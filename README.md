@@ -58,9 +58,9 @@ Mở một terminal mới:
 ```bash
 cd frontend
 npm install
-npm start
+npm run dev
 ```
-Frontend sẽ khởi chạy tại: `http://localhost:5173` hoặc `http://localhost:3000`
+Frontend sẽ khởi chạy tại: `http://localhost:5173`
 
 ---
 

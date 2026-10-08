@@ -33,14 +33,29 @@ export default function DrawerAppBar(props: Props) {
         background: darkTheme.palette.background.default,
       }}
     >
-      <Typography
-        variant="body1"
-        component="h1"
-        fontWeight={600}
-        sx={{ my: 2 }}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 1.2,
+          my: 2,
+        }}
       >
-        Financialhub
-      </Typography>
+        <Box
+          component="img"
+          src="/logo.png"
+          alt="MoneyManager Logo"
+          sx={{ width: 26, height: 26, objectFit: "contain" }}
+        />
+        <Typography
+          variant="body1"
+          component="h1"
+          fontWeight={600}
+        >
+          MoneyManager
+        </Typography>
+      </Box>
       <Divider />
       <List>
         {navigation.map((item) => (
@@ -85,14 +100,27 @@ export default function DrawerAppBar(props: Props) {
             >
               <MenuIcon />
             </IconButton>
-            <Typography
-              variant="body1"
-              component="h1"
-              fontWeight={600}
-              sx={{ display: { xs: "none", sm: "block" } }}
+            <Box
+              sx={{
+                display: { xs: "none", sm: "flex" },
+                alignItems: "center",
+                gap: 1.2,
+              }}
             >
-              Financialhub
-            </Typography>
+              <Box
+                component="img"
+                src="/logo.png"
+                alt="MoneyManager Logo"
+                sx={{ width: 26, height: 26, objectFit: "contain" }}
+              />
+              <Typography
+                variant="body1"
+                component="h1"
+                fontWeight={600}
+              >
+                MoneyManager
+              </Typography>
+            </Box>
             <Divider
               orientation="vertical"
               sx={{
