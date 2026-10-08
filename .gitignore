@@ -200,3 +200,5 @@ sketch
 # End of https://www.toptal.com/developers/gitignore/api/react
 frontend/node_modules
 .python-version
+.agent/
+.agent

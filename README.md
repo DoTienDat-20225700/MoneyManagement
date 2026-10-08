@@ -1,102 +1,78 @@
-# FinancialHub
-![image](https://github.com/isabellaaquino/financialhub/assets/76221367/7b7dc6e9-4279-4fff-9e19-04b4394252e9)
+# MoneyManagement - Ứng Dụng Quản Lý Chi Tiêu Cá Nhân (FinancialHub)
 
-## Overview 📝
+![FinancialHub Dashboard](https://github.com/isabellaaquino/financialhub/assets/76221367/7b7dc6e9-4279-4fff-9e19-04b4394252e9)
 
-This repository contains a finance management web application built with **Django** and **React.js**. The main goal of this project is to ~~make myself a finance tracker because i'm terrible at saving money~~ provide a user-friendly solution for managing your personal finances, tracking transactions, and gaining insights into your earnings and expenses.
+## 📌 Tổng Quan (Overview)
 
-While we don't host this on a cloud solution, you can try this app following the steps described [here](#installation-%EF%B8%8F).
+**MoneyManagement (FinancialHub)** là ứng dụng web quản lý tài chính cá nhân toàn diện được xây dựng bằng **Django** (Backend) và **React.js** (Frontend). Hệ thống cung cấp giải pháp trực quan, thân thiện giúp người dùng theo dõi các khoản thu chi, quản lý dòng tiền, lập kế hoạch tiết kiệm và phân tích xu hướng tài chính thông qua biểu đồ phân tích.
 
-## Features 🚀
+---
 
-### Transaction Management 💸
+## ✨ Tính Năng Nổi Bật (Key Features)
 
-- Create transactions for transfers, earnings, and expenses.
-- Track transaction details such as date, amount, and description.
-- Create your own personalized labels for transactions for easier filtering.
-- Import payment invoices (Brazilian PIX only)
-- Create recurrent transactions ❗
+### 1. Quản lý Giao dịch (Transaction Management) 💸
+- Thêm mới, chỉnh sửa và quản lý các giao dịch thu nhập (Earnings) và chi tiêu (Expenses).
+- Ghi nhận chi tiết: ngày giao dịch, số tiền, mô tả và phân loại danh mục.
+- Tùy chỉnh các nhãn (Labels) cá nhân hóa để lọc và tìm kiếm giao dịch nhanh chóng.
+- Hỗ trợ nhập hóa đơn (Invoice import).
 
-### Monthly Earnings and Expense Analysis 📈
+### 2. Thống Kê & Phân Tích Tài Chính (Financial Analytics) 📈
+- Biểu đồ tương tác trực quan hóa thu nhập và chi tiêu theo tuần/tháng/năm.
+- Phân tích cơ cấu chi tiêu theo từng danh mục dưới dạng biểu đồ tròn (Pie chart) và biểu đồ cột.
+- Theo dõi xu hướng tài chính và đưa ra đánh giá thói quen chi tiêu.
 
-- Visualize your earning and expenses using interactive graphs and charts.
-- Get a clear overview of your financial trends over time.
-- Analyze your spending habits and identify areas for improvement.
+### 3. Kế Hoạch Tiết Kiệm (Saving Plans) 🐖
+- Thiết lập các mục tiêu tiết kiệm cá nhân hóa với số tiền và thời hạn cụ thể.
+- Theo dõi tiến độ hoàn thành mục tiêu tiết kiệm trực quan.
 
-### SavingPlans 🐖 ❗
+---
 
-- Create personalized saving plans tailored to your specific goals.
-- Set savings targets and monitor your progress.
-- Get reminders and notifications to stay on track with your savings.
+## 🛠️ Công Nghệ Sử Dụng (Tech Stack)
 
-#### Items followed by an ❗ are items that already started being implemented, but are yet to be released for usage
+- **Backend**: Python 3, Django, Django REST Framework
+- **Frontend**: React.js, HTML5, CSS3, JavaScript
+- **Database**: SQLite (phát triển) / PostgreSQL
+- **Tools**: Git, GitHub CLI, npm, pip
 
-## Installation ⚙️
+---
 
-To run the application locally, please follow these steps:
+## ⚙️ Hướng Dẫn Cài Đặt & Chạy Ứng Dụng (Installation)
 
-1. Clone the repository:
+### 1. Clone repository
+```bash
+git clone https://github.com/DoTienDat-20225700/MoneyManagement.git
+cd MoneyManagement
+```
 
-   ```bash
-   git clone https://github.com/isabellaaquino/financialhub.git
-   ```
+### 2. Cài đặt Backend (Django)
+```bash
+cd backend
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+```
+Backend sẽ khởi chạy tại: `http://127.0.0.1:8000`
 
-2. Install dependencies for the Django backend:
+### 3. Cài đặt Frontend (React)
+Mở một terminal mới:
+```bash
+cd frontend
+npm install
+npm start
+```
+Frontend sẽ khởi chạy tại: `http://localhost:5173` hoặc `http://localhost:3000`
 
-   ```bash
-   cd backend
-   pip install -r requirements.txt
-   ```
+---
 
-3. Set up the Django database:
+## 🧑‍💻 Thông Tin Tác Giả (Author)
 
-   ```bash
-   python manage.py migrate
-   ```
+- **Họ và tên**: Đỗ Tiến Đạt
+- **Mã số sinh viên (MSSV)**: 20225700
+- **Trường**: Đại học Bách Khoa Hà Nội (HUST)
+- **GitHub**: [@DoTienDat-20225700](https://github.com/DoTienDat-20225700)
+- **Email**: [dat.dt225700@sis.hust.edu.vn](mailto:dat.dt225700@sis.hust.edu.vn)
 
-4. Install dependencies for the React.js frontend:
+---
 
-   ```bash
-   cd ../frontend
-   npm install
-   ```
-
-5. Start the development server:
-
-   ```bash
-   npm start
-   ```
-
-6. Access the application in your browser at `http://localhost:5173`.
-
-## About the project 🧑‍🎓
-
-Although this project is a work in progress (and will be for a long time), our kanban board and issues are public, and can be accessed [here](https://github.com/users/isabellaaquino/projects/1/views/1). We would love to know your ideas, suggestions and reviews!
-
-Another thing worth being said is that we are both undergrad compsci students, and we try to allocate time to work on this whenever we can. Along with that, we also want to add that we have an initial UML modelling made on Visual Paradigm that is being made for studying purposes and can be accessed through `backend/modelling`.
-
-Last but not least, stars are appreciated! 🤩
-
-## Usage 💡
-
-Once the application is up and running, you can perform the following tasks:
-
-- Register a new user account or log in with an existing account.
-- Create transactions by specifying the type (earning or expense) and categorize them as you wish, creating your own labels.
-- View and analyze your monthly earnings and expenses through interactive graphs and charts.
-
-## Roadmap 🗺️
-
-The following features are planned for future development:
-
-- Report generation and advanced insights for better financial analysis.
-- Budgeting tools to help you plan and manage your expenses effectively.
-- Recurrent transactions to facilitate expenses that happen every month
-
-## License 📄
-
-This project will be soon licensed under the MIT License. You are free to use, modify, and distribute this software for personal purposes.
-
-## Authors ✍️
-
-This project is thought, planned and implemented by [Isabella Aquino](https://github.com/isabellaaquino) (backend heavy) & [Pedro Dell'Olio](https://github.com/pedrodellolio) (frontend heavy)
+## 📄 License
+Dự án được phát triển phục vụ mục đích học tập và nghiên cứu cá nhân.
