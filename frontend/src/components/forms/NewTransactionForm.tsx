@@ -28,6 +28,7 @@ import { useTransactions } from "../../hooks/api/useTransactions";
 import { typeOptionMask } from "../../models/Transaction";
 import {
   NewTransactionFormData,
+  NewTransactionFormInput,
   newTransactionFormSchema,
 } from "../../schemas/newTransactionSchema";
 import { formatCurrency } from "../../utils/utils";
@@ -42,17 +43,13 @@ function NewTransactionForm() {
     handleSubmit,
     control,
     formState: { errors },
-  } = useForm<NewTransactionFormData>({
+  } = useForm<NewTransactionFormInput, any, NewTransactionFormData>({
     resolver: zodResolver(newTransactionFormSchema),
-    values: {
+    defaultValues: {
       title: "",
-      value: 0,
-      label: {
-        id: 0,
-        name: "",
-        color: "",
-      },
-      date: dayjs(new Date().toLocaleDateString(), "DD-MM-YYYY"),
+      value: "",
+      label: null,
+      date: dayjs(),
       type: TypeOption.EXPENSE,
       updateWallet: false,
       recurring: false,
@@ -115,8 +112,7 @@ function NewTransactionForm() {
             helperText={errors.title ? errors.title.message : " "}
             error={!!errors.title}
             onChange={onChange}
-            defaultValue={""}
-            value={value}
+            value={value ?? ""}
             label="Title"
             variant="outlined"
             size="small"
@@ -138,8 +134,12 @@ function NewTransactionForm() {
             <AsyncAutocomplete
               onChange={onChange}
               value={value}
-              helperText={errors.label ? errors.label.name?.message : " "}
-              error={!!errors.label?.name}
+              helperText={
+                errors.label
+                  ? errors.label.message || (errors.label as any)?.name?.message
+                  : " "
+              }
+              error={!!errors.label}
             />
           )}
         />
@@ -172,23 +172,21 @@ function NewTransactionForm() {
           render={({ field: { onChange, value } }) => (
             <TextField
               fullWidth
-              autoFocus
               helperText={errors.value ? errors.value.message : " "}
               error={!!errors.value}
-              defaultValue={""}
               onChange={(e) => {
                 const formattedValue = formatCurrency(e.target.value);
                 onChange(formattedValue);
               }}
-              value={value === 0 ? "" : value}
+              value={value ?? ""}
               label="Amount"
               variant="outlined"
               size="small"
-              placeholder="0,00"
+              placeholder="0"
               InputProps={{
                 style: { fontSize: "14px", height: "40px" },
-                startAdornment: (
-                  <InputAdornment position="start">R$</InputAdornment>
+                endAdornment: (
+                  <InputAdornment position="end">đ</InputAdornment>
                 ),
               }}
             />
@@ -205,7 +203,6 @@ function NewTransactionForm() {
                   label="Date"
                   value={value}
                   onChange={onChange}
-                  defaultValue={""}
                   slotProps={{
                     textField: {
                       size: "small",

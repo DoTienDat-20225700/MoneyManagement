@@ -40,13 +40,11 @@ export function useTransactions() {
         date: transaction.date,
       };
       const response = await axiosPrivate.post("/transaction/", newTransaction);
-      if (response.status !== 200) return null;
-      return await response.data;
+      return response.data;
     } catch (error) {
       console.log(error);
+      throw error;
     }
-
-    return null;
   }
 
   async function deleteTransaction({
@@ -58,11 +56,11 @@ export function useTransactions() {
       const response = await axiosPrivate.delete(
         `/transaction/${transactionId}`
       );
-      return await response.data;
+      return response.data;
     } catch (error) {
       console.log(error);
+      throw error;
     }
-    return null;
   }
 
   return { getTransactions, createTransaction, deleteTransaction };

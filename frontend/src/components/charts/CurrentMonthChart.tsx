@@ -19,7 +19,7 @@ import {
 import { useTransactions } from "../../hooks/api/useTransactions";
 import { Transaction } from "../../models/Transaction";
 import { darkTheme } from "../../theme";
-import { barRangeOptionMask, getStartDate } from "../../utils/utils";
+import { barRangeOptionMask, getStartDate, formatValue } from "../../utils/utils";
 
 function CurrentMonthChart() {
   const { getTransactions } = useTransactions();
@@ -66,7 +66,7 @@ function CurrentMonthChart() {
             },
             show: true,
             formatter: function (value: string) {
-              return new Date(value).toLocaleString("pt-BR", {
+              return new Date(value).toLocaleString("vi-VN", {
                 day: "2-digit",
                 month: "2-digit",
               });
@@ -81,10 +81,7 @@ function CurrentMonthChart() {
               colors: grey[700],
             },
             formatter: function (val) {
-              return val.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-              });
+              return formatValue(val);
             },
           },
         },
@@ -98,6 +95,11 @@ function CurrentMonthChart() {
           x: {
             formatter(val) {
               return String(val);
+            },
+          },
+          y: {
+            formatter(val) {
+              return formatValue(val);
             },
           },
         },

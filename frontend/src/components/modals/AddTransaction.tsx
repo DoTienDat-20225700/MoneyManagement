@@ -33,7 +33,7 @@ export default function AddTransaction() {
     >
       <DialogTitle>Add new transaction</DialogTitle>
       <DialogContent>
-        <NewTransactionForm />
+        {isOpen && <NewTransactionForm />}
       </DialogContent>
     </Dialog>
   );

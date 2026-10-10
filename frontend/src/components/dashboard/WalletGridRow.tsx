@@ -50,7 +50,7 @@ function WalletGridRow(props: Props) {
             <Box display="flex" alignItems="center" gap={2}>
               {!isEditingBalance ? (
                 <Typography component="span" variant="h5" fontWeight={600}>
-                  {formatValue(props.wallet!.current_amount, 10_000)}
+                  {formatValue(props.wallet?.current_amount ?? 0)}
                 </Typography>
               ) : (
                 <EditBalanceForm setState={setIsEditingBalance} />
@@ -132,7 +132,7 @@ function WalletGridRow(props: Props) {
           ) : (
             <Box display="flex" alignItems="center" gap={2}>
               <Typography component="span" variant="h5" fontWeight={600}>
-                +{formatValue(props.wallet!.monthly_earnings, 10_000)}
+                +{formatValue(Math.abs(Number(props.wallet?.monthly_earnings || 0)))}
               </Typography>
             </Box>
           )}
@@ -167,7 +167,7 @@ function WalletGridRow(props: Props) {
           ) : (
             <Box display="flex" alignItems="center" gap={2}>
               <Typography component="span" variant="h5" fontWeight={600}>
-                -{formatValue(props.wallet!.monthly_expenses, 10_000)}
+                -{formatValue(Math.abs(Number(props.wallet?.monthly_expenses || 0)))}
               </Typography>
             </Box>
           )}

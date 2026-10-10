@@ -11,17 +11,20 @@
 ## ✨ Tính Năng Nổi Bật (Key Features)
 
 ### 1. Quản lý Giao dịch (Transaction Management) 💸
+
 - Thêm mới, chỉnh sửa và quản lý các giao dịch thu nhập (Earnings) và chi tiêu (Expenses).
 - Ghi nhận chi tiết: ngày giao dịch, số tiền, mô tả và phân loại danh mục.
 - Tùy chỉnh các nhãn (Labels) cá nhân hóa để lọc và tìm kiếm giao dịch nhanh chóng.
 - Hỗ trợ nhập hóa đơn (Invoice import).
 
 ### 2. Thống Kê & Phân Tích Tài Chính (Financial Analytics) 📈
+
 - Biểu đồ tương tác trực quan hóa thu nhập và chi tiêu theo tuần/tháng/năm.
 - Phân tích cơ cấu chi tiêu theo từng danh mục dưới dạng biểu đồ tròn (Pie chart) và biểu đồ cột.
 - Theo dõi xu hướng tài chính và đưa ra đánh giá thói quen chi tiêu.
 
 ### 3. Kế Hoạch Tiết Kiệm (Saving Plans) 🐖
+
 - Thiết lập các mục tiêu tiết kiệm cá nhân hóa với số tiền và thời hạn cụ thể.
 - Theo dõi tiến độ hoàn thành mục tiêu tiết kiệm trực quan.
 
@@ -39,27 +42,33 @@
 ## ⚙️ Hướng Dẫn Cài Đặt & Chạy Ứng Dụng (Installation)
 
 ### 1. Clone repository
+
 ```bash
 git clone https://github.com/DoTienDat-20225700/MoneyManagement.git
 cd MoneyManagement
 ```
 
 ### 2. Cài đặt Backend (Django)
+
 ```bash
 cd backend
 pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver
+python3 manage.py migrate
+python3 manage.py runserver
 ```
+
 Backend sẽ khởi chạy tại: `http://127.0.0.1:8000`
 
 ### 3. Cài đặt Frontend (React)
+
 Mở một terminal mới:
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+
 Frontend sẽ khởi chạy tại: `http://localhost:5173`
 
 ---
@@ -75,4 +84,5 @@ Frontend sẽ khởi chạy tại: `http://localhost:5173`
 ---
 
 ## 📄 License
+
 Dự án được phát triển phục vụ mục đích học tập và nghiên cứu cá nhân.

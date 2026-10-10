@@ -19,7 +19,7 @@ import {
 import { useTransactions } from "../../hooks/api/useTransactions";
 import { AggregatedExpense } from "../../models/Transaction";
 import { darkTheme } from "../../theme";
-import { getStartDate, pieRangeOptionMask } from "../../utils/utils";
+import { getStartDate, pieRangeOptionMask, formatValue } from "../../utils/utils";
 
 function ProfileChart() {
   const { getTransactions } = useTransactions();
@@ -76,10 +76,15 @@ function ProfileChart() {
         yaxis: {
           labels: {
             formatter: function (val) {
-              return val.toLocaleString("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-              });
+              return formatValue(val);
+            },
+          },
+        },
+        tooltip: {
+          theme: "dark",
+          y: {
+            formatter: function (val) {
+              return formatValue(val);
             },
           },
         },

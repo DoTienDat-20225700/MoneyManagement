@@ -5,33 +5,35 @@ import {
   PieChartRangeType,
 } from "../enums/Enums";
 
-export function formatValue(value: number, limit: number): string {
-  if (value < limit) {
-    return parseFloat(value.toString()).toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
+export function formatValue(
+  value: number | string | null | undefined,
+  _limit?: number
+): string {
+  if (value === null || value === undefined || value === "") {
+    return "0đ";
   }
 
-  const abbreviations = ["", "mil", "mi", "bi"];
-  let abbreviationIndex = 0;
-
-  while (value >= 1000) {
-    value /= 1000;
-    abbreviationIndex++;
+  const num = typeof value === "string" ? parseFloat(value) : value;
+  if (isNaN(num)) {
+    return "0đ";
   }
 
-  return value
-    ? "R$" + value.toFixed(2) + abbreviations[abbreviationIndex]
-    : "";
+  const sign = num < 0 ? "-" : "";
+  const absVal = Math.round(Math.abs(num));
+  const formatted = absVal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+  return `${sign}${formatted}đ`;
 }
 
-export function formatCurrency(value: string) {
-  let formattedValue = value.replace(/\D/g, "");
-  formattedValue = formattedValue.replace(/(\d)(\d{2})$/, "$1,$2");
-  formattedValue = formattedValue.replace(/(?=(\d{3})+(\D))\B/g, ".");
-
-  return formattedValue;
+export function formatCurrency(
+  value: string | number | null | undefined
+): string {
+  if (value === undefined || value === null) return "";
+  const stringValue = value.toString();
+  let cleanValue = stringValue.replace(/\D/g, "");
+  if (!cleanValue) return "";
+  cleanValue = cleanValue.replace(/^0+(?!$)/, "");
+  return cleanValue.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
 export function getStartDate(range: BarChartRangeType | PieChartRangeType) {

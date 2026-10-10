@@ -66,11 +66,11 @@ function EditBalanceForm(props: Props) {
             size="small"
             defaultValue={""}
             sx={{ borderColor: grey[800], maxHeight: "32px" }}
-            placeholder="0,00"
+            placeholder="0"
             InputProps={{
               style: { fontSize: "20px", height: "38px" },
-              startAdornment: (
-                <InputAdornment position="start">R$</InputAdornment>
+              endAdornment: (
+                <InputAdornment position="end">đ</InputAdornment>
               ),
             }}
           />

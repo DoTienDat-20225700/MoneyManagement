@@ -291,13 +291,15 @@ class Transaction(WalletBasedModel):
         if data.get("title"):
             transaction.title = data.get("title")
 
-        if data.get("label"):
-            print(data)
-            custom_label = CustomLabel.objects.get(
-                pk=data.get("label").get("id"))
-            if custom_label.get_wallet() != user_wallet:
-                raise PermissionError()
-            transaction.label = custom_label
+        if data.get("label") and data.get("label").get("id"):
+            try:
+                custom_label = CustomLabel.objects.get(
+                    pk=data.get("label").get("id"))
+                if custom_label.get_wallet() != user_wallet:
+                    raise PermissionError()
+                transaction.label = custom_label
+            except CustomLabel.DoesNotExist:
+                pass
 
         if data.get("description"):
             transaction.description = data.get("description")
@@ -312,8 +314,15 @@ class Transaction(WalletBasedModel):
             transaction.type = data.get("type")
         if data.get("date"):
             date_string = data.get("date")
-            date_object = datetime.strptime(
-                date_string, "%Y-%m-%dT%H:%M:%S.%fZ")
+            try:
+                date_object = datetime.strptime(
+                    date_string, "%Y-%m-%dT%H:%M:%S.%fZ")
+            except ValueError:
+                try:
+                    date_object = datetime.strptime(
+                        date_string, "%Y-%m-%dT%H:%M:%SZ")
+                except ValueError:
+                    date_object = datetime.fromisoformat(date_string.replace("Z", "+00:00"))
             transaction.date = date_object.date()
         if data.get("updateWallet") is not None:
             transaction.update_wallet = data.get("updateWallet")

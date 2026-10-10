@@ -31,8 +31,12 @@ export default function AsyncAutocomplete(props: Props) {
       onOpen={() => setOpen(true)}
       onClose={() => setOpen(false)}
       options={wallet?.labels ?? []}
-      getOptionLabel={(option) => option.name}
-      isOptionEqualToValue={(option, value) => option.name === value.name}
+      getOptionLabel={(option) =>
+        typeof option === "string" ? option : option?.name ?? ""
+      }
+      isOptionEqualToValue={(option, value) =>
+        !value || option.id === value?.id || option.name === value?.name
+      }
       onChange={(_, data) => props.onChange(data)}
       value={props.value}
       renderInput={(params) => (

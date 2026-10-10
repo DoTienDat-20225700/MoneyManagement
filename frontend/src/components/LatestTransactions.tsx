@@ -14,6 +14,7 @@ import { useSnackbar } from "notistack";
 import React from "react";
 import { useTransactions } from "../hooks/api/useTransactions";
 import { Transaction, typeOptionColor } from "../models/Transaction";
+import { formatValue } from "../utils/utils";
 
 const MAX_ROWS = 10;
 
@@ -70,10 +71,7 @@ function LatestTransactions(props: Props) {
       headerName: "Value",
       width: 300,
       valueFormatter: (params: GridValueFormatterParams) => {
-        return parseFloat(params.value).toLocaleString("pt-BR", {
-          style: "currency",
-          currency: "BRL",
-        });
+        return formatValue(params.value);
       },
     },
     {
