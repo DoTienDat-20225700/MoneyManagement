@@ -147,10 +147,11 @@ function CurrentMonthChart() {
         <Typography component="h2" variant="body1" mb={1}>
           {t("daily_expenses")}
         </Typography>
-        <FormControl sx={{ width: "200px" }}>
-          <InputLabel>{t("range")}</InputLabel>
+        <FormControl size="small" sx={{ width: "200px" }}>
+          <InputLabel id="bar-chart-range-select-label">{t("range")}</InputLabel>
           <Select
-            size="small"
+            labelId="bar-chart-range-select-label"
+            id="bar-chart-range-select"
             value={range.id}
             label={t("range")}
             onChange={(e) =>

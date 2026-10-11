@@ -378,6 +378,13 @@ class Transaction(WalletBasedModel):
         transaction.type = optional_data.get('type')
         transaction.update_wallet = optional_data.get('update_wallet')
 
+        label_id = optional_data.get('label_id')
+        if label_id:
+            try:
+                transaction.label = CustomLabel.objects.get(pk=label_id, wallet=user_wallet)
+            except CustomLabel.DoesNotExist:
+                pass
+
         # Invoice dict section
         transaction.value = imported_data.get("value")
         transaction.date = imported_data.get("date")

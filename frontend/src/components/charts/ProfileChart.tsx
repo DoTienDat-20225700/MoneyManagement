@@ -49,7 +49,9 @@ function ProfileChart() {
     ? transactions.map((obj: AggregatedExpense) => obj.value)
     : [];
   const labels = transactions
-    ? transactions.map((obj: AggregatedExpense) => obj.label_name)
+    ? transactions.map((obj: AggregatedExpense) =>
+        obj.label_name === "Chưa phân loại" ? t("uncategorized") : obj.label_name
+      )
     : [];
 
   const state = useMemo<{
@@ -115,10 +117,11 @@ function ProfileChart() {
         <Typography component="h2" variant="body1" mb={1}>
           {t("expenses_distribution")}
         </Typography>
-        <FormControl sx={{ width: "200px" }}>
-          <InputLabel>{t("range")}</InputLabel>
+        <FormControl size="small" sx={{ width: "200px" }}>
+          <InputLabel id="pie-chart-range-select-label">{t("range")}</InputLabel>
           <Select
-            size="small"
+            labelId="pie-chart-range-select-label"
+            id="pie-chart-range-select"
             value={range.id}
             label={t("range")}
             onChange={(e) =>

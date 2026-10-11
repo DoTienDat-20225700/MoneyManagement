@@ -16,7 +16,7 @@ from datetime import date
 from datetime import timedelta
 from hubModels.models import CustomLabel
 from hubModels.serializers import LabelSerializer
-from hubModels.importer import PDFInvoiceImporter, InvoiceProcessingException
+from hubModels.importer import InvoiceImporter, PDFInvoiceImporter, InvoiceProcessingException
 from django.conf import settings
 from django.db.models.functions import TruncDate
 
@@ -131,6 +131,54 @@ class TransactionAPIView(APIView):
 
         return custom_success_response("Transaction deleted with success!")
 
+    def put(self, request, transaction_pk=None):
+        user: HubUser = request.user
+        pk = transaction_pk or request.data.get('id')
+        if not pk:
+            return custom_server_error_response("No transaction id was given. Please try again.")
+
+        try:
+            transaction = Transaction.objects.get(pk=pk)
+        except Transaction.DoesNotExist:
+            return custom_user_error_response("Không tìm thấy giao dịch.", 404)
+
+        if not transaction.is_from_wallet(user.get_wallet()):
+            raise PermissionError()
+
+        data = request.data
+        if 'title' in data and data['title']:
+            transaction.title = data['title']
+        if 'value' in data and data['value'] is not None:
+            transaction.value = data['value']
+        if 'type' in data and data['type']:
+            transaction.type = data['type']
+        if 'date' in data and data['date']:
+            date_val = data['date']
+            if isinstance(date_val, str):
+                try:
+                    transaction.date = date.fromisoformat(date_val.split('T')[0])
+                except ValueError:
+                    pass
+            elif isinstance(date_val, (date, datetime)):
+                transaction.date = date_val
+
+        if 'label' in data or 'label_id' in data:
+            label_data = data.get('label') or data.get('label_id')
+            label_id = label_data.get('id') if isinstance(label_data, dict) else label_data
+            if label_id:
+                try:
+                    custom_label = CustomLabel.objects.get(pk=label_id, wallet=user.get_wallet())
+                    transaction.label = custom_label
+                except CustomLabel.DoesNotExist:
+                    transaction.label = None
+            else:
+                transaction.label = None
+
+        transaction.imported = False
+        transaction.save()
+
+        return custom_success_response("Cập nhật giao dịch thành công!")
+
 
 class LabelAPIView(APIView):
     permission_classes = (IsAuthenticated,)
@@ -178,36 +226,49 @@ class ImportInvoicesAPIView(APIView):
         files_list = request.FILES.getlist('files[]')
 
         institution = request.query_params.get('institution')
-        update_wallet = bool(request.query_params.get('updateWallet', False))
+        update_wallet = request.query_params.get('updateWallet') in ['1', 'true', 'True', True]
         transaction_type = request.query_params.get('type', None)
+        label_id = request.query_params.get('label', None)
 
         if update_wallet and not transaction_type:
             # Update wallet has no effect if transaction type is None
             update_wallet = False
 
-        file_path = 'hubAPI/imported_files/buffer.pdf'
+        os.makedirs('hubAPI/imported_files', exist_ok=True)
 
         for uploaded_file in files_list:
-            with open(file_path, 'wb') as file:
-                file.write(uploaded_file.read())
-
-            optional_data = {'update_wallet': update_wallet, 'type': transaction_type}
-
-            try:
-                invoice_dict = PDFInvoiceImporter(file_path, institution).process_file()
-            except:
-                os.remove(file_path)
-                return custom_user_error_response(InvoiceProcessingException.message)
-
-            os.remove(file_path)
-
-            if not invoice_dict.get('value') and not invoice_dict.get('date'):
-                return custom_user_error_response(InvoiceProcessingException.message)
+            _, ext = os.path.splitext(uploaded_file.name)
+            if not ext:
+                ext = '.pdf'
+            ext = ext.lower()
+            file_path = f'hubAPI/imported_files/buffer_{user.pk}{ext}'
 
             try:
-                Transaction.create_from_import(imported_data=invoice_dict, optional_data=optional_data, user=user)
-            except:
-                return custom_user_error_response('Có lỗi xảy ra khi lưu giao dịch từ hoá đơn. Vui lòng thử lại.')
+                with open(file_path, 'wb') as file:
+                    for chunk in uploaded_file.chunks():
+                        file.write(chunk)
+
+                optional_data = {
+                    'update_wallet': update_wallet,
+                    'type': transaction_type,
+                    'label_id': label_id,
+                }
+
+                try:
+                    invoice_dict = InvoiceImporter(file_path, institution).process_file()
+                except Exception as e:
+                    return custom_user_error_response(InvoiceProcessingException.message)
+
+                if not invoice_dict.get('value') and not invoice_dict.get('date'):
+                    return custom_user_error_response(InvoiceProcessingException.message)
+
+                try:
+                    Transaction.create_from_import(imported_data=invoice_dict, optional_data=optional_data, user=user)
+                except Exception as e:
+                    return custom_user_error_response('Có lỗi xảy ra khi lưu giao dịch từ hoá đơn. Vui lòng thử lại.')
+            finally:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
 
         return custom_success_response('Đã nhập hoá đơn thành công! Vui lòng cập nhật các thông tin còn thiếu.')
 

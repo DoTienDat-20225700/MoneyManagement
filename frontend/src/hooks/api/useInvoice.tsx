@@ -8,16 +8,19 @@ export function useInvoice() {
     invoices,
     institution,
     type,
+    label,
     updateWallet,
   }: {
     invoices: FileList;
     institution?: String;
     type?: TypeOption;
+    label?: string | number;
     updateWallet?: boolean;
   }): Promise<{ [key: string]: string } | null> {
     try {
       let endpoint = `/import/?institution=${institution}`;
       if (type) endpoint += `&type=${type}`;
+      if (label) endpoint += `&label=${label}`;
       if (updateWallet) endpoint += `&updateWallet=${updateWallet ? 1 : 0}`;
 
       const formData = new FormData();

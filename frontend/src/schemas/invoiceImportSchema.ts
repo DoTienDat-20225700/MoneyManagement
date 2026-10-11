@@ -2,8 +2,15 @@ import { z } from "zod";
 import { TypeOption } from "../enums/Enums";
 import { BankInstitutions } from "../models/Invoices";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ACCEPTED_DOC_TYPES = ["application/pdf"];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ACCEPTED_DOC_TYPES = [
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/webp",
+];
+const ACCEPTED_EXTENSIONS = [".pdf", ".png", ".jpg", ".jpeg", ".webp"];
 
 export const newInvoiceImportSchema = z
   .object({
@@ -18,7 +25,15 @@ export const newInvoiceImportSchema = z
         "err_file_size"
       )
       .refine(
-        (files) => !files?.[0] || ACCEPTED_DOC_TYPES.includes(files[0].type),
+        (files) => {
+          if (!files?.[0]) return true;
+          const file = files[0];
+          if (file.type && ACCEPTED_DOC_TYPES.includes(file.type)) {
+            return true;
+          }
+          const lowerName = file.name.toLowerCase();
+          return ACCEPTED_EXTENSIONS.some((ext) => lowerName.endsWith(ext));
+        },
         "err_file_type"
       ),
     institution: z
@@ -26,6 +41,7 @@ export const newInvoiceImportSchema = z
       .default(BankInstitutions.GENERAL_VN),
     // global optional attributes
     type: z.nativeEnum(TypeOption).optional(),
+    label: z.union([z.string(), z.number()]).optional(),
     updateWallet: z.boolean().optional(),
   })
   .refine((data) => {

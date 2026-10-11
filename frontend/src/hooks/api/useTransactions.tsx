@@ -63,5 +63,24 @@ export function useTransactions() {
     }
   }
 
-  return { getTransactions, createTransaction, deleteTransaction };
+  async function updateTransaction({
+    transactionId,
+    transaction,
+  }: {
+    transactionId: number;
+    transaction: any;
+  }): Promise<{ [key: string]: string } | null> {
+    try {
+      const response = await axiosPrivate.put(
+        `/transaction/${transactionId}`,
+        transaction
+      );
+      return response.data;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+
+  return { getTransactions, createTransaction, deleteTransaction, updateTransaction };
 }

@@ -18,12 +18,13 @@ import {
   Typography,
 } from "@mui/material";
 import { grey } from "@mui/material/colors";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSnackbar } from "notistack";
 import { Controller, useForm } from "react-hook-form";
 import { useSearchParams } from "react-router-dom";
 import { TypeOption } from "../../enums/Enums";
 import { useInvoice } from "../../hooks/api/useInvoice";
+import { useLabels } from "../../hooks/api/useLabels";
 import { BankInstitutions } from "../../models/Invoices";
 import { typeOptionMask } from "../../models/Transaction";
 import {
@@ -36,6 +37,11 @@ function NewInvoiceForm() {
   const { language, t } = useLanguage();
   const queryClient = useQueryClient();
   const { uploadInvoices } = useInvoice();
+  const { getLabels } = useLabels();
+  const { data: labels } = useQuery({
+    queryKey: ["labels"],
+    queryFn: getLabels,
+  });
   const { enqueueSnackbar } = useSnackbar();
   const [_, setSearchParams] = useSearchParams();
   const {
@@ -49,6 +55,7 @@ function NewInvoiceForm() {
       invoices: undefined,
       institution: BankInstitutions.GENERAL_VN,
       type: undefined,
+      label: undefined,
       updateWallet: undefined,
     },
   });
@@ -62,6 +69,9 @@ function NewInvoiceForm() {
       });
       queryClient.invalidateQueries({
         queryKey: ["transactions"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["wallet"],
       });
       enqueueSnackbar(t("invoice_import_success"), {
         variant: "success",
@@ -91,6 +101,7 @@ function NewInvoiceForm() {
       invoices: data.invoices,
       institution: data.institution,
       type: data?.type,
+      label: data?.label,
       updateWallet: data?.updateWallet,
     });
   }
@@ -122,14 +133,17 @@ function NewInvoiceForm() {
                     : errors.invoices.message === "err_file_type"
                     ? t("err_file_type")
                     : t("err_invoice_req")
-                  : null
+                  : t("invoice_file_tip")
               }
               error={!!errors.invoices}
               onChange={(e: any) => {
                 setValue("invoices", e.target.files);
               }}
               size="small"
-              inputProps={{ multiple: true }}
+              inputProps={{
+                multiple: true,
+                accept: ".pdf,.png,.jpg,.jpeg,.webp,image/*",
+              }}
             />
           </FormControl>
         )}
@@ -139,10 +153,13 @@ function NewInvoiceForm() {
         name="institution"
         control={control}
         render={({ field: { onChange, value } }) => (
-          <FormControl sx={{ width: "100%" }}>
-            <InputLabel>{t("bank_institution")}</InputLabel>
+          <FormControl fullWidth size="small">
+            <InputLabel id="import-bank-institution-label">
+              {t("bank_institution")}
+            </InputLabel>
             <Select
-              size="small"
+              labelId="import-bank-institution-label"
+              id="import-bank-institution-select"
               value={value}
               label={t("bank_institution")}
               onChange={onChange}
@@ -154,6 +171,52 @@ function NewInvoiceForm() {
                   </MenuItem>
                 );
               })}
+            </Select>
+          </FormControl>
+        )}
+      />
+
+      <Controller
+        name="label"
+        control={control}
+        render={({ field: { onChange, value } }) => (
+          <FormControl fullWidth size="small">
+            <InputLabel id="import-label-select-label">
+              {t("col_label")}
+            </InputLabel>
+            <Select<number | string>
+              labelId="import-label-select-label"
+              id="import-label-select"
+              value={
+                value !== undefined && value !== null && value !== ""
+                  ? Number(value)
+                  : ""
+              }
+              label={t("col_label")}
+              onChange={(e) =>
+                onChange(
+                  e.target.value === "" ? undefined : Number(e.target.value)
+                )
+              }
+            >
+              <MenuItem value="">
+                <em>{t("uncategorized")}</em>
+              </MenuItem>
+              {labels?.map((item) => (
+                <MenuItem key={item.id} value={Number(item.id)}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Box
+                      sx={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: "50%",
+                        backgroundColor: item.color,
+                      }}
+                    />
+                    {item.name}
+                  </Box>
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
         )}

@@ -80,7 +80,15 @@ class TransactionsQueryset(models.QuerySet):
         return self.values_months().annotate_values()
 
     def group_by_labels(self):
-        return self.values_labels().annotate_values()
+        labeled = list(self.values_labels().annotate_values())
+        unlabeled_sum = self.filter(label__isnull=True).aggregate(Sum('value')).get('value__sum')
+        if unlabeled_sum and unlabeled_sum > 0:
+            labeled.append({
+                'label_name': 'Chưa phân loại',
+                'label_color': '#6c757d',
+                'value': unlabeled_sum
+            })
+        return labeled
 
     def add_empty_dates(self, start_date, end_date):
         """
