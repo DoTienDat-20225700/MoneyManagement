@@ -56,19 +56,19 @@ export const AuthProvider = ({ children }: Props) => {
       setLoggedUser(jwtDecode(data.access));
     } catch (error) {
       console.log(error);
+      throw error;
     }
   }
 
   async function SignUp({ user }: { user: UserInput }) {
     try {
       const response = await api.post("/register/", user);
-      if (response.status !== 200) return null;
+      if (response.status !== 200) throw new Error("Registration failed");
       return (await response.data) as string;
     } catch (error) {
       console.log(error);
+      throw error;
     }
-
-    return null;
   }
 
   function SignOut() {

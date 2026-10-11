@@ -374,7 +374,7 @@ class Transaction(WalletBasedModel):
         transaction.imported = True
 
         # Empty fields section
-        transaction.title = ''
+        transaction.title = imported_data.get('title') or ''
         transaction.type = optional_data.get('type')
         transaction.update_wallet = optional_data.get('update_wallet')
 

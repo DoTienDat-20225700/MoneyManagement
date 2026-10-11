@@ -38,11 +38,11 @@ export function useLabels() {
   ): Promise<{ [key: string]: string } | null> {
     try {
       const response = await axiosPrivate.delete(`/label/${label_pk}`);
-      return await response.data;
+      return response.data;
     } catch (error) {
       console.log(error);
+      throw error;
     }
-    return null;
   }
 
   return { getLabels, createLabel, deleteLabel };

@@ -7,8 +7,10 @@ import {
 } from "@mui/material";
 import { useSearchParams } from "react-router-dom";
 import NewTransactionForm from "../forms/NewTransactionForm";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function AddTransaction() {
+  const { t } = useLanguage();
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -31,7 +33,7 @@ export default function AddTransaction() {
         style: { background: "#0d0d0d" },
       }}
     >
-      <DialogTitle>Add new transaction</DialogTitle>
+      <DialogTitle>{t("add_new_transaction")}</DialogTitle>
       <DialogContent>
         {isOpen && <NewTransactionForm />}
       </DialogContent>

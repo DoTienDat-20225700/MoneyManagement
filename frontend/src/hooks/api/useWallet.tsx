@@ -14,7 +14,8 @@ export function useWallet() {
       return {
         current_amount: 0,
         monthly_expenses: 0,
-        monthly_incomes: 0,
+        monthly_earnings: 0,
+        labels: [],
       } as Wallet;
     }
   }

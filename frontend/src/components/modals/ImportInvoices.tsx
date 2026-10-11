@@ -7,8 +7,10 @@ import {
 } from "@mui/material";
 import { useSearchParams } from "react-router-dom";
 import NewInvoiceForm from "../forms/NewInvoiceForm";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function ImportInvoice() {
+  const { t } = useLanguage();
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -31,9 +33,9 @@ export default function ImportInvoice() {
         style: { background: "#0d0d0d" },
       }}
     >
-      <DialogTitle>Bulk import invoices</DialogTitle>
+      <DialogTitle>{t("import_invoices")}</DialogTitle>
       <DialogContent>
-        <NewInvoiceForm />
+        {isOpen && <NewInvoiceForm />}
       </DialogContent>
     </Dialog>
   );

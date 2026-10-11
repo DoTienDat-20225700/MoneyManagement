@@ -48,7 +48,20 @@ export function getStartDate(range: BarChartRangeType | PieChartRangeType) {
   return startDate;
 }
 
-export function barRangeOptionMask(option: BarChartRangeType) {
+export function barRangeOptionMask(
+  option: BarChartRangeType,
+  lang?: "vi" | "en"
+) {
+  if (lang === "vi") {
+    switch (option) {
+      case BarChartRangeOptions.LastMonth:
+        return "Tháng trước";
+      case BarChartRangeOptions.LastWeek:
+        return "Tuần trước";
+      case BarChartRangeOptions.LastTwoWeeks:
+        return "2 tuần trước";
+    }
+  }
   switch (option) {
     case BarChartRangeOptions.LastMonth:
       return "Last month";
@@ -59,7 +72,20 @@ export function barRangeOptionMask(option: BarChartRangeType) {
   }
 }
 
-export function pieRangeOptionMask(option: PieChartRangeType) {
+export function pieRangeOptionMask(
+  option: PieChartRangeType,
+  lang?: "vi" | "en"
+) {
+  if (lang === "vi") {
+    switch (option) {
+      case PieChartRangeOptions.Last30Days:
+        return "30 ngày qua";
+      case PieChartRangeOptions.Last90Days:
+        return "90 ngày qua";
+      case PieChartRangeOptions.Last180Days:
+        return "180 ngày qua";
+    }
+  }
   switch (option) {
     case PieChartRangeOptions.Last30Days:
       return "Last 30 days";

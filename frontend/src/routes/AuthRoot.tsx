@@ -1,7 +1,9 @@
-import { Box, Typography } from "@mui/material";
-import { grey } from "@mui/material/colors";
+import { Box, Button, Typography } from "@mui/material";
 import { Outlet } from "react-router-dom";
+import { useLanguage } from "../context/LanguageContext";
+
 function AuthRoot() {
+  const { language, toggleLanguage } = useLanguage();
   return (
     <Box
       sx={{ display: "flex", justifyContent: "space-between", height: "100vh" }}
@@ -81,8 +83,37 @@ function AuthRoot() {
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
+          position: "relative",
         }}
       >
+        <Box sx={{ position: "absolute", top: 24, right: 32 }}>
+          <Button
+            onClick={toggleLanguage}
+            variant="outlined"
+            size="small"
+            sx={{
+              height: 34,
+              px: 1.5,
+              borderRadius: "20px",
+              color: "#fff",
+              borderColor: "rgba(255, 255, 255, 0.2)",
+              background: "rgba(255, 255, 255, 0.05)",
+              backdropFilter: "blur(8px)",
+              fontSize: "13px",
+              fontWeight: 600,
+              letterSpacing: 0.5,
+              textTransform: "none",
+              transition: "all 0.25s ease",
+              "&:hover": {
+                borderColor: "#4caf50",
+                background: "rgba(76, 175, 80, 0.15)",
+                boxShadow: "0 0 10px rgba(76, 175, 80, 0.3)",
+              },
+            }}
+          >
+            {language === "vi" ? "🇻🇳 VI" : "🇺🇸 EN"}
+          </Button>
+        </Box>
         <Outlet />
       </Box>
     </Box>

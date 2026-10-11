@@ -10,11 +10,16 @@ import {
 import { useWallet } from "../../hooks/api/useWallet";
 import { formatCurrency } from "../../utils/utils";
 
+import { useLanguage } from "../../context/LanguageContext";
+import { useSnackbar } from "notistack";
+
 interface Props {
   setState: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 function EditBalanceForm(props: Props) {
+  const { t } = useLanguage();
+  const { enqueueSnackbar } = useSnackbar();
   const queryClient = useQueryClient();
   const { updateWallet } = useWallet();
 
@@ -23,6 +28,9 @@ function EditBalanceForm(props: Props) {
     control,
   } = useForm<EditBalanceFormData>({
     resolver: zodResolver(editBalanceFormSchema),
+    defaultValues: {
+      balance: "",
+    },
   });
 
   const { mutateAsync } = useMutation({
@@ -33,14 +41,22 @@ function EditBalanceForm(props: Props) {
       });
       props.setState(false);
     },
-    onError: () => {
-      console.log("No server response");
+    onError: (err: any) => {
+      const errorMsg = !err?.response
+        ? t("no_server_response")
+        : t("err_balance_update");
+      enqueueSnackbar(errorMsg, {
+        variant: "error",
+        autoHideDuration: 3000,
+        anchorOrigin: { horizontal: "right", vertical: "bottom" },
+      });
     },
   });
 
   async function editBalance(data: EditBalanceFormData) {
+    const parsed = parseFloat((data.balance ?? "").replace(/\./g, "").replace(",", "."));
     await mutateAsync({
-      value: data.balance,
+      value: isNaN(parsed) ? 0 : parsed,
     });
   }
 
@@ -60,11 +76,10 @@ function EditBalanceForm(props: Props) {
               const formattedValue = formatCurrency(e.target.value);
               onChange(formattedValue);
             }}
-            value={value}
+            value={value ?? ""}
             label=""
             variant="outlined"
             size="small"
-            defaultValue={""}
             sx={{ borderColor: grey[800], maxHeight: "32px" }}
             placeholder="0"
             InputProps={{

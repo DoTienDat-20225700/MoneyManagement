@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import React, { useState } from "react";
 import { useWallet } from "../hooks/api/useWallet";
 import { CustomLabel } from "../models/CustomLabel";
+import { useLanguage } from "../context/LanguageContext";
 
 interface Props {
   onChange: any;
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export default function AsyncAutocomplete(props: Props) {
+  const { t } = useLanguage();
   const { getWallet } = useWallet();
   const [open, setOpen] = useState(false);
 
@@ -42,7 +44,7 @@ export default function AsyncAutocomplete(props: Props) {
       renderInput={(params) => (
         <TextField
           {...params}
-          label="Label"
+          label={t("label")}
           error={props.error}
           helperText={props.helperText}
           InputProps={{

@@ -4,17 +4,20 @@ import { grey } from "@mui/material/colors";
 import { useQuery } from "@tanstack/react-query";
 import LatestTransactions from "../components/LatestTransactions";
 import { useTransactions } from "../hooks/api/useTransactions";
+import { useLanguage } from "../context/LanguageContext";
+import { Transaction } from "../models/Transaction";
 
 function Transactions() {
+  const { t } = useLanguage();
   const { getTransactions } = useTransactions();
   const { data: transactions } = useQuery({
     queryKey: ["transactions"],
-    queryFn: () => getTransactions(),
+    queryFn: () => getTransactions() as Promise<Transaction[]>,
   });
   return (
     <>
       <Typography component="h1" variant="h4" fontWeight={600} mb={4}>
-        Transactions
+        {t("transactions")}
       </Typography>
       <Box>
         <form>
@@ -23,7 +26,7 @@ function Transactions() {
             label=""
             variant="outlined"
             size="medium"
-            placeholder="Find transaction"
+            placeholder={t("find_transaction")}
             // onChange={handleSearchChange}
             InputProps={{
               style: { fontSize: "14px", height: "40px" },

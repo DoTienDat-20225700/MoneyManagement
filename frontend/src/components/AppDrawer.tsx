@@ -5,14 +5,17 @@ import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
 import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
+import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
+import TranslateIcon from "@mui/icons-material/Translate";
+import { AppBar, Box, Button, Drawer, Toolbar, Typography } from "@mui/material";
+import { Link, useLocation } from "react-router-dom";
 import { darkTheme } from "../theme";
 import { navigation } from "../navigation";
-import { AppBar, Box, Drawer, Toolbar, Typography } from "@mui/material";
-import { Link } from "react-router-dom";
 import UserDropdown from "./UserDropdown";
+import { useLanguage } from "../context/LanguageContext";
 
-const drawerWidth = 240;
+const drawerWidth = 260;
 interface Props {
   window?: () => Window;
 }
@@ -20,9 +23,17 @@ interface Props {
 export default function DrawerAppBar(props: Props) {
   const { window } = props;
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const location = useLocation();
+  const { language, toggleLanguage, t } = useLanguage();
 
   const handleDrawerToggle = () => {
     setMobileOpen((prevState) => !prevState);
+  };
+
+  const getNavLabel = (path: string) => {
+    if (path === "/") return t("dashboard");
+    if (path === "/transactions") return t("transactions");
+    return path;
   };
 
   const drawer = (
@@ -31,41 +42,89 @@ export default function DrawerAppBar(props: Props) {
       sx={{
         textAlign: "center",
         background: darkTheme.palette.background.default,
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       <Box
+        component={Link}
+        to="/"
         sx={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           gap: 1.2,
-          my: 2,
+          my: 2.5,
+          textDecoration: "none",
+          color: "inherit",
         }}
       >
         <Box
           component="img"
           src="/logo.png"
           alt="MoneyManager Logo"
-          sx={{ width: 26, height: 26, objectFit: "contain" }}
+          sx={{ width: 28, height: 28, objectFit: "contain" }}
         />
-        <Typography
-          variant="body1"
-          component="h1"
-          fontWeight={600}
-        >
+        <Typography variant="h6" fontWeight={700} color="#fff">
           MoneyManager
         </Typography>
       </Box>
-      <Divider />
-      <List>
-        {navigation.map((item) => (
-          <ListItem key={item.label} disablePadding>
-            <ListItemButton sx={{ textAlign: "center" }}>
-              <ListItemText primary={item.label} />
-            </ListItemButton>
-          </ListItem>
-        ))}
+      <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
+      <List sx={{ px: 1, py: 2 }}>
+        {navigation.map((item) => {
+          const isActive =
+            item.path === "/"
+              ? location.pathname === "/"
+              : location.pathname.startsWith(item.path);
+          return (
+            <ListItem key={item.path} disablePadding sx={{ mb: 1 }}>
+              <ListItemButton
+                component={Link}
+                to={item.path}
+                sx={{
+                  borderRadius: 2,
+                  backgroundColor: isActive
+                    ? "rgba(76, 175, 80, 0.16)"
+                    : "transparent",
+                  color: isActive ? "#81c784" : "#e0e0e0",
+                  "&:hover": {
+                    backgroundColor: "rgba(255,255,255,0.06)",
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: "inherit", minWidth: 38 }}>
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText
+                  primary={getNavLabel(item.path)}
+                  primaryTypographyProps={{ fontWeight: isActive ? 600 : 500 }}
+                />
+              </ListItemButton>
+            </ListItem>
+          );
+        })}
       </List>
+      <Box sx={{ mt: "auto", p: 2 }}>
+        <Button
+          fullWidth
+          variant="outlined"
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleLanguage();
+          }}
+          startIcon={<TranslateIcon fontSize="small" />}
+          sx={{
+            py: 1,
+            borderRadius: 2,
+            borderColor: "rgba(255,255,255,0.2)",
+            color: "#fff",
+          }}
+        >
+          {language === "vi" ? "🇻🇳 Tiếng Việt" : "🇬🇧 English"}
+        </Button>
+      </Box>
     </Box>
   );
 
@@ -77,18 +136,24 @@ export default function DrawerAppBar(props: Props) {
       <AppBar
         component="nav"
         sx={{
-          background: darkTheme.palette.background.default,
-          borderBottom: `1px solid ${darkTheme.palette.background.paper}`,
+          background: "rgba(13, 14, 18, 0.85)",
+          backdropFilter: "blur(14px)",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.35)",
         }}
       >
         <Toolbar
-          sx={{ mx: 2, display: "flex", justifyContent: "space-between" }}
+          sx={{
+            px: { xs: 2, sm: 3, md: 4 },
+            display: "flex",
+            justifyContent: "space-between",
+          }}
         >
+          {/* Left section: Logo + Divider + Navigation links */}
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
-              justifyContent: "start",
             }}
           >
             <IconButton
@@ -100,80 +165,137 @@ export default function DrawerAppBar(props: Props) {
             >
               <MenuIcon />
             </IconButton>
+
+            {/* Brand Logo */}
             <Box
+              component={Link}
+              to="/"
               sx={{
                 display: { xs: "none", sm: "flex" },
                 alignItems: "center",
                 gap: 1.2,
+                textDecoration: "none",
+                color: "inherit",
+                cursor: "pointer",
+                "&:hover": { opacity: 0.9 },
               }}
             >
               <Box
                 component="img"
                 src="/logo.png"
                 alt="MoneyManager Logo"
-                sx={{ width: 26, height: 26, objectFit: "contain" }}
+                sx={{ width: 28, height: 28, objectFit: "contain" }}
               />
               <Typography
-                variant="body1"
-                component="h1"
-                fontWeight={600}
+                variant="h6"
+                fontWeight={700}
+                sx={{
+                  background: "linear-gradient(90deg, #ffffff 0%, #a5d6a7 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  letterSpacing: 0.3,
+                }}
               >
                 MoneyManager
               </Typography>
             </Box>
-            <Divider
-              orientation="vertical"
+
+            {/* Separator Divider */}
+            <Box
               sx={{
-                display: { xs: "none", xl: "flex" },
-                justifyContent: "center",
-                borderColor: darkTheme.palette.background.paper,
-                height: "30px",
-                p: 2,
-                mr: 2,
+                display: { xs: "none", sm: "block" },
+                width: "1px",
+                height: "22px",
+                bgcolor: "rgba(255, 255, 255, 0.18)",
+                mx: { sm: 2.5, md: 3.5 },
               }}
             />
-            <Box sx={{ display: { xs: "none", sm: "block" } }}>
-              {navigation.map((item) => (
-                <Link
-                  to={item.path}
-                  key={item.label}
-                  style={{
-                    color: "#fff",
-                    marginRight: 28,
-                    textDecoration: "none",
-                    fontSize: "14px",
-                  }}
-                >
-                  {item.label}
-                </Link>
-              ))}
+
+            {/* Navigation links with comfortable spacing and active indicator */}
+            <Box
+              sx={{
+                display: { xs: "none", sm: "flex" },
+                alignItems: "center",
+                gap: 1.5,
+              }}
+            >
+              {navigation.map((item) => {
+                const isActive =
+                  item.path === "/"
+                    ? location.pathname === "/"
+                    : location.pathname.startsWith(item.path);
+
+                return (
+                  <Link
+                    to={item.path}
+                    key={item.path}
+                    style={{
+                      color: isActive ? "#81c784" : "#cfd8dc",
+                      backgroundColor: isActive
+                        ? "rgba(76, 175, 80, 0.16)"
+                        : "transparent",
+                      border: isActive
+                        ? "1px solid rgba(76, 175, 80, 0.35)"
+                        : "1px solid transparent",
+                      borderRadius: "8px",
+                      padding: "6px 16px",
+                      textDecoration: "none",
+                      fontSize: "14px",
+                      fontWeight: isActive ? 600 : 500,
+                      transition: "all 0.2s ease",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
+                  >
+                    {getNavLabel(item.path)}
+                  </Link>
+                );
+              })}
             </Box>
           </Box>
 
+          {/* Right section: Language Switcher + User Dropdown */}
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
-              gap: 2,
+              gap: 1.5,
             }}
           >
-            {/* <Select
-              labelId="demo-select-small-label"
-              id="demo-select-small"
-              value={2021}
-              label=""
+            {/* Bilingual Switcher Toggle Button */}
+            <Button
+              onClick={toggleLanguage}
+              variant="outlined"
               size="small"
-              // onChange={handleChange}
               sx={{
-                color: grey[400],
-                height: "35px",
-                width: "120px",
+                height: 34,
+                px: 1.5,
+                borderRadius: "20px",
+                color: "#fff",
+                borderColor: "rgba(255, 255, 255, 0.2)",
+                background: "rgba(255, 255, 255, 0.05)",
+                backdropFilter: "blur(8px)",
+                fontSize: "13px",
+                fontWeight: 600,
+                letterSpacing: 0.5,
+                textTransform: "none",
+                transition: "all 0.25s ease",
+                "&:hover": {
+                  borderColor: "#4caf50",
+                  background: "rgba(76, 175, 80, 0.15)",
+                  color: "#a5d6a7",
+                },
+                display: "flex",
+                alignItems: "center",
+                gap: 0.8,
               }}
             >
-              <MenuItem value={2021}>2021</MenuItem>
-              <MenuItem value={2022}>2022</MenuItem>
-              <MenuItem value={2023}>2023</MenuItem>
-            </Select> */}
+              <span style={{ fontSize: "16px", lineHeight: 1 }}>
+                {language === "vi" ? "🇻🇳" : "🇬🇧"}
+              </span>
+              <span>{language === "vi" ? "VI" : "EN"}</span>
+            </Button>
 
             <UserDropdown />
           </Box>

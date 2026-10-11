@@ -12,8 +12,10 @@ import {
 import { useAuth } from "../hooks/useAuth";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function UserDropdown() {
+  const { t } = useLanguage();
   const { user, SignOut } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -28,11 +30,11 @@ export default function UserDropdown() {
   return (
     <>
       <Box sx={{ display: "flex", alignItems: "center", textAlign: "center" }}>
-        <Tooltip title="Account settings">
+        <Tooltip title={t("account_settings")}>
           <IconButton
             onClick={handleClick}
             size="small"
-            sx={{ ml: 2 }}
+            sx={{ ml: 1 }}
             aria-controls={open ? "account-menu" : undefined}
             aria-haspopup="true"
             aria-expanded={open ? "true" : undefined}
@@ -80,7 +82,6 @@ export default function UserDropdown() {
         transformOrigin={{ horizontal: "right", vertical: "top" }}
         anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       >
-        <Divider />
         <MenuItem onClick={handleClose}>
           <Link
             to="settings"
@@ -94,14 +95,15 @@ export default function UserDropdown() {
             <ListItemIcon>
               <Settings fontSize="small" />
             </ListItemIcon>
-            Settings
+            {t("settings")}
           </Link>
         </MenuItem>
+        <Divider />
         <MenuItem onClick={SignOut}>
           <ListItemIcon>
             <Logout fontSize="small" />
           </ListItemIcon>
-          Logout
+          {t("sign_out")}
         </MenuItem>
       </Menu>
     </>

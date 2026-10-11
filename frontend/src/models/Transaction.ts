@@ -22,7 +22,10 @@ export interface AggregatedExpense {
   value: number;
 }
 
-export function typeOptionMask(type: TypeOption) {
+export function typeOptionMask(type: TypeOption, lang?: "vi" | "en") {
+  if (lang === "vi") {
+    return type === TypeOption.EXPENSE ? "Khoản chi" : "Khoản thu";
+  }
   return type.slice(0, 1) + type.slice(1, type.length).toLowerCase();
 }
 

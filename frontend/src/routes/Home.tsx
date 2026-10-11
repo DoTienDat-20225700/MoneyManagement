@@ -12,16 +12,19 @@ import AddTransaction from "../components/modals/AddTransaction";
 import ImportInvoice from "../components/modals/ImportInvoices";
 import { useTransactions } from "../hooks/api/useTransactions";
 import { useWallet } from "../hooks/api/useWallet";
+import { useLanguage } from "../context/LanguageContext";
+import { Transaction } from "../models/Transaction";
 
 const QUERY_LIMIT = 10;
 function Home() {
+  const { t } = useLanguage();
   const { getTransactions } = useTransactions();
   const { getWallet } = useWallet();
   const [_, setSearchParams] = useSearchParams();
 
   const { data: transactions } = useQuery({
     queryKey: ["transactions"],
-    queryFn: () => getTransactions(QUERY_LIMIT),
+    queryFn: () => getTransactions(QUERY_LIMIT) as Promise<Transaction[]>,
   });
 
   const {
@@ -50,7 +53,7 @@ function Home() {
         }}
       >
         <Typography component="h1" variant="h4" fontWeight={600}>
-          Dashboard
+          {t("dashboard_title")}
         </Typography>
         <Box sx={{ marginTop: { xs: 2, md: 0 } }}>
           <Button
@@ -65,7 +68,7 @@ function Home() {
               })
             }
           >
-            Import invoice
+            {t("import_invoice")}
           </Button>
           <Button
             variant="contained"
@@ -78,7 +81,7 @@ function Home() {
               })
             }
           >
-            New transaction
+            {t("new_transaction")}
           </Button>
         </Box>
       </Box>
@@ -93,7 +96,7 @@ function Home() {
             <CurrentMonthChart />
           ) : (
             <Typography component="p" variant="body1">
-              Unable to load chart due to insufficient data.
+              {t("unable_to_load_chart")}
             </Typography>
           )}
         </Grid>
@@ -103,7 +106,7 @@ function Home() {
         <Grid item xs={12}>
           <Box height={"auto"}>
             <Typography component="h2" variant="h6" mb={1} mt={2}>
-              Latest transactions
+              {t("latest_transactions")}
             </Typography>
             {transactions && (
               <>
@@ -114,7 +117,7 @@ function Home() {
                     size="medium"
                     sx={{ marginTop: 2 }}
                   >
-                    Show more
+                    {t("show_more")}
                   </Button>
                 </Link>
               </>

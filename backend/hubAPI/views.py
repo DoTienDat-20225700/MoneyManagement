@@ -207,9 +207,9 @@ class ImportInvoicesAPIView(APIView):
             try:
                 Transaction.create_from_import(imported_data=invoice_dict, optional_data=optional_data, user=user)
             except:
-                return custom_user_error_response('Something went wrong. Please try again.')
+                return custom_user_error_response('Có lỗi xảy ra khi lưu giao dịch từ hoá đơn. Vui lòng thử lại.')
 
-        return custom_success_response('Invoices were successfully imported. Please finish updating your transactions.')
+        return custom_success_response('Đã nhập hoá đơn thành công! Vui lòng cập nhật các thông tin còn thiếu.')
 
 
 @api_view(['GET'])
@@ -228,11 +228,13 @@ def get_routes(request):
 
 
 @api_view(['POST'])
-# @permission_classes([IsAuthenticated])
 def create_user(request):
     data = request.data
-    user = HubUser.create_from_json(data)
-    return Response("ok")
+    try:
+        user = HubUser.create_from_json(data)
+        return custom_success_response("Tạo tài khoản thành công!")
+    except Exception as e:
+        return custom_user_error_response("Email này đã được sử dụng hoặc thông tin không hợp lệ.")
 
 
 @api_view(['GET'])

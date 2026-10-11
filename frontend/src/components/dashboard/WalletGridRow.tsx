@@ -8,6 +8,7 @@ import { Wallet } from "../../models/Wallet";
 import { darkTheme } from "../../theme";
 import { formatValue } from "../../utils/utils";
 import EditBalanceForm from "../forms/EditBalanceForm";
+import { useLanguage } from "../../context/LanguageContext";
 
 interface Props {
   wallet?: Wallet;
@@ -16,6 +17,7 @@ interface Props {
 }
 
 function WalletGridRow(props: Props) {
+  const { t } = useLanguage();
   const [isEditingBalance, setIsEditingBalance] = useState(false);
 
   return (
@@ -29,7 +31,7 @@ function WalletGridRow(props: Props) {
           height={"100%"}
         >
           <Typography component="h2" variant="body1" mb={1}>
-            Balance
+            {t("balance")}
           </Typography>
           {props.isPending ? (
             <Skeleton variant="rectangular" width={210} height={50} />
@@ -44,7 +46,7 @@ function WalletGridRow(props: Props) {
                 textAlign: "center",
               }}
             >
-              Unable to load data.
+              {t("unable_to_load_data")}
             </Typography>
           ) : (
             <Box display="flex" alignItems="center" gap={2}>
@@ -112,7 +114,7 @@ function WalletGridRow(props: Props) {
           height={"100%"}
         >
           <Typography component="h2" variant="body1" mb={1}>
-            Monthly Earnings
+            {t("monthly_earnings")}
           </Typography>
           {props.isPending ? (
             <Skeleton variant="rectangular" width={210} height={50} />
@@ -127,7 +129,7 @@ function WalletGridRow(props: Props) {
                 textAlign: "center",
               }}
             >
-              Unable to load data.
+              {t("unable_to_load_data")}
             </Typography>
           ) : (
             <Box display="flex" alignItems="center" gap={2}>
@@ -147,7 +149,7 @@ function WalletGridRow(props: Props) {
           height={"100%"}
         >
           <Typography component="h2" variant="body1" mb={1}>
-            Monthly Expenses
+            {t("monthly_expenses")}
           </Typography>
           {props.isPending ? (
             <Skeleton variant="rectangular" width={210} height={50} />
@@ -162,7 +164,7 @@ function WalletGridRow(props: Props) {
                 textAlign: "center",
               }}
             >
-              Unable to load data.
+              {t("unable_to_load_data")}
             </Typography>
           ) : (
             <Box display="flex" alignItems="center" gap={2}>

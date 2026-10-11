@@ -7,8 +7,10 @@ import {
 } from "@mui/material";
 import { useSearchParams } from "react-router-dom";
 import NewLabelForm from "../forms/NewLabelForm";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function AddLabel() {
+  const { t } = useLanguage();
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -31,9 +33,9 @@ export default function AddLabel() {
         style: { background: "#0d0d0d" },
       }}
     >
-      <DialogTitle>Add new label</DialogTitle>
+      <DialogTitle>{t("add_new_label")}</DialogTitle>
       <DialogContent>
-        <NewLabelForm />
+        {isOpen && <NewLabelForm />}
       </DialogContent>
     </Dialog>
   );

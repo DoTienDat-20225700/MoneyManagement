@@ -33,8 +33,10 @@ import {
 } from "../../schemas/newTransactionSchema";
 import { formatCurrency } from "../../utils/utils";
 import AsyncAutocomplete from "../AsyncAutocomplete";
+import { useLanguage } from "../../context/LanguageContext";
 
 function NewTransactionForm() {
+  const { language, dateFormat, t } = useLanguage();
   const queryClient = useQueryClient();
   const { createTransaction } = useTransactions();
   const { enqueueSnackbar } = useSnackbar();
@@ -71,15 +73,18 @@ function NewTransactionForm() {
       queryClient.invalidateQueries({
         queryKey: ["wallet"],
       });
-      enqueueSnackbar("Transaction created successfully!", {
+      enqueueSnackbar(t("transaction_created"), {
         variant: "success",
         autoHideDuration: 3000,
         anchorOrigin: { horizontal: "right", vertical: "bottom" },
       });
     },
-    onError: (err) => {
+    onError: (err: any) => {
       console.log(err);
-      enqueueSnackbar("No server response", {
+      const errorMsg = !err?.response
+        ? t("no_server_response")
+        : t("err_transaction_create");
+      enqueueSnackbar(errorMsg, {
         variant: "error",
         autoHideDuration: 3000,
         anchorOrigin: { horizontal: "right", vertical: "bottom" },
@@ -109,11 +114,11 @@ function NewTransactionForm() {
           <TextField
             fullWidth
             autoFocus
-            helperText={errors.title ? errors.title.message : " "}
+            helperText={errors.title ? t("err_title_req") : " "}
             error={!!errors.title}
             onChange={onChange}
             value={value ?? ""}
-            label="Title"
+            label={t("title")}
             variant="outlined"
             size="small"
           />
@@ -134,11 +139,7 @@ function NewTransactionForm() {
             <AsyncAutocomplete
               onChange={onChange}
               value={value}
-              helperText={
-                errors.label
-                  ? errors.label.message || (errors.label as any)?.name?.message
-                  : " "
-              }
+              helperText={errors.label ? t("err_label_req") : " "}
               error={!!errors.label}
             />
           )}
@@ -172,14 +173,14 @@ function NewTransactionForm() {
           render={({ field: { onChange, value } }) => (
             <TextField
               fullWidth
-              helperText={errors.value ? errors.value.message : " "}
+              helperText={errors.value ? t("err_amount_req") : " "}
               error={!!errors.value}
               onChange={(e) => {
                 const formattedValue = formatCurrency(e.target.value);
                 onChange(formattedValue);
               }}
               value={value ?? ""}
-              label="Amount"
+              label={t("amount")}
               variant="outlined"
               size="small"
               placeholder="0"
@@ -198,16 +199,20 @@ function NewTransactionForm() {
           control={control}
           render={({ field: { onChange, value } }) => (
             <>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <LocalizationProvider
+                dateAdapter={AdapterDayjs}
+                adapterLocale={language}
+              >
                 <DatePicker
-                  label="Date"
+                  label={t("date")}
+                  format={dateFormat}
                   value={value}
                   onChange={onChange}
                   slotProps={{
                     textField: {
                       size: "small",
                       error: !!errors.date,
-                      helperText: errors.date ? errors.date.message : " ",
+                      helperText: errors.date ? t("err_date_req") : " ",
                     },
                   }}
                 />
@@ -225,7 +230,7 @@ function NewTransactionForm() {
               sx={{ mb: 1, "&.Mui-disabled": { color: "white" } }}
               disabled={true}
             >
-              Type
+              {t("type")}
             </FormLabel>
             <RadioGroup
               defaultValue={TypeOption.EXPENSE}
@@ -239,7 +244,7 @@ function NewTransactionForm() {
                     key={i}
                     value={item}
                     control={<Radio />}
-                    label={typeOptionMask(item)}
+                    label={typeOptionMask(item, language)}
                     sx={{
                       backgroundColor: grey[900],
                       p: 1,
@@ -253,7 +258,7 @@ function NewTransactionForm() {
           </FormControl>
         )}
       />
-      <Typography component="h6">Options</Typography>
+      <Typography component="h6">{t("options")}</Typography>
       <FormGroup>
         <FormControlLabel
           control={
@@ -270,29 +275,12 @@ function NewTransactionForm() {
               )}
             />
           }
-          label="Update wallet"
+          label={t("update_wallet")}
         />
-        {/* <FormControlLabel
-          control={
-            <Controller
-              name="recurring"
-              control={control}
-              render={({ field: { onChange, value, name } }) => (
-                <Checkbox
-                  name={name}
-                  checked={value}
-                  onChange={onChange}
-                  inputProps={{ "aria-label": "controlled" }}
-                />
-              )}
-            />
-          }
-          label="Recurring"
-        /> */}
       </FormGroup>
 
       <Button type="submit" variant="contained">
-        Add
+        {t("add")}
       </Button>
     </form>
   );

@@ -15,6 +15,7 @@ urlpatterns = [
     path('labels/', LabelAPIView.as_view(), name='labels'),
     path('label/', LabelAPIView.as_view(), name='label'),
     path('labels/<int:label_pk>', LabelAPIView.as_view(), name='label'),
+    path('label/<int:label_pk>', LabelAPIView.as_view(), name='label_singular'),
     path('savingplans/', get_saving_plans, name='saving_plans'),
     path('transactions/', get_transactions, name='transactions'),
     path('transaction/', TransactionAPIView.as_view(), name='transaction'),

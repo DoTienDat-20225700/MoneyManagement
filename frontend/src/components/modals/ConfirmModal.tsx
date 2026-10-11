@@ -1,6 +1,3 @@
-// import { Dialog, Transition } from "@headlessui/react";
-import { Fragment } from "react";
-
 interface Props {
   index: number;
   isOpen: boolean;
@@ -8,11 +5,7 @@ interface Props {
   submitDeletion(e: React.MouseEvent, index: number): void;
 }
 
-export default function ConfirmModal(props: Props) {
-  function closeModal() {
-    props.handleState(false);
-  }
-
+export default function ConfirmModal(_props: Props) {
   return (
     <>
       {/* <Transition appear show={props.isOpen} as={Fragment}>

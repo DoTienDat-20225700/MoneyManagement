@@ -10,8 +10,10 @@ import {
 } from "../../schemas/newLabelSchema";
 import { grey } from "@mui/material/colors";
 import { useLabels } from "../../hooks/api/useLabels";
+import { useLanguage } from "../../context/LanguageContext";
 
 function NewLabelForm() {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const { createLabel } = useLabels();
   const { enqueueSnackbar } = useSnackbar();
@@ -22,7 +24,7 @@ function NewLabelForm() {
     formState: { errors },
   } = useForm<NewLabelFormData>({
     resolver: zodResolver(newLabelFormSchema),
-    values: {
+    defaultValues: {
       name: "",
       color: "#000000",
     },
@@ -38,15 +40,21 @@ function NewLabelForm() {
       queryClient.invalidateQueries({
         queryKey: ["wallet"],
       });
-      enqueueSnackbar("Label created successfully!", {
+      queryClient.invalidateQueries({
+        queryKey: ["labels"],
+      });
+      enqueueSnackbar(t("label_created"), {
         variant: "success",
         autoHideDuration: 3000,
         anchorOrigin: { horizontal: "right", vertical: "bottom" },
       });
     },
-    onError: (err) => {
+    onError: (err: any) => {
       console.log(err);
-      enqueueSnackbar("No server response", {
+      const errorMsg = !err?.response
+        ? t("no_server_response")
+        : t("err_label_create");
+      enqueueSnackbar(errorMsg, {
         variant: "error",
         autoHideDuration: 3000,
         anchorOrigin: { horizontal: "right", vertical: "bottom" },
@@ -76,12 +84,11 @@ function NewLabelForm() {
           <TextField
             fullWidth
             autoFocus
-            helperText={errors.name ? errors.name.message : " "}
+            helperText={errors.name ? t("err_label_name_req") : " "}
             error={!!errors.name}
             onChange={onChange}
             value={value}
-            defaultValue = {''}
-            label="Name"
+            label={t("label_name")}
             variant="outlined"
             size="small"
           />
@@ -105,8 +112,7 @@ function NewLabelForm() {
                 name={name}
                 onChange={onChange}
                 value={value}
-                label="Color"
-                defaultValue = {''}
+                label={t("color")}
                 variant="outlined"
                 size="small"
                 type="color"
@@ -119,7 +125,7 @@ function NewLabelForm() {
       </Box>
 
       <Button type="submit" variant="contained">
-        Add
+        {t("create")}
       </Button>
     </form>
   );

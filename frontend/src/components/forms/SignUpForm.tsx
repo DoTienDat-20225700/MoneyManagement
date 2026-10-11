@@ -6,26 +6,50 @@ import { useAuth } from "../../hooks/useAuth";
 import { useMutation } from "@tanstack/react-query";
 import { grey } from "@mui/material/colors";
 import { SignUpFormData, signUpFormSchema } from "../../schemas/signUpSchema";
+import { useLanguage } from "../../context/LanguageContext";
+import { useSnackbar } from "notistack";
 
 function SignUpForm() {
-  let navigate = useNavigate();
+  const navigate = useNavigate();
+  const { t } = useLanguage();
   const { SignUp } = useAuth();
+  const { enqueueSnackbar } = useSnackbar();
+
   const { handleSubmit, control } = useForm<SignUpFormData>({
     resolver: zodResolver(signUpFormSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
   });
 
-  const { mutateAsync } = useMutation({
+  const { mutate, isPending } = useMutation({
     mutationFn: SignUp,
     onSuccess: () => {
-      navigate("/");
+      enqueueSnackbar(t("register_success"), {
+        variant: "success",
+        autoHideDuration: 3000,
+        anchorOrigin: { horizontal: "right", vertical: "bottom" },
+      });
+      navigate("/auth/sign-in");
     },
-    onError: () => {
-      console.log("No server response");
+    onError: (err: any) => {
+      const errorMsg = !err?.response
+        ? t("no_server_response")
+        : t("err_register_failed");
+      enqueueSnackbar(errorMsg, {
+        variant: "error",
+        autoHideDuration: 3500,
+        anchorOrigin: { horizontal: "right", vertical: "bottom" },
+      });
     },
   });
 
-  async function signUp(data: SignUpFormData) {
-    await mutateAsync({
+  function signUp(data: SignUpFormData) {
+    mutate({
       user: {
         firstName: data.firstName,
         lastName: data.lastName,
@@ -40,8 +64,8 @@ function SignUpForm() {
       sx={{
         display: "flex",
         flexDirection: "column",
-        gap: 6,
-        width: "400px",
+        gap: 4,
+        width: "420px",
       }}
     >
       <Box>
@@ -49,12 +73,12 @@ function SignUpForm() {
           variant="h5"
           component="h1"
           fontWeight={600}
-          lineHeight={1.8}
+          lineHeight={1.6}
         >
-          Create an account
+          {t("create_account")}
         </Typography>
-        <Typography variant="body2" component="p" color={grey[500]}>
-          Please sign up to access your account
+        <Typography variant="body2" component="p" color={grey[500]} mt={0.5}>
+          {t("sign_up_desc")}
         </Typography>
       </Box>
       <form
@@ -62,7 +86,7 @@ function SignUpForm() {
         style={{
           display: "flex",
           flexDirection: "column",
-          gap: "30px",
+          gap: "20px",
         }}
       >
         <Box
@@ -79,15 +103,13 @@ function SignUpForm() {
             render={({ field: { onChange, value }, fieldState: { error } }) => (
               <TextField
                 fullWidth
-                autoComplete="new-password"
                 size="small"
-                defaultValue={""}
                 autoFocus
-                helperText={error ? error.message : null}
+                helperText={error ? t("err_first_name_req") : null}
                 error={!!error}
                 onChange={onChange}
-                value={value}
-                label="First name"
+                value={value ?? ""}
+                label={t("first_name")}
                 variant="outlined"
               />
             )}
@@ -99,15 +121,12 @@ function SignUpForm() {
             render={({ field: { onChange, value }, fieldState: { error } }) => (
               <TextField
                 fullWidth
-                autoComplete="new-password"
                 size="small"
-                defaultValue={""}
-                autoFocus
-                helperText={error ? error.message : null}
+                helperText={error ? t("err_last_name_req") : null}
                 error={!!error}
                 onChange={onChange}
-                value={value}
-                label="Last name"
+                value={value ?? ""}
+                label={t("last_name")}
                 variant="outlined"
               />
             )}
@@ -120,15 +139,18 @@ function SignUpForm() {
           render={({ field: { onChange, value }, fieldState: { error } }) => (
             <TextField
               fullWidth
-              autoComplete="new-password"
               size="small"
-              defaultValue={""}
-              autoFocus
-              helperText={error ? error.message : null}
+              helperText={
+                error
+                  ? error.message === "err_email_invalid"
+                    ? t("err_email_invalid")
+                    : t("err_email_req")
+                  : null
+              }
               error={!!error}
               onChange={onChange}
-              value={value}
-              label="Email"
+              value={value ?? ""}
+              label={t("email")}
               variant="outlined"
             />
           )}
@@ -140,15 +162,12 @@ function SignUpForm() {
           render={({ field: { onChange, value }, fieldState: { error } }) => (
             <TextField
               fullWidth
-              autoComplete="new-password"
               size="small"
-              defaultValue={""}
-              autoFocus
-              helperText={error ? error.message : null}
+              helperText={error ? t("err_password_req") : null}
               error={!!error}
               onChange={onChange}
-              value={value}
-              label="Password"
+              value={value ?? ""}
+              label={t("password")}
               variant="outlined"
               type="password"
             />
@@ -161,29 +180,32 @@ function SignUpForm() {
           render={({ field: { onChange, value }, fieldState: { error } }) => (
             <TextField
               fullWidth
-              autoComplete="new-password"
               size="small"
-              defaultValue={""}
-              autoFocus
-              helperText={error ? error.message : null}
+              helperText={
+                error
+                  ? error.message === "err_confirm_password_req"
+                    ? t("err_confirm_password_req")
+                    : t("err_password_match")
+                  : null
+              }
               error={!!error}
               onChange={onChange}
-              value={value}
-              label="Confirm password"
+              value={value ?? ""}
+              label={t("confirm_password")}
               variant="outlined"
               type="password"
-              inputProps={{
-                autocomplete: "new-password",
-                form: {
-                  autocomplete: "off",
-                },
-              }}
             />
           )}
         />
 
-        <Button type="submit" variant="contained" size="medium">
-          Sign Up
+        <Button
+          type="submit"
+          variant="contained"
+          size="medium"
+          disabled={isPending}
+          sx={{ py: 1.2, fontWeight: 600, textTransform: "none", mt: 1 }}
+        >
+          {t("sign_up")}
         </Button>
         <Typography
           color="gray"
@@ -191,7 +213,10 @@ function SignUpForm() {
           component="p"
           textAlign="center"
         >
-          Already have an account? <Link to="/auth/sign-in">Sign in</Link>
+          {t("already_have_account")}{" "}
+          <Link to="/auth/sign-in" style={{ color: "#4caf50", fontWeight: 500 }}>
+            {t("sign_in")}
+          </Link>
         </Typography>
       </form>
     </Box>

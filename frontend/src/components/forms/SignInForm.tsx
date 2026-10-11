@@ -6,26 +6,38 @@ import { useAuth } from "../../hooks/useAuth";
 import { SignInFormData, signInFormSchema } from "../../schemas/signInSchema";
 import { useMutation } from "@tanstack/react-query";
 import { grey } from "@mui/material/colors";
+import { useLanguage } from "../../context/LanguageContext";
+import { useSnackbar } from "notistack";
 
 function SignInForm() {
-  let navigate = useNavigate();
+  const navigate = useNavigate();
+  const { t } = useLanguage();
   const { SignIn } = useAuth();
+  const { enqueueSnackbar } = useSnackbar();
+
   const { handleSubmit, control } = useForm<SignInFormData>({
     resolver: zodResolver(signInFormSchema),
   });
 
-  const { mutateAsync } = useMutation({
+  const { mutate, isPending } = useMutation({
     mutationFn: SignIn,
     onSuccess: () => {
       navigate("/");
     },
-    onError: () => {
-      console.log("No server response");
+    onError: (err: any) => {
+      const errorMsg = !err?.response
+        ? t("no_server_response")
+        : t("err_invalid_credentials");
+      enqueueSnackbar(errorMsg, {
+        variant: "error",
+        autoHideDuration: 3500,
+        anchorOrigin: { horizontal: "right", vertical: "bottom" },
+      });
     },
   });
 
-  async function signIn(data: SignInFormData) {
-    await mutateAsync({ email: data.email, password: data.password });
+  function signIn(data: SignInFormData) {
+    mutate({ email: data.email, password: data.password });
   }
 
   return (
@@ -33,7 +45,7 @@ function SignInForm() {
       sx={{
         display: "flex",
         flexDirection: "column",
-        gap: 6,
+        gap: 5,
         width: "400px",
       }}
     >
@@ -42,12 +54,12 @@ function SignInForm() {
           variant="h5"
           component="h1"
           fontWeight={600}
-          lineHeight={1.8}
+          lineHeight={1.6}
         >
-          Welcome back
+          {t("welcome_back")}
         </Typography>
-        <Typography variant="body2" component="p" color={grey[500]}>
-          Please sign in to access your account
+        <Typography variant="body2" component="p" color={grey[500]} mt={0.5}>
+          {t("sign_in_desc")}
         </Typography>
       </Box>
       <form
@@ -55,7 +67,7 @@ function SignInForm() {
         style={{
           display: "flex",
           flexDirection: "column",
-          gap: "30px",
+          gap: "24px",
         }}
       >
         <Controller
@@ -66,12 +78,18 @@ function SignInForm() {
               fullWidth
               size="small"
               autoFocus
-              helperText={error ? error.message : null}
+              helperText={
+                error
+                  ? error.message === "err_email_invalid"
+                    ? t("err_email_invalid")
+                    : t("err_email_req")
+                  : null
+              }
               defaultValue={""}
               error={!!error}
               onChange={onChange}
-              value={value}
-              label="Email"
+              value={value ?? ""}
+              label={t("email")}
               variant="outlined"
             />
           )}
@@ -84,20 +102,25 @@ function SignInForm() {
             <TextField
               fullWidth
               size="small"
-              autoFocus
-              helperText={error ? error.message : null}
+              helperText={error ? t("err_password_req") : null}
               defaultValue={""}
               error={!!error}
               onChange={onChange}
-              value={value}
-              label="Password"
+              value={value ?? ""}
+              label={t("password")}
               variant="outlined"
               type="password"
             />
           )}
         />
-        <Button type="submit" variant="contained" size="medium">
-          Sign In
+        <Button
+          type="submit"
+          variant="contained"
+          size="medium"
+          disabled={isPending}
+          sx={{ py: 1.2, fontWeight: 600, textTransform: "none" }}
+        >
+          {t("sign_in")}
         </Button>
         <Typography
           color="gray"
@@ -105,7 +128,10 @@ function SignInForm() {
           component="p"
           textAlign="center"
         >
-          Don't have an account? <Link to="/auth/sign-up">Sign up</Link>
+          {t("dont_have_account")}{" "}
+          <Link to="/auth/sign-up" style={{ color: "#4caf50", fontWeight: 500 }}>
+            {t("sign_up")}
+          </Link>
         </Typography>
       </form>
     </Box>

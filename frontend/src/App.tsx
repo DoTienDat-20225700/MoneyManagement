@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SnackbarProvider } from "notistack";
 import { RouterProvider } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { LanguageProvider } from "./context/LanguageContext";
 import { router } from "./main";
 import { darkTheme } from "./theme";
 
@@ -21,9 +22,11 @@ function App() {
       <CssBaseline />
       <QueryClientProvider client={queryClient}>
         <SnackbarProvider maxSnack={3}>
-          <AuthProvider>
-            <RouterProvider router={router} />
-          </AuthProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <RouterProvider router={router} />
+            </AuthProvider>
+          </LanguageProvider>
         </SnackbarProvider>
       </QueryClientProvider>
     </ThemeProvider>

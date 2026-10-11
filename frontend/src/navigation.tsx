@@ -1,7 +1,6 @@
 import { ReactNode } from "react";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import ReceiptIcon from "@mui/icons-material/Receipt";
-import SavingsIcon from "@mui/icons-material/Savings";
 
 interface NavigationItem {
   label: string;

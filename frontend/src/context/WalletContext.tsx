@@ -1,4 +1,4 @@
-import { createContext, useState } from "react";
+import { createContext } from "react";
 interface WalletContextData {
   wallet: string;
   transactions: string;
@@ -12,36 +12,6 @@ interface Props {
 
 const WalletContext = createContext<WalletContextData>({} as WalletContextData);
 export const WalletProvider = ({ children }: Props) => {
-  let [wallet, setWallet] = useState<string | null>(() =>
-    localStorage.getItem("wallet")
-  );
-  let [transactions, setTransactions] = useState<string | null>(() =>
-    localStorage.getItem("wallet")
-  );
-
-  // async function getWallet(authTokens: string) {
-  //   const wallet = await walletService.getUserLoggedWallet(authTokens);
-  //   //setWallet(wallet)
-  // }
-
-  // async function getTransactions(authTokens: string) {
-  //   const transactions = await transactionService.getUserLoggedTransactions(
-  //     authTokens,
-  //     dateService.currentYear()
-  //   );
-  //   //setTransactions(transactions);
-  // }
-
-  // return (
-  //   <WalletContext.Provider
-  //     value={{
-  //       wallet,
-  //       transactions,
-  //       getWallet,
-  //       getTransactions
-  //     }}
-  //   >
-  //   </WalletContext.Provider>
-  // );
+  return <>{children}</>;
 };
 export default WalletContext;

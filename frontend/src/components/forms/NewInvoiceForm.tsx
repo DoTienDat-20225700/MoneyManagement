@@ -30,8 +30,10 @@ import {
   NewInvoiceImportFormData,
   newInvoiceImportSchema,
 } from "../../schemas/invoiceImportSchema";
+import { useLanguage } from "../../context/LanguageContext";
 
-function NewTransactionForm() {
+function NewInvoiceForm() {
+  const { language, t } = useLanguage();
   const queryClient = useQueryClient();
   const { uploadInvoices } = useInvoice();
   const { enqueueSnackbar } = useSnackbar();
@@ -45,7 +47,7 @@ function NewTransactionForm() {
     resolver: zodResolver(newInvoiceImportSchema),
     defaultValues: {
       invoices: undefined,
-      institution: BankInstitutions.SANTANDER,
+      institution: BankInstitutions.GENERAL_VN,
       type: undefined,
       updateWallet: undefined,
     },
@@ -53,7 +55,7 @@ function NewTransactionForm() {
 
   const { mutateAsync } = useMutation({
     mutationFn: uploadInvoices,
-    onSuccess: (response: any) => {
+    onSuccess: () => {
       setSearchParams((state) => {
         state.delete("invoice");
         return state;
@@ -61,16 +63,24 @@ function NewTransactionForm() {
       queryClient.invalidateQueries({
         queryKey: ["transactions"],
       });
-      enqueueSnackbar(response.message, {
+      enqueueSnackbar(t("invoice_import_success"), {
         variant: "success",
         autoHideDuration: 3000,
         anchorOrigin: { horizontal: "right", vertical: "bottom" },
       });
     },
     onError: (err: any) => {
-      enqueueSnackbar(err.response.data.message, {
+      const isParseError =
+        err?.response?.data?.message?.includes("phân tích") ||
+        err?.response?.data?.message?.includes("parse");
+      const errorMsg = !err?.response
+        ? t("no_server_response")
+        : isParseError
+        ? t("err_invoice_parse")
+        : t("err_invoice_save");
+      enqueueSnackbar(errorMsg, {
         variant: "error",
-        autoHideDuration: 3000,
+        autoHideDuration: 3500,
         anchorOrigin: { horizontal: "right", vertical: "bottom" },
       });
     },
@@ -105,7 +115,15 @@ function NewTransactionForm() {
               fullWidth
               autoFocus
               type="file"
-              helperText={errors.invoices?.message}
+              helperText={
+                errors.invoices
+                  ? errors.invoices.message === "err_file_size"
+                    ? t("err_file_size")
+                    : errors.invoices.message === "err_file_type"
+                    ? t("err_file_type")
+                    : t("err_invoice_req")
+                  : null
+              }
               error={!!errors.invoices}
               onChange={(e: any) => {
                 setValue("invoices", e.target.files);
@@ -122,11 +140,11 @@ function NewTransactionForm() {
         control={control}
         render={({ field: { onChange, value } }) => (
           <FormControl sx={{ width: "100%" }}>
-            <InputLabel>Bank Institution</InputLabel>
+            <InputLabel>{t("bank_institution")}</InputLabel>
             <Select
               size="small"
               value={value}
-              label="Bank Institution"
+              label={t("bank_institution")}
               onChange={onChange}
             >
               {Object.values(BankInstitutions).map((item, index) => {
@@ -148,9 +166,9 @@ function NewTransactionForm() {
           justifyContent: "flex-start",
         }}
       >
-        <Typography component="h2">Global optional options</Typography>
+        <Typography component="h2">{t("global_optional_options")}</Typography>
         <Tooltip
-          title="Changes made below will apply to every transaction imported."
+          title={t("global_options_tooltip")}
           arrow
           placement="top"
         >
@@ -173,7 +191,7 @@ function NewTransactionForm() {
               disabled={true}
               about="teste"
             >
-              Type
+              {t("type")}
             </FormLabel>
             <RadioGroup
               defaultValue={undefined}
@@ -187,7 +205,7 @@ function NewTransactionForm() {
                     key={i}
                     value={item}
                     control={<Radio />}
-                    label={typeOptionMask(item)}
+                    label={typeOptionMask(item, language)}
                     sx={{
                       backgroundColor: grey[900],
                       p: 1,
@@ -217,15 +235,15 @@ function NewTransactionForm() {
               )}
             />
           }
-          label="Update wallet"
+          label={t("update_wallet")}
         />
       </FormGroup>
 
       <Button type="submit" variant="contained">
-        Import
+        {t("import_btn")}
       </Button>
     </form>
   );
 }
 
-export default NewTransactionForm;
+export default NewInvoiceForm;

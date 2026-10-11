@@ -1,14 +1,12 @@
 // import { Listbox, Transition } from "@headlessui/react";
 import { SummaryOption } from "../../models/Summary";
 
-const options = Object.values(SummaryOption);
-
 interface Props {
   option: SummaryOption;
   handleOption: any;
 }
 
-export default function Options(props: Props) {
+export default function Options(_props: Props) {
   return (
     <div className="w-28 z-10">
       {/* <Listbox value={props.option} onChange={props.handleOption}>

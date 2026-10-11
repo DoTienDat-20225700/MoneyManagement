@@ -20,8 +20,10 @@ import { useTransactions } from "../../hooks/api/useTransactions";
 import { AggregatedExpense } from "../../models/Transaction";
 import { darkTheme } from "../../theme";
 import { getStartDate, pieRangeOptionMask, formatValue } from "../../utils/utils";
+import { useLanguage } from "../../context/LanguageContext";
 
 function ProfileChart() {
+  const { language, t } = useLanguage();
   const { getTransactions } = useTransactions();
 
   const [range, setRange] = useState<PieChartRangeType>(
@@ -111,14 +113,14 @@ function ProfileChart() {
         }}
       >
         <Typography component="h2" variant="body1" mb={1}>
-          Expenses Distribution
+          {t("expenses_distribution")}
         </Typography>
-        <FormControl sx={{ width: "20%" }}>
-          <InputLabel>Range</InputLabel>
+        <FormControl sx={{ width: "200px" }}>
+          <InputLabel>{t("range")}</InputLabel>
           <Select
             size="small"
             value={range.id}
-            label="Range"
+            label={t("range")}
             onChange={(e) =>
               setRange(getPieChartOptionById(Number(e.target.value)))
             }
@@ -126,7 +128,7 @@ function ProfileChart() {
             {Object.values(PieChartRangeOptions).map((item, index) => {
               return (
                 <MenuItem key={index} value={item.id}>
-                  {pieRangeOptionMask(item)}
+                  {pieRangeOptionMask(item, language)}
                 </MenuItem>
               );
             })}
@@ -152,7 +154,7 @@ function ProfileChart() {
             textAlign: "center",
           }}
         >
-          Unable to load chart due to insufficient data.
+          {t("unable_to_load_chart")}
         </Typography>
       )}
     </Box>

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { TypeOption } from "../enums/Enums";
 
 export const newTransactionFormSchema = z.object({
-  title: z.string().min(1, "Title must be at least 1 character long."),
+  title: z.string().min(1, "err_title_req"),
   value: z
     .union([z.string(), z.number()])
     .transform((val) => {
@@ -12,7 +12,7 @@ export const newTransactionFormSchema = z.object({
       return isNaN(parsed) ? 0 : parsed;
     })
     .refine((val) => val >= 1, {
-      message: "Please select an amount >= 1.",
+      message: "err_amount_req",
     }),
   label: z
     .object({
@@ -22,11 +22,11 @@ export const newTransactionFormSchema = z.object({
     })
     .nullable()
     .refine((val) => val !== null && val.name && val.name.trim().length > 0, {
-      message: "Please select a label.",
+      message: "err_label_req",
     }),
   date: z.custom<Dayjs>(
     (val) => dayjs.isDayjs(val) && (val as Dayjs).isValid(),
-    "Please select a date"
+    "err_date_req"
   ),
   type: z.nativeEnum(TypeOption).default(TypeOption.EXPENSE),
   updateWallet: z.boolean().default(false),

@@ -20,8 +20,11 @@ import { useTransactions } from "../../hooks/api/useTransactions";
 import { Transaction } from "../../models/Transaction";
 import { darkTheme } from "../../theme";
 import { barRangeOptionMask, getStartDate, formatValue } from "../../utils/utils";
+import { useLanguage } from "../../context/LanguageContext";
+import dayjs from "dayjs";
 
 function CurrentMonthChart() {
+  const { language, dateFormat, t } = useLanguage();
   const { getTransactions } = useTransactions();
   const [range, setRange] = useState<BarChartRangeType>(
     BarChartRangeOptions.LastWeek
@@ -66,10 +69,7 @@ function CurrentMonthChart() {
             },
             show: true,
             formatter: function (value: string) {
-              return new Date(value).toLocaleString("vi-VN", {
-                day: "2-digit",
-                month: "2-digit",
-              });
+              return dayjs(value).format(language === "vi" ? "DD/MM" : "MM/DD");
             },
           },
         },
@@ -94,7 +94,9 @@ function CurrentMonthChart() {
           theme: "dark",
           x: {
             formatter(val) {
-              return String(val);
+              return dayjs(String(val)).isValid()
+                ? dayjs(String(val)).format(dateFormat)
+                : String(val);
             },
           },
           y: {
@@ -114,7 +116,7 @@ function CurrentMonthChart() {
       options: ApexOptions;
       series: ApexOptions["series"];
     };
-  }, [lineChartData]);
+  }, [lineChartData, language, dateFormat]);
 
   useEffect(() => {
     const dataSet = transactions
@@ -143,14 +145,14 @@ function CurrentMonthChart() {
         }}
       >
         <Typography component="h2" variant="body1" mb={1}>
-          Daily expenses
+          {t("daily_expenses")}
         </Typography>
         <FormControl sx={{ width: "200px" }}>
-          <InputLabel>Range</InputLabel>
+          <InputLabel>{t("range")}</InputLabel>
           <Select
             size="small"
             value={range.id}
-            label="Range"
+            label={t("range")}
             onChange={(e) =>
               setRange(getBarChartOptionsById(Number(e.target.value)))
             }
@@ -160,7 +162,7 @@ function CurrentMonthChart() {
               .map((item, index) => {
                 return (
                   <MenuItem key={index} value={item.id}>
-                    {barRangeOptionMask(item)}
+                    {barRangeOptionMask(item, language)}
                   </MenuItem>
                 );
               })}
@@ -179,7 +181,7 @@ function CurrentMonthChart() {
             textAlign: "center",
           }}
         >
-          Unable to load chart due to insufficient data.
+          {t("unable_to_load_chart")}
         </Typography>
       ) : (
         <Chart
