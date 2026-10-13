@@ -1,3 +1,4 @@
+from datetime import date, datetime
 from rest_framework import serializers
 from .models import Transaction, SavingPlan, Wallet, CustomLabel
 
@@ -5,6 +6,13 @@ from django.utils import timezone
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 from rest_framework_simplejwt.exceptions import InvalidToken
+
+
+class SafeDateField(serializers.DateField):
+    def to_representation(self, value):
+        if isinstance(value, datetime):
+            value = value.date()
+        return super().to_representation(value)
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -54,8 +62,8 @@ class WalletSerializer(serializers.ModelSerializer):
 
 
 class TransactionSerializer(serializers.ModelSerializer):
-    date = serializers.DateField(format="%m-%d-%Y", input_formats=['%m-%d-%Y'])
-    value = serializers.DecimalField(decimal_places=2, max_digits=10)
+    date = SafeDateField(format="%m-%d-%Y", input_formats=['%m-%d-%Y'])
+    value = serializers.DecimalField(decimal_places=2, max_digits=15)
     amount = serializers.SerializerMethodField()
     duration = serializers.SerializerMethodField()
     label = LabelSerializer(read_only=True)
@@ -66,23 +74,21 @@ class TransactionSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_amount(obj):
-        if obj.recurrent:
-            return None
+        if obj.recurrent and hasattr(obj, 'recurrency') and obj.recurrency:
+            return obj.recurrency.amount
         return None
 
     @staticmethod
     def get_duration(obj):
-        if obj.recurrent:
-            return None
+        if obj.recurrent and hasattr(obj, 'recurrency') and obj.recurrency:
+            return obj.recurrency.duration
         return None
 
 
 class SavingPlanSerializer(serializers.ModelSerializer):
-    # days_to_end_goal = serializers.SerializerMethodField('get_days_to_end_goal')
+    amount = serializers.DecimalField(decimal_places=2, max_digits=15)
+    goal_date = serializers.DateField(format="%Y-%m-%d", input_formats=['%Y-%m-%d', '%m-%d-%Y'], required=False, allow_null=True)
 
     class Meta:
         model = SavingPlan
-        fields = ('title', 'amount', 'active', 'goal_date', 'description')
-
-    # def get_days_to_end_goal(self, obj):
-    #     return (timezone.now() - obj.goal_date).days
+        fields = ('id', 'title', 'amount', 'active', 'goal_date', 'description')

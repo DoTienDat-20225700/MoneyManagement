@@ -1,9 +1,11 @@
 import os
+from decimal import Decimal, InvalidOperation
+from django.core.exceptions import ValidationError
 from django.http import JsonResponse
-from django.db.models import QuerySet, Sum
+from django.db.models import QuerySet, Sum, Q
 from .utils import custom_server_error_response, custom_success_response, custom_user_error_response
 from hubModels.serializers import MyTokenObtainPairSerializer, MyTokenRefreshSerializer
-from hubModels.models import HubUser, Transaction
+from hubModels.models import HubUser, Transaction, CustomLabel, SavingPlan
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.views import APIView
@@ -18,6 +20,7 @@ from hubModels.models import CustomLabel
 from hubModels.serializers import LabelSerializer
 from hubModels.importer import InvoiceImporter, PDFInvoiceImporter, InvoiceProcessingException
 from django.conf import settings
+from django.db import transaction as db_transaction
 from django.db.models.functions import TruncDate
 
 
@@ -25,7 +28,6 @@ class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
     def finalize_response(self, request, response, *args, **kwargs):
-        print("aT: " + response.data.get('access'))
         if response.data.get('refresh'):
             response.set_cookie(
                 key=settings.SIMPLE_JWT["AUTH_COOKIE"],
@@ -48,17 +50,14 @@ class MyTokenRefreshView(TokenRefreshView):
         refresh_token = request.COOKIES.get('refresh_token')
 
         if not refresh_token:
-            print('error: Refresh token is required')
             return Response({'error': 'Refresh token is required'}, status=403)
 
         try:
             token = RefreshToken(refresh_token)
             access_token = str(token.access_token)
-            print("new aT: " + access_token)
             return Response({'access_token': access_token, 'refresh_token': refresh_token})
-        except Exception as e:
-            print(str(e))
-            return Response({'error': str(e)}, status=403)
+        except Exception:
+            return Response({'error': 'Invalid refresh token'}, status=403)
 
     def finalize_response(self, request, response, *args, **kwargs):
         if response.data.get('refresh'):
@@ -93,11 +92,18 @@ class WalletAPIView(APIView):
         wallet = user.get_wallet()
 
         try:
-            value = float(request.data)
-        except (ValueError, TypeError):
+            if isinstance(request.data, bool):
+                raise InvalidOperation
+            value = Decimal(str(request.data))
+            if not value.is_finite():
+                raise InvalidOperation
+        except (InvalidOperation, ValueError, TypeError):
             return custom_user_error_response("Entered value needs to be a number. Please try again.", 422)
 
-        wallet.set_balance(value)
+        try:
+            wallet.set_balance(value)
+        except ValidationError:
+            return custom_user_error_response("Entered value is outside the supported range.", 422)
 
         return custom_success_response("Wallet's balance successfully updated!")
 
@@ -110,24 +116,29 @@ class TransactionAPIView(APIView):
         user: HubUser = request.user
 
         data = request.data
-        transaction = Transaction.create_from_json(data, user_pk=user.pk)
+        try:
+            Transaction.create_from_json(data, user_pk=user.pk)
+        except ValidationError as error:
+            return custom_user_error_response(error.message if hasattr(error, 'message') else str(error), 400)
+        except PermissionError:
+            return custom_user_error_response('Wallet was not found.', 404)
 
         # TODO: Change response to message string
         return custom_success_response("Transaction created with success!")
 
-    def delete(self, request, transaction_pk):
+    def delete(self, request, transaction_pk=None):
         user: HubUser = request.user
 
         if not transaction_pk:
-            return custom_server_error_response("No transaction id was given. Please try again.")
+            return custom_user_error_response("No transaction id was given. Please try again.", 400)
 
-        transaction = Transaction.objects.get(pk=transaction_pk)
-
-        # Transaction does not belong to the requesting user
-        if not transaction.is_from_wallet(user.get_wallet()):
-            raise PermissionError()
-
-        transaction.delete()
+        with db_transaction.atomic():
+            try:
+                transaction = Transaction.objects.select_for_update().get(
+                    pk=transaction_pk, wallet__user=user)
+            except Transaction.DoesNotExist:
+                return custom_user_error_response("Không tìm thấy giao dịch.", 404)
+            transaction.delete()
 
         return custom_success_response("Transaction deleted with success!")
 
@@ -135,47 +146,14 @@ class TransactionAPIView(APIView):
         user: HubUser = request.user
         pk = transaction_pk or request.data.get('id')
         if not pk:
-            return custom_server_error_response("No transaction id was given. Please try again.")
+            return custom_user_error_response("No transaction id was given. Please try again.", 400)
 
         try:
-            transaction = Transaction.objects.get(pk=pk)
+            Transaction.update_from_json(pk, user, request.data)
         except Transaction.DoesNotExist:
             return custom_user_error_response("Không tìm thấy giao dịch.", 404)
-
-        if not transaction.is_from_wallet(user.get_wallet()):
-            raise PermissionError()
-
-        data = request.data
-        if 'title' in data and data['title']:
-            transaction.title = data['title']
-        if 'value' in data and data['value'] is not None:
-            transaction.value = data['value']
-        if 'type' in data and data['type']:
-            transaction.type = data['type']
-        if 'date' in data and data['date']:
-            date_val = data['date']
-            if isinstance(date_val, str):
-                try:
-                    transaction.date = date.fromisoformat(date_val.split('T')[0])
-                except ValueError:
-                    pass
-            elif isinstance(date_val, (date, datetime)):
-                transaction.date = date_val
-
-        if 'label' in data or 'label_id' in data:
-            label_data = data.get('label') or data.get('label_id')
-            label_id = label_data.get('id') if isinstance(label_data, dict) else label_data
-            if label_id:
-                try:
-                    custom_label = CustomLabel.objects.get(pk=label_id, wallet=user.get_wallet())
-                    transaction.label = custom_label
-                except CustomLabel.DoesNotExist:
-                    transaction.label = None
-            else:
-                transaction.label = None
-
-        transaction.imported = False
-        transaction.save()
+        except ValidationError as error:
+            return custom_user_error_response(error.message if hasattr(error, 'message') else str(error), 400)
 
         return custom_success_response("Cập nhật giao dịch thành công!")
 
@@ -196,21 +174,23 @@ class LabelAPIView(APIView):
         user: HubUser = request.user
 
         data = request.data
-        CustomLabel.create_from_json(data, user_pk=user.pk)
+        try:
+            CustomLabel.create_from_json(data, user_pk=user.pk)
+        except (PermissionError, ValueError, ValidationError):
+            return custom_user_error_response("Thông tin nhãn không hợp lệ.", 400)
 
         return custom_success_response("Label created with success!")
 
-    def delete(self, request, label_pk):
+    def delete(self, request, label_pk=None):
         user: HubUser = request.user
 
         if not label_pk:
-            return custom_server_error_response("No label id was given. Please try again.")
+            return custom_user_error_response("No label id was given. Please try again.", 400)
 
-        label = CustomLabel.objects.get(pk=label_pk)
-
-        # Transaction does not belong to the requesting user
-        if not label.is_from_wallet(user.get_wallet()):
-            raise PermissionError()
+        try:
+            label = CustomLabel.objects.get(pk=label_pk, wallet__user=user)
+        except CustomLabel.DoesNotExist:
+            return custom_user_error_response("Không tìm thấy nhãn.", 404)
 
         label.delete()
 
@@ -298,6 +278,81 @@ def create_user(request):
         return custom_user_error_response("Email này đã được sử dụng hoặc thông tin không hợp lệ.")
 
 
+class SavingPlanAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = SavingPlanSerializer
+
+    def get(self, request, saving_plan_pk=None):
+        user: HubUser = request.user
+        if saving_plan_pk:
+            try:
+                plan = SavingPlan.objects.get(pk=saving_plan_pk, wallet__user=user)
+                return Response(self.serializer_class(plan).data)
+            except SavingPlan.DoesNotExist:
+                return custom_user_error_response("Không tìm thấy kế hoạch tiết kiệm.", 404)
+
+        plans = user.get_saving_plans()
+        return Response(self.serializer_class(plans, many=True).data)
+
+    def post(self, request):
+        user: HubUser = request.user
+        try:
+            plan = SavingPlan.create_from_json(request.data, user_pk=user.pk)
+            return Response(self.serializer_class(plan).data, status=201)
+        except ValidationError as error:
+            return custom_user_error_response(error.message if hasattr(error, 'message') else str(error), 400)
+        except PermissionError:
+            return custom_user_error_response('Wallet was not found.', 404)
+
+    def put(self, request, saving_plan_pk=None):
+        user: HubUser = request.user
+        pk = saving_plan_pk or request.data.get('id')
+        if not pk:
+            return custom_user_error_response("No saving plan id was given. Please try again.", 400)
+
+        try:
+            plan = SavingPlan.update_from_json(pk, user, request.data)
+            return Response(self.serializer_class(plan).data, status=200)
+        except SavingPlan.DoesNotExist:
+            return custom_user_error_response("Không tìm thấy kế hoạch tiết kiệm.", 404)
+        except ValidationError as error:
+            return custom_user_error_response(error.message if hasattr(error, 'message') else str(error), 400)
+
+    def patch(self, request, saving_plan_pk=None):
+        user: HubUser = request.user
+        pk = saving_plan_pk or request.data.get('id')
+        if not pk:
+            return custom_user_error_response("No saving plan id was given. Please try again.", 400)
+
+        try:
+            plan = SavingPlan.objects.get(pk=pk, wallet__user=user)
+        except SavingPlan.DoesNotExist:
+            return custom_user_error_response("Không tìm thấy kế hoạch tiết kiệm.", 404)
+
+        if 'active' in request.data:
+            if not isinstance(request.data['active'], bool):
+                return custom_user_error_response("Active must be a boolean.", 400)
+            plan.active = request.data['active']
+            plan.save(update_fields=['active'])
+        else:
+            plan.toggle_active()
+
+        return Response(self.serializer_class(plan).data, status=200)
+
+    def delete(self, request, saving_plan_pk=None):
+        user: HubUser = request.user
+        if not saving_plan_pk:
+            return custom_user_error_response("No saving plan id was given. Please try again.", 400)
+
+        try:
+            plan = SavingPlan.objects.get(pk=saving_plan_pk, wallet__user=user)
+        except SavingPlan.DoesNotExist:
+            return custom_user_error_response("Không tìm thấy kế hoạch tiết kiệm.", 404)
+
+        plan.delete()
+        return custom_success_response("Kế hoạch tiết kiệm đã được xoá thành công!")
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_saving_plans(request):
@@ -321,28 +376,75 @@ def get_transactions(request):
     limit = request.query_params.get('limit')
     # return only values grouped by date for charts
     chart_type = request.query_params.get('chart_type')
+    search = request.query_params.get('search') or request.query_params.get('q')
 
-    transactions = user.get_wallet().get_transactions()
+    transactions = user.get_wallet().transactions.all()
+
+    if search and search.strip():
+        term = search.strip()
+        q_filter = Q(title__icontains=term) | Q(label__name__icontains=term)
+
+        term_upper = term.upper()
+        if term_upper in ['EXPENSE', 'CHI', 'KHOẢN CHI', 'KHOAN CHI']:
+            q_filter |= Q(type='EXPENSE')
+        elif term_upper in ['EARNING', 'THU', 'KHOẢN THU', 'KHOAN THU']:
+            q_filter |= Q(type='EARNING')
+        elif term_upper in ['RECURRENT', 'RECURRING', 'ĐỊNH KỲ', 'DINH KY', 'LẶP LẠI', 'LAP LAI']:
+            q_filter |= Q(recurrent=True)
+
+        clean_numeric = term.replace(',', '').replace('.', '').replace('đ', '').replace('VND', '').strip()
+        try:
+            val = Decimal(clean_numeric)
+            q_filter |= Q(value=val)
+        except (InvalidOperation, ValueError):
+            pass
+
+        try:
+            parsed_d = date.fromisoformat(term)
+            q_filter |= Q(date=parsed_d)
+        except ValueError:
+            pass
+
+        transactions = transactions.filter(q_filter)
+
+    if bool(start_date_str) != bool(end_date_str):
+        return custom_user_error_response('Both start_date and end_date are required.', 400)
 
     if start_date_str and end_date_str:
-        start_date = date.fromisoformat(start_date_str)
-        end_date = date.fromisoformat(end_date_str)
+        try:
+            start_date = date.fromisoformat(start_date_str)
+            end_date = date.fromisoformat(end_date_str)
+        except ValueError:
+            return custom_user_error_response('Dates must use YYYY-MM-DD.', 400)
+        if start_date > end_date:
+            return custom_user_error_response('start_date must not be after end_date.', 400)
 
-        transactions = transactions.get_in_range(start_date, end_date)
+        transactions = transactions.filter(date__range=[start_date, end_date])
 
-    if limit and int(limit) > 0:
-        transactions = transactions[:int(limit)]
+    try:
+        limit = int(limit or 0)
+        chart_type = int(chart_type or 0)
+    except (TypeError, ValueError):
+        return custom_user_error_response('limit and chart_type must be integers.', 400)
 
-    if int(chart_type) == 0:
+    if chart_type == 0:
+        transactions = transactions.order_by('-date', '-id')
+        if limit > 0:
+            transactions = transactions[:limit]
         transactions_serialized = TransactionSerializer(transactions, many=True)
         return Response(transactions_serialized.data)
 
-    if int(chart_type) == 1:
+    if chart_type == 1:
         # CHART TYPE == 1: Bar chart grouping by dates
+        if not (start_date_str and end_date_str):
+            return custom_user_error_response('Date range is required for this chart.', 400)
         grouped_transactions_list = transactions.expenses().group_by_dates().add_empty_dates(start_date, end_date)
 
-    elif int(chart_type) == 2:
+    elif chart_type == 2:
         # CHART TYPE == 2: Pie chart grouping by labels
         grouped_transactions_list = transactions.expenses().group_by_labels()
+
+    else:
+        return custom_user_error_response('chart_type must be 0, 1, or 2.', 400)
 
     return Response(grouped_transactions_list)

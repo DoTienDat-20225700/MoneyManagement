@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import ReceiptIcon from "@mui/icons-material/Receipt";
+import SavingsIcon from "@mui/icons-material/Savings";
 
 interface NavigationItem {
   label: string;
@@ -19,9 +20,9 @@ export const navigation: NavigationItem[] = [
     path: "/transactions",
     icon: <ReceiptIcon />,
   },
-  // {
-  //   label: "SavingPlans",
-  //   path: "/saving-plans",
-  //   icon: <SavingsIcon />,
-  // },
+  {
+    label: "SavingPlans",
+    path: "/saving-plans",
+    icon: <SavingsIcon />,
+  },
 ];

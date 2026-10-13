@@ -1,4 +1,4 @@
-import { WarningAmberRounded, EditOutlined } from "@mui/icons-material";
+import { WarningAmberRounded, EditOutlined, RepeatRounded } from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -249,7 +249,7 @@ function LatestTransactions(props: Props) {
     {
       field: "imported",
       headerName: "",
-      width: 50,
+      width: 45,
       renderCell: (params) => {
         return (
           params.value && (
@@ -257,6 +257,28 @@ function LatestTransactions(props: Props) {
               <WarningAmberRounded color="warning" sx={{ fontSize: 20 }} />
             </Tooltip>
           )
+        );
+      },
+    },
+    {
+      field: "recurrent",
+      headerName: "",
+      width: 45,
+      renderCell: (params) => {
+        if (!params.value) return null;
+        const dur = params.row.duration ? String(params.row.duration).toLowerCase() : "";
+        const durMap: { [key: string]: string } = {
+          days: language === "vi" ? "ngày" : "days",
+          weeks: language === "vi" ? "tuần" : "weeks",
+          months: language === "vi" ? "tháng" : "months",
+          years: language === "vi" ? "năm" : "years",
+        };
+        const durLabel = durMap[dur] || dur;
+        const info = params.row.amount ? `${params.row.amount} ${durLabel}` : "";
+        return (
+          <Tooltip title={`${t("recurring_transaction")}${info ? ` (${info})` : ""}`}>
+            <RepeatRounded color="info" sx={{ fontSize: 20 }} />
+          </Tooltip>
         );
       },
     },
@@ -272,6 +294,9 @@ function LatestTransactions(props: Props) {
           value: item.value,
           date: dayjs(item.date).format(dateFormat),
           imported: item.imported || false,
+          recurrent: item.recurrent || false,
+          amount: item.amount,
+          duration: item.duration,
         }))
       : [];
   }

@@ -1,5 +1,15 @@
+import { useState, useEffect } from "react";
 import SearchIcon from "@mui/icons-material/Search";
-import { Box, InputAdornment, TextField, Typography } from "@mui/material";
+import ClearIcon from "@mui/icons-material/Clear";
+import {
+  Box,
+  CircularProgress,
+  IconButton,
+  InputAdornment,
+  TextField,
+  Typography,
+  Alert,
+} from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { useQuery } from "@tanstack/react-query";
 import LatestTransactions from "../components/LatestTransactions";
@@ -10,24 +20,42 @@ import { Transaction } from "../models/Transaction";
 function Transactions() {
   const { t } = useLanguage();
   const { getTransactions } = useTransactions();
-  const { data: transactions } = useQuery({
-    queryKey: ["transactions"],
-    queryFn: () => getTransactions() as Promise<Transaction[]>,
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
+  const {
+    data: transactions,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ["transactions", debouncedSearch],
+    queryFn: () =>
+      getTransactions({ search: debouncedSearch }) as Promise<Transaction[]>,
   });
+
   return (
     <>
       <Typography component="h1" variant="h4" fontWeight={600} mb={4}>
         {t("transactions")}
       </Typography>
       <Box>
-        <form>
+        <Box component="form" onSubmit={(e) => e.preventDefault()} sx={{ mb: 2 }}>
           <TextField
             fullWidth
             label=""
             variant="outlined"
             size="medium"
             placeholder={t("find_transaction")}
-            // onChange={handleSearchChange}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             InputProps={{
               style: { fontSize: "14px", height: "40px" },
               startAdornment: (
@@ -35,10 +63,32 @@ function Transactions() {
                   <SearchIcon />
                 </InputAdornment>
               ),
+              endAdornment: (
+                <>
+                  {isLoading && <CircularProgress size={18} sx={{ mr: 1 }} />}
+                  {searchTerm && (
+                    <InputAdornment position="end">
+                      <IconButton
+                        size="small"
+                        onClick={() => setSearchTerm("")}
+                        edge="end"
+                      >
+                        <ClearIcon fontSize="small" />
+                      </IconButton>
+                    </InputAdornment>
+                  )}
+                </>
+              ),
             }}
-            sx={{ mb: 2 }}
           />
-        </form>
+        </Box>
+
+        {isError && (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={() => refetch()}>
+            {t("unable_to_load_data")}
+          </Alert>
+        )}
+
         <LatestTransactions data={transactions ?? []} headOnly={false} />
       </Box>
     </>

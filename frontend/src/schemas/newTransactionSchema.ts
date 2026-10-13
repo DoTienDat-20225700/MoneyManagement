@@ -31,6 +31,15 @@ export const newTransactionFormSchema = z.object({
   type: z.nativeEnum(TypeOption).default(TypeOption.EXPENSE),
   updateWallet: z.boolean().default(false),
   recurring: z.boolean().default(false),
+  amount: z
+    .union([z.number(), z.string()])
+    .optional()
+    .transform((val) => {
+      if (val === undefined || val === null || val === "") return 1;
+      const num = Number(val);
+      return isNaN(num) || num <= 0 ? 1 : num;
+    }),
+  duration: z.enum(["DAYS", "WEEKS", "MONTHS", "YEARS"]).default("MONTHS"),
 });
 
 export type NewTransactionFormInput = z.input<typeof newTransactionFormSchema>;

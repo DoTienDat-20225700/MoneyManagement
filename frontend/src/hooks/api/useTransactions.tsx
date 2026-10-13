@@ -6,25 +6,55 @@ export function useTransactions() {
   const axiosPrivate = useAxiosPrivate();
 
   async function getTransactions(
-    limit: number = 0,
+    limitOrOptions:
+      | number
+      | {
+          limit?: number;
+          chartType?: number;
+          startDate?: Date;
+          endDate?: Date;
+          search?: string;
+        } = 0,
     chartType: number = 0,
     startDate?: Date,
-    endDate?: Date
+    endDate?: Date,
+    search?: string
   ): Promise<Transaction[] | AggregatedExpense[]> {
+    let limit = 0;
+    let actualChartType = 0;
+    let actualStartDate: Date | undefined;
+    let actualEndDate: Date | undefined;
+    let actualSearch: string | undefined;
+
+    if (typeof limitOrOptions === "object" && limitOrOptions !== null) {
+      limit = limitOrOptions.limit ?? 0;
+      actualChartType = limitOrOptions.chartType ?? 0;
+      actualStartDate = limitOrOptions.startDate;
+      actualEndDate = limitOrOptions.endDate;
+      actualSearch = limitOrOptions.search;
+    } else {
+      limit = limitOrOptions;
+      actualChartType = chartType;
+      actualStartDate = startDate;
+      actualEndDate = endDate;
+      actualSearch = search;
+    }
+
     try {
-      let endpoint = `/transactions?limit=${limit}&chart_type=${chartType}`;
-      if (startDate)
-        endpoint += `&start_date=${startDate.toISOString().split("T")[0]}`;
-      if (endDate)
-        endpoint += `&end_date=${endDate.toISOString().split("T")[0]}`;
+      let endpoint = `/transactions?limit=${limit}&chart_type=${actualChartType}`;
+      if (actualStartDate)
+        endpoint += `&start_date=${actualStartDate.toISOString().split("T")[0]}`;
+      if (actualEndDate)
+        endpoint += `&end_date=${actualEndDate.toISOString().split("T")[0]}`;
+      if (actualSearch && actualSearch.trim())
+        endpoint += `&search=${encodeURIComponent(actualSearch.trim())}`;
       const response = await axiosPrivate.get(endpoint);
 
-      if (chartType === 2) {
+      if (actualChartType === 2) {
         return response.data as AggregatedExpense[];
       }
       return response.data as Transaction[];
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
@@ -37,12 +67,12 @@ export function useTransactions() {
     try {
       const newTransaction = {
         ...transaction,
-        date: transaction.date,
+        date: transaction.date.toISOString ? transaction.date.toISOString().split("T")[0] : transaction.date,
+        recurrent: transaction.recurring,
       };
       const response = await axiosPrivate.post("/transaction/", newTransaction);
       return response.data;
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
@@ -58,7 +88,6 @@ export function useTransactions() {
       );
       return response.data;
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }
@@ -77,7 +106,6 @@ export function useTransactions() {
       );
       return response.data;
     } catch (error) {
-      console.log(error);
       throw error;
     }
   }

@@ -1,5 +1,7 @@
-from decimal import Decimal
-from django.db import models
+from decimal import Decimal, InvalidOperation
+import re
+from django.core.exceptions import ValidationError
+from django.db import models, transaction as db_transaction
 from django.db.models import QuerySet, Sum, F
 from django.core.mail import send_mail
 from django.contrib.auth.models import PermissionsMixin
@@ -65,6 +67,12 @@ class HubUser(AbstractBaseUser, PermissionsMixin):
         """
         return self.get_wallet().get_labels()
 
+    def get_saving_plans(self) -> QuerySet['SavingPlan']:
+        """
+        Return all SavingPlans related to that user
+        """
+        return self.get_wallet().get_saving_plans()
+
     def get_full_name(self):
         """
         Returns the first_name plus the last_name, with a space in between.
@@ -94,12 +102,45 @@ class Wallet(models.Model):
     ]
 
     def update_balance(self, value):
-        self.current_amount = self.current_amount + Decimal(value)
-        self.save(update_fields=['current_amount'])
+        """Atomically apply a delta and keep this instance in sync.
+
+        Transaction creation, editing and deletion all use this method.  Taking
+        a row lock prevents two requests from calculating a new balance from
+        the same stale value.
+        """
+        try:
+            delta = Decimal(value)
+        except (InvalidOperation, TypeError, ValueError):
+            raise ValidationError('Wallet balance adjustment must be numeric.')
+        if not delta.is_finite():
+            raise ValidationError('Wallet balance adjustment must be finite.')
+
+        with db_transaction.atomic():
+            wallet = Wallet.objects.select_for_update().get(pk=self.pk)
+            new_amount = wallet.current_amount + delta
+            if not new_amount.is_finite() or len(new_amount.as_tuple().digits) > 15 \
+                    or -new_amount.as_tuple().exponent > 2:
+                raise ValidationError('Wallet balance is outside the supported range.')
+            wallet.current_amount = new_amount
+            wallet.save(update_fields=['current_amount'])
+            self.current_amount = wallet.current_amount
 
     def set_balance(self, value):
-        self.current_amount = Decimal(value)
-        self.save(update_fields=['current_amount'])
+        try:
+            amount = Decimal(value)
+        except (InvalidOperation, TypeError, ValueError):
+            raise ValidationError('Wallet balance must be numeric.')
+
+        if not amount.is_finite():
+            raise ValidationError('Wallet balance must be finite.')
+        if len(amount.as_tuple().digits) > 15 or -amount.as_tuple().exponent > 2:
+            raise ValidationError('Wallet balance supports at most 15 digits and 2 decimal places.')
+
+        with db_transaction.atomic():
+            wallet = Wallet.objects.select_for_update().get(pk=self.pk)
+            wallet.current_amount = amount
+            wallet.save(update_fields=['current_amount'])
+            self.current_amount = wallet.current_amount
 
     def get_current_amount(self):
         return self.current_amount
@@ -133,7 +174,7 @@ class Wallet(models.Model):
             .aggregate(Sum('value')).get('value__sum') or 0
 
     def get_saving_plans(self):
-        pass
+        return self.saving_plans.all()
 
     def get_labels(self) -> QuerySet['CustomLabel']:
         return self.labels.all()
@@ -171,6 +212,8 @@ class CustomLabel(WalletBasedModel):
 
     @staticmethod
     def create_from_json(data: dict, user_pk: int) -> 'CustomLabel':
+        if not isinstance(data, dict):
+            raise ValidationError('Label payload must be an object.')
         try:
             user: HubUser = HubUser.objects.get(pk=user_pk)
         except HubUser.DoesNotExist:
@@ -181,16 +224,16 @@ class CustomLabel(WalletBasedModel):
         if not user_wallet:
             raise PermissionError()
 
-        label = CustomLabel()
-        label.wallet = user_wallet
+        name = data.get('name')
+        color = data.get('color')
+        if not isinstance(name, str) or not name.strip():
+            raise ValidationError({'name': 'Name is required.'})
+        if len(name.strip()) > 30:
+            raise ValidationError({'name': 'Name must not exceed 30 characters.'})
+        if not isinstance(color, str) or not re.fullmatch(r'#[0-9a-fA-F]{6}', color):
+            raise ValidationError({'color': 'Color must be a six-digit hex value.'})
 
-        if not data.get("name"):
-            raise Exception("Title is required.")
-        label.name = data.get("name")
-
-        if not data.get("color"):
-            raise Exception("Color is required.")
-        label.color = data.get("color")
+        label = CustomLabel(wallet=user_wallet, name=name.strip(), color=color)
 
         label.save()
 
@@ -212,6 +255,7 @@ class TransactionRecurrency(models.Model):
     amount = models.IntegerField()
     duration = models.CharField(max_length=6, choices=DURATION_TYPES)
     end_date = models.DateTimeField(blank=True, null=True)
+    active = models.BooleanField(default=True)
 
     def trigger_async_instantiation(self):
         pass
@@ -248,23 +292,92 @@ class Transaction(WalletBasedModel):
     # Manager section
     objects = TransactionsManager()
 
-    def save(self, is_first_save=False, **kwargs):
-        # Cloned transactions will never update wallet, since will they will only be a base transaction for future ones
-        if self.update_wallet and is_first_save and not self.recurrent:
-            amount = self.value if self.type == 'EARNING' else (-self.value)
-            self.wallet.update_balance(amount)
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=('base_transaction', 'date'),
+                name='unique_generated_recurrence_occurrence',
+            ),
+        ]
 
-        return super().save(**kwargs)
+    @staticmethod
+    def _parse_date(value):
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, date):
+            return value
+        if not isinstance(value, str) or not value.strip():
+            raise ValidationError({'date': 'A valid transaction date is required.'})
+
+        try:
+            # Date-only values are the normal API contract.  ISO datetimes are
+            # also accepted because Dayjs serialises request data that way.
+            return datetime.fromisoformat(value.replace('Z', '+00:00')).date()
+        except ValueError:
+            raise ValidationError({'date': 'Use an ISO-8601 date or datetime.'})
+
+    @classmethod
+    def _parse_value(cls, value):
+        if isinstance(value, bool):
+            raise ValidationError({'value': 'Value must be a positive number.'})
+        try:
+            amount = Decimal(str(value))
+        except (InvalidOperation, TypeError, ValueError):
+            raise ValidationError({'value': 'Value must be a positive number.'})
+        if not amount.is_finite() or amount <= 0:
+            raise ValidationError({'value': 'Value must be a positive number.'})
+        if len(amount.as_tuple().digits) > 15 or -amount.as_tuple().exponent > 2:
+            raise ValidationError({'value': 'Value supports at most 15 digits and 2 decimal places.'})
+        return amount
+
+    @classmethod
+    def _parse_type(cls, value):
+        valid_types = {choice[0] for choice in cls.TRANSACTION_TYPES}
+        if value not in valid_types:
+            raise ValidationError({'type': 'Type must be EXPENSE or EARNING.'})
+        return value
+
+    @staticmethod
+    def _parse_boolean(value, field_name):
+        if isinstance(value, bool):
+            return value
+        raise ValidationError({field_name: 'Must be a boolean.'})
+
+    def wallet_effect(self):
+        """Return this transaction's signed wallet effect, if any."""
+        if not self.update_wallet:
+            return Decimal('0')
+        return self.value if self.type == 'EARNING' else -self.value
+
+    def save(self, is_first_save=False, **kwargs):
+        """Save a new transaction and apply its balance effect exactly once.
+
+        Existing records deliberately do not adjust a wallet here.  Their
+        changes must go through ``update_from_json`` so the old effect can be
+        reversed before the new one is applied.
+        """
+        if isinstance(self.date, datetime):
+            self.date = self.date.date()
+        should_apply_effect = is_first_save and self._state.adding and self.wallet_effect()
+        with db_transaction.atomic():
+            result = super().save(**kwargs)
+            if should_apply_effect:
+                self.wallet.update_balance(self.wallet_effect())
+            return result
 
     def delete(self, **kwargs):
-        # Rollback for the wallet's previous update
-        if self.update_wallet:
-            # If transaction doesn't have fk to a base
-            if not self.recurrent:
-                amount = (-self.value) if self.type == 'EARNING' else self.value
-                self.wallet.update_balance(amount)
+        # Query the current row first: a repeated delete on a stale instance
+        # must not reverse the balance twice.
+        with db_transaction.atomic():
+            try:
+                current = Transaction.objects.select_related('wallet').get(pk=self.pk)
+            except Transaction.DoesNotExist:
+                return super().delete(**kwargs)
 
-        return super().delete(**kwargs)
+            effect = current.wallet_effect()
+            if effect:
+                current.wallet.update_balance(-effect)
+            return super().delete(**kwargs)
 
     @staticmethod
     def create_from_json(data: dict, user_pk: int) -> 'Transaction':
@@ -273,88 +386,179 @@ class Transaction(WalletBasedModel):
         @params: 
             data : dict
         """
-        # TODO: Field validations
-        try:
-            user: HubUser = HubUser.objects.get(pk=user_pk)
-        except HubUser.DoesNotExist:
-            raise PermissionError()
+        if not isinstance(data, dict):
+            raise ValidationError('Transaction payload must be an object.')
 
-        user_wallet = user.get_wallet()
-
-        if not user_wallet:
-            raise PermissionError()
-
-        transaction = Transaction()
-        transaction.wallet = user_wallet
-
-        # TODO: Update required attributes
-        if data.get("title"):
-            transaction.title = data.get("title")
-
-        if data.get("label") and data.get("label").get("id"):
+        with db_transaction.atomic():
             try:
-                custom_label = CustomLabel.objects.get(
-                    pk=data.get("label").get("id"))
-                if custom_label.get_wallet() != user_wallet:
-                    raise PermissionError()
-                transaction.label = custom_label
-            except CustomLabel.DoesNotExist:
-                pass
+                user = HubUser.objects.get(pk=user_pk)
+                user_wallet = Wallet.objects.select_for_update().get(user=user)
+            except (HubUser.DoesNotExist, Wallet.DoesNotExist):
+                raise PermissionError()
 
-        if data.get("description"):
-            transaction.description = data.get("description")
+            title = data.get('title')
+            if not isinstance(title, str) or not title.strip():
+                raise ValidationError({'title': 'Title is required.'})
+            if len(title.strip()) > 200:
+                raise ValidationError({'title': 'Title must not exceed 200 characters.'})
 
-        # Value section
-        if data.get("value") is not None:
-            transaction.value = data.get("value")
-        else:
-            raise PermissionError()
-
-        if data.get("type"):
-            transaction.type = data.get("type")
-        if data.get("date"):
-            date_string = data.get("date")
-            try:
-                date_object = datetime.strptime(
-                    date_string, "%Y-%m-%dT%H:%M:%S.%fZ")
-            except ValueError:
-                try:
-                    date_object = datetime.strptime(
-                        date_string, "%Y-%m-%dT%H:%M:%SZ")
-                except ValueError:
-                    date_object = datetime.fromisoformat(date_string.replace("Z", "+00:00"))
-            transaction.date = date_object.date()
-        if data.get("updateWallet") is not None:
-            transaction.update_wallet = data.get("updateWallet")
-
-        # Recurrency section
-        if data.get("recurrent") is True:
-            transaction.recurrent = data.get("recurrent")
-            # When a transaction is set to recurrent, we'll instantiate a copy of this transaction to be the base
-            # for recurrency editions
-            if not data.get("amount"):
-                raise PermissionError()  # TODO: Update exception
-
-            if not data.get("duration"):
-                raise PermissionError()  # TODO: Update exception
-
-            # TODO: Move this instantiation + fk's handling to another method
-
-            transaction.save(is_first_save=True)
-
-            recurrency = TransactionRecurrency.objects.create(
-                transaction=transaction,
-                amount=data.get("amount"),
-                duration=data.get("duration"),
+            transaction = Transaction(
+                wallet=user_wallet,
+                title=title.strip(),
+                value=Transaction._parse_value(data.get('value')),
+                type=Transaction._parse_type(data.get('type')),
+                date=Transaction._parse_date(data.get('date')),
             )
 
-            transaction.recurrency = recurrency
-            transaction.save()
+            if data.get('updateWallet') is not None:
+                transaction.update_wallet = Transaction._parse_boolean(
+                    data.get('updateWallet'), 'updateWallet')
 
-        else:
+            label_data = data.get('label')
+            if label_data is not None:
+                label_id = label_data.get('id') if isinstance(label_data, dict) else None
+                if not label_id:
+                    raise ValidationError({'label': 'Label must include an id.'})
+                try:
+                    transaction.label = CustomLabel.objects.get(pk=label_id, wallet=user_wallet)
+                except CustomLabel.DoesNotExist:
+                    raise ValidationError({'label': 'Label does not belong to this wallet.'})
+
+            recurrent = data.get('recurrent', data.get('recurring', False))
+            transaction.recurrent = Transaction._parse_boolean(recurrent, 'recurrent')
+            if transaction.recurrent:
+                raw_amount = data.get('amount')
+                duration = data.get('duration')
+                try:
+                    if isinstance(raw_amount, bool):
+                        raise ValueError
+                    amount = int(raw_amount)
+                    if amount <= 0:
+                        raise ValueError
+                except (TypeError, ValueError):
+                    raise ValidationError({'amount': 'Amount must be a positive integer.'})
+                valid_durations = {choice[0] for choice in TransactionRecurrency.DURATION_TYPES}
+                if duration not in valid_durations:
+                    raise ValidationError({'duration': 'Duration is invalid.'})
+
             transaction.save(is_first_save=True)
 
-        return transaction
+            if transaction.recurrent:
+                recurrency = TransactionRecurrency.objects.create(
+                    transaction=transaction,
+                    amount=amount,
+                    duration=duration,
+                )
+                transaction.recurrency = recurrency
+                transaction.save()
+
+            return transaction
+
+    @classmethod
+    def update_from_json(cls, transaction_pk, user, data):
+        """Update an owned transaction while keeping wallet balances correct."""
+        if not isinstance(data, dict):
+            raise ValidationError('Transaction payload must be an object.')
+
+        with db_transaction.atomic():
+            try:
+                transaction = cls.objects.select_for_update().select_related('wallet').get(
+                    pk=transaction_pk, wallet__user=user)
+            except cls.DoesNotExist:
+                raise cls.DoesNotExist()
+
+            original_wallet_id = transaction.wallet_id
+            original_effect = transaction.wallet_effect()
+
+            if 'wallet_id' in data or 'wallet' in data:
+                wallet_id = data.get('wallet_id', data.get('wallet'))
+                if isinstance(wallet_id, dict):
+                    wallet_id = wallet_id.get('id')
+                try:
+                    transaction.wallet = Wallet.objects.get(pk=wallet_id, user=user)
+                except (Wallet.DoesNotExist, TypeError, ValueError):
+                    raise ValidationError({'wallet_id': 'Wallet does not belong to this user.'})
+
+            if 'title' in data:
+                title = data['title']
+                if not isinstance(title, str) or not title.strip():
+                    raise ValidationError({'title': 'Title is required.'})
+                if len(title.strip()) > 200:
+                    raise ValidationError({'title': 'Title must not exceed 200 characters.'})
+                transaction.title = title.strip()
+            if 'value' in data:
+                transaction.value = cls._parse_value(data['value'])
+            if 'type' in data:
+                transaction.type = cls._parse_type(data['type'])
+            if 'date' in data:
+                transaction.date = cls._parse_date(data['date'])
+            if 'updateWallet' in data:
+                transaction.update_wallet = cls._parse_boolean(data['updateWallet'], 'updateWallet')
+
+            if 'label' in data or 'label_id' in data:
+                label_data = data.get('label', data.get('label_id'))
+                label_id = label_data.get('id') if isinstance(label_data, dict) else label_data
+                if label_id in (None, ''):
+                    transaction.label = None
+                else:
+                    try:
+                        transaction.label = CustomLabel.objects.get(pk=label_id, wallet=transaction.wallet)
+                    except (CustomLabel.DoesNotExist, TypeError, ValueError):
+                        raise ValidationError({'label': 'Label does not belong to this wallet.'})
+
+            if 'recurrent' in data:
+                transaction.recurrent = cls._parse_boolean(data['recurrent'], 'recurrent')
+
+            if transaction.recurrent and ('amount' in data or 'duration' in data):
+                raw_amount = data.get('amount')
+                duration = data.get('duration')
+                if transaction.recurrency:
+                    if raw_amount is None:
+                        raw_amount = transaction.recurrency.amount
+                    if duration is None:
+                        duration = transaction.recurrency.duration
+                try:
+                    if isinstance(raw_amount, bool):
+                        raise ValueError
+                    amount = int(raw_amount)
+                    if amount <= 0:
+                        raise ValueError
+                except (TypeError, ValueError):
+                    raise ValidationError({'amount': 'Amount must be a positive integer.'})
+                valid_durations = {choice[0] for choice in TransactionRecurrency.DURATION_TYPES}
+                if duration not in valid_durations:
+                    raise ValidationError({'duration': 'Duration is invalid.'})
+                if transaction.recurrency:
+                    transaction.recurrency.amount = amount
+                    transaction.recurrency.duration = duration
+                    transaction.recurrency.save()
+                else:
+                    recurrency = TransactionRecurrency.objects.create(
+                        transaction=transaction,
+                        amount=amount,
+                        duration=duration,
+                        active=True,
+                    )
+                    transaction.recurrency = recurrency
+
+            # Acquire the affected wallet rows in a stable order before any
+            # balance calculation.  This avoids stale read/modify/write
+            # updates and reduces deadlock risk if wallets are ever movable.
+            wallets = {
+                wallet.pk: wallet for wallet in Wallet.objects.select_for_update()
+                .filter(pk__in={original_wallet_id, transaction.wallet_id}).order_by('pk')
+            }
+            if original_effect:
+                wallets[original_wallet_id].update_balance(-original_effect)
+
+            transaction.wallet = wallets[transaction.wallet_id]
+            transaction.imported = False
+            transaction.save()
+
+            new_effect = transaction.wallet_effect()
+            if new_effect:
+                wallets[transaction.wallet_id].update_balance(new_effect)
+            return transaction
 
     @staticmethod
     def create_from_import(imported_data, optional_data, user):
@@ -375,8 +579,9 @@ class Transaction(WalletBasedModel):
 
         # Empty fields section
         transaction.title = imported_data.get('title') or ''
-        transaction.type = optional_data.get('type')
-        transaction.update_wallet = optional_data.get('update_wallet')
+        imported_type = optional_data.get('type')
+        transaction.type = Transaction._parse_type(imported_type) if imported_type else None
+        transaction.update_wallet = bool(optional_data.get('update_wallet'))
 
         label_id = optional_data.get('label_id')
         if label_id:
@@ -386,8 +591,8 @@ class Transaction(WalletBasedModel):
                 pass
 
         # Invoice dict section
-        transaction.value = imported_data.get("value")
-        transaction.date = imported_data.get("date")
+        transaction.value = Transaction._parse_value(imported_data.get("value"))
+        transaction.date = Transaction._parse_date(imported_data.get("date"))
 
         transaction.save(is_first_save=True)
 
@@ -405,8 +610,112 @@ class SavingPlan(WalletBasedModel):
     amount = models.DecimalField(decimal_places=2, max_digits=15)
     active = models.BooleanField(default=True)
     goal_date = models.DateField(blank=True, null=True)
-    description = models.CharField(max_length=200)
+    description = models.CharField(max_length=200, blank=True, default='')
 
     def toggle_active(self):
         self.active = not self.active
         self.save(update_fields=['active'])
+
+    @staticmethod
+    def _parse_amount(value):
+        if isinstance(value, bool):
+            raise ValidationError({'amount': 'Amount must be a positive number.'})
+        try:
+            val = Decimal(str(value))
+        except (InvalidOperation, TypeError, ValueError):
+            raise ValidationError({'amount': 'Amount must be a positive number.'})
+        if not val.is_finite() or val <= 0:
+            raise ValidationError({'amount': 'Amount must be a positive number.'})
+        if len(val.as_tuple().digits) > 15 or -val.as_tuple().exponent > 2:
+            raise ValidationError({'amount': 'Amount supports at most 15 digits and 2 decimal places.'})
+        return val
+
+    @staticmethod
+    def _parse_date(value):
+        if value in (None, ''):
+            return None
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, date):
+            return value
+        if not isinstance(value, str) or not value.strip():
+            return None
+        try:
+            return datetime.fromisoformat(value.replace('Z', '+00:00')).date()
+        except ValueError:
+            raise ValidationError({'goal_date': 'Use an ISO-8601 date (YYYY-MM-DD).'})
+
+    @classmethod
+    def create_from_json(cls, data: dict, user_pk: int) -> 'SavingPlan':
+        if not isinstance(data, dict):
+            raise ValidationError('Saving plan payload must be an object.')
+
+        try:
+            user = HubUser.objects.get(pk=user_pk)
+            user_wallet = user.get_wallet()
+        except (HubUser.DoesNotExist, Wallet.DoesNotExist):
+            raise PermissionError()
+
+        title = data.get('title')
+        if not isinstance(title, str) or not title.strip():
+            raise ValidationError({'title': 'Title is required.'})
+        if len(title.strip()) > 50:
+            raise ValidationError({'title': 'Title must not exceed 50 characters.'})
+
+        amount = cls._parse_amount(data.get('amount'))
+        goal_date = cls._parse_date(data.get('goal_date', data.get('goalDate')))
+        description = data.get('description', '')
+        if description and len(str(description).strip()) > 200:
+            raise ValidationError({'description': 'Description must not exceed 200 characters.'})
+
+        active = data.get('active', True)
+        if not isinstance(active, bool):
+            active = True
+
+        plan = cls.objects.create(
+            wallet=user_wallet,
+            title=title.strip(),
+            amount=amount,
+            goal_date=goal_date,
+            description=str(description).strip() if description else '',
+            active=active,
+        )
+        return plan
+
+    @classmethod
+    def update_from_json(cls, plan_pk: int, user: HubUser, data: dict) -> 'SavingPlan':
+        if not isinstance(data, dict):
+            raise ValidationError('Saving plan payload must be an object.')
+
+        try:
+            plan = cls.objects.get(pk=plan_pk, wallet__user=user)
+        except cls.DoesNotExist:
+            raise cls.DoesNotExist()
+
+        if 'title' in data:
+            title = data['title']
+            if not isinstance(title, str) or not title.strip():
+                raise ValidationError({'title': 'Title is required.'})
+            if len(title.strip()) > 50:
+                raise ValidationError({'title': 'Title must not exceed 50 characters.'})
+            plan.title = title.strip()
+
+        if 'amount' in data:
+            plan.amount = cls._parse_amount(data['amount'])
+
+        if 'goal_date' in data or 'goalDate' in data:
+            plan.goal_date = cls._parse_date(data.get('goal_date', data.get('goalDate')))
+
+        if 'description' in data:
+            description = data['description'] or ''
+            if len(str(description).strip()) > 200:
+                raise ValidationError({'description': 'Description must not exceed 200 characters.'})
+            plan.description = str(description).strip()
+
+        if 'active' in data:
+            if not isinstance(data['active'], bool):
+                raise ValidationError({'active': 'Active must be a boolean.'})
+            plan.active = data['active']
+
+        plan.save()
+        return plan

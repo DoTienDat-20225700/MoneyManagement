@@ -33,6 +33,7 @@ export default function DrawerAppBar(props: Props) {
   const getNavLabel = (path: string) => {
     if (path === "/") return t("dashboard");
     if (path === "/transactions") return t("transactions");
+    if (path === "/saving-plans") return t("saving_plans");
     return path;
   };
 
@@ -85,9 +86,12 @@ export default function DrawerAppBar(props: Props) {
                 sx={{
                   borderRadius: 2,
                   backgroundColor: isActive
-                    ? "rgba(76, 175, 80, 0.16)"
+                    ? "rgba(0, 134, 58, 0.22)"
                     : "transparent",
-                  color: isActive ? "#81c784" : "#e0e0e0",
+                  color: isActive ? "#48cc90" : "#e0e0e0",
+                  border: isActive
+                    ? "1px solid rgba(72, 204, 144, 0.35)"
+                    : "1px solid transparent",
                   "&:hover": {
                     backgroundColor: "rgba(255,255,255,0.06)",
                   },
@@ -226,16 +230,17 @@ export default function DrawerAppBar(props: Props) {
                     : location.pathname.startsWith(item.path);
 
                 return (
-                  <Link
+                  <Box
+                    component={Link}
                     to={item.path}
                     key={item.path}
-                    style={{
-                      color: isActive ? "#81c784" : "#cfd8dc",
+                    sx={{
+                      color: isActive ? "#48cc90" : "rgba(255, 255, 255, 0.7)",
                       backgroundColor: isActive
-                        ? "rgba(76, 175, 80, 0.16)"
+                        ? "rgba(0, 134, 58, 0.22)"
                         : "transparent",
                       border: isActive
-                        ? "1px solid rgba(76, 175, 80, 0.35)"
+                        ? "1px solid rgba(72, 204, 144, 0.35)"
                         : "1px solid transparent",
                       borderRadius: "8px",
                       padding: "6px 16px",
@@ -246,10 +251,16 @@ export default function DrawerAppBar(props: Props) {
                       display: "inline-flex",
                       alignItems: "center",
                       gap: "6px",
+                      "&:hover": {
+                        color: "#fff",
+                        backgroundColor: isActive
+                          ? "rgba(0, 134, 58, 0.32)"
+                          : "rgba(255, 255, 255, 0.06)",
+                      },
                     }}
                   >
                     {getNavLabel(item.path)}
-                  </Link>
+                  </Box>
                 );
               })}
             </Box>

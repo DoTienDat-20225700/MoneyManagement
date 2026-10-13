@@ -32,6 +32,17 @@ export const darkTheme = createTheme({
         },
       },
     },
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: "#121316",
+          backgroundImage: "none",
+          borderRadius: 12,
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          boxShadow: "0 16px 48px rgba(0, 0, 0, 0.7)",
+        },
+      },
+    },
     MuiDataGrid: {
       styleOverrides: {
         root: {

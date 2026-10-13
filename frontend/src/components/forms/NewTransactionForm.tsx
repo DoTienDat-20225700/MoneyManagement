@@ -9,6 +9,7 @@ import {
   FormGroup,
   FormLabel,
   InputAdornment,
+  MenuItem,
   Radio,
   RadioGroup,
   TextField,
@@ -44,6 +45,7 @@ function NewTransactionForm() {
   const {
     handleSubmit,
     control,
+    watch,
     formState: { errors },
   } = useForm<NewTransactionFormInput, any, NewTransactionFormData>({
     resolver: zodResolver(newTransactionFormSchema),
@@ -55,8 +57,12 @@ function NewTransactionForm() {
       type: TypeOption.EXPENSE,
       updateWallet: false,
       recurring: false,
+      amount: 1,
+      duration: "MONTHS",
     },
   });
+
+  const isRecurring = watch("recurring");
 
   const { mutateAsync } = useMutation({
     mutationFn: createTransaction,
@@ -277,7 +283,66 @@ function NewTransactionForm() {
           }
           label={t("update_wallet")}
         />
+        <FormControlLabel
+          control={
+            <Controller
+              name="recurring"
+              control={control}
+              render={({ field: { onChange, value, name } }) => (
+                <Checkbox
+                  name={name}
+                  checked={value}
+                  onChange={onChange}
+                  inputProps={{ "aria-label": "controlled" }}
+                />
+              )}
+            />
+          }
+          label={t("recurring_transaction")}
+        />
       </FormGroup>
+
+      {isRecurring && (
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center", mt: -1 }}>
+          <Typography variant="body2" color="text.secondary">
+            {t("every")}:
+          </Typography>
+          <Controller
+            name="amount"
+            control={control}
+            render={({ field: { onChange, value } }) => (
+              <TextField
+                type="number"
+                size="small"
+                sx={{ width: 90 }}
+                value={value ?? 1}
+                onChange={(e) =>
+                  onChange(Math.max(1, parseInt(e.target.value) || 1))
+                }
+                inputProps={{ min: 1 }}
+              />
+            )}
+          />
+          <Controller
+            name="duration"
+            control={control}
+            render={({ field: { onChange, value } }) => (
+              <TextField
+                select
+                size="small"
+                sx={{ width: 140 }}
+                value={value ?? "MONTHS"}
+                onChange={onChange}
+              >
+                <MenuItem value="DAYS">{t("days")}</MenuItem>
+                <MenuItem value="WEEKS">{t("weeks")}</MenuItem>
+                <MenuItem value="MONTHS">{t("months")}</MenuItem>
+                <MenuItem value="YEARS">{t("years")}</MenuItem>
+              </TextField>
+            )}
+          />
+        </Box>
+      )}
 
       <Button type="submit" variant="contained">
         {t("add")}

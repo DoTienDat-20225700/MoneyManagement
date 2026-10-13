@@ -6,6 +6,7 @@ import SignUp from "./routes/SignUp";
 import SignIn from "./routes/SignIn";
 import Home from "./routes/Home";
 import Transactions from "./routes/Transactions";
+import SavingPlans from "./routes/SavingPlans";
 import App from "./App";
 import PersistLogin from "./components/auth/PersistLogin";
 import "./main.css";
@@ -27,6 +28,10 @@ export const router = createBrowserRouter([
           {
             path: "transactions",
             element: <Transactions />,
+          },
+          {
+            path: "saving-plans",
+            element: <SavingPlans />,
           },
           {
             path: "settings",
