@@ -77,6 +77,8 @@ function LatestTransactions(props: Props) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["wallet"] });
+      queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      queryClient.invalidateQueries({ queryKey: ["budget_summary"] });
       enqueueSnackbar(t("transaction_deleted"), {
         variant: "success",
         autoHideDuration: 3000,
@@ -97,6 +99,8 @@ function LatestTransactions(props: Props) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["wallet"] });
+      queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      queryClient.invalidateQueries({ queryKey: ["budget_summary"] });
       enqueueSnackbar(t("transaction_updated"), {
         variant: "success",
         autoHideDuration: 3000,

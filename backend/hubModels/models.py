@@ -179,6 +179,14 @@ class Wallet(models.Model):
     def get_labels(self) -> QuerySet['CustomLabel']:
         return self.labels.all()
 
+    def get_category_budgets(self, month=None, year=None):
+        qs = self.category_budgets.all()
+        if year is not None:
+            qs = qs.filter(year=year)
+        if month is not None:
+            qs = qs.filter(month=month)
+        return qs
+
 
 class WalletBasedModel(models.Model):
     wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE, null=False)
@@ -719,3 +727,166 @@ class SavingPlan(WalletBasedModel):
 
         plan.save()
         return plan
+
+
+class CategoryBudget(WalletBasedModel):
+    wallet = models.ForeignKey(
+        Wallet, on_delete=models.CASCADE, null=False, related_name='category_budgets')
+    label = models.ForeignKey(
+        CustomLabel, on_delete=models.CASCADE, null=False, related_name='budgets')
+    amount = models.DecimalField(decimal_places=2, max_digits=15)
+    month = models.PositiveSmallIntegerField()
+    year = models.PositiveSmallIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['wallet', 'label', 'month', 'year'],
+                name='unique_wallet_category_monthly_budget',
+            ),
+        ]
+        ordering = ['-year', '-month', 'label__name']
+
+    def __str__(self):
+        return f"{self.label.name} Budget ({self.month}/{self.year}): {self.amount}"
+
+    @staticmethod
+    def _parse_amount(value):
+        if isinstance(value, bool):
+            raise ValidationError({'amount': 'Amount must be a positive number.'})
+        try:
+            val = Decimal(str(value))
+        except (InvalidOperation, TypeError, ValueError):
+            raise ValidationError({'amount': 'Amount must be a positive number.'})
+        if not val.is_finite() or val <= 0:
+            raise ValidationError({'amount': 'Amount must be a positive number.'})
+        if len(val.as_tuple().digits) > 15 or -val.as_tuple().exponent > 2:
+            raise ValidationError({'amount': 'Amount supports at most 15 digits and 2 decimal places.'})
+        return val
+
+    @staticmethod
+    def _parse_month(value):
+        if isinstance(value, bool):
+            raise ValidationError({'month': 'Month must be an integer between 1 and 12.'})
+        try:
+            month = int(value)
+        except (TypeError, ValueError):
+            raise ValidationError({'month': 'Month must be an integer between 1 and 12.'})
+        if month < 1 or month > 12:
+            raise ValidationError({'month': 'Month must be between 1 and 12.'})
+        return month
+
+    @staticmethod
+    def _parse_year(value):
+        if isinstance(value, bool):
+            raise ValidationError({'year': 'Year must be a valid integer.'})
+        try:
+            year = int(value)
+        except (TypeError, ValueError):
+            raise ValidationError({'year': 'Year must be a valid integer.'})
+        if year < 2000 or year > 2100:
+            raise ValidationError({'year': 'Year must be between 2000 and 2100.'})
+        return year
+
+    @classmethod
+    def create_from_json(cls, data: dict, user_pk: int) -> 'CategoryBudget':
+        if not isinstance(data, dict):
+            raise ValidationError('Budget payload must be an object.')
+
+        try:
+            user = HubUser.objects.get(pk=user_pk)
+            user_wallet = user.get_wallet()
+        except (HubUser.DoesNotExist, Wallet.DoesNotExist):
+            raise PermissionError()
+
+        label_id = data.get('label_id', data.get('label'))
+        if isinstance(label_id, dict):
+            label_id = label_id.get('id')
+        if not label_id:
+            raise ValidationError({'label': 'A category is required for this budget.'})
+
+        try:
+            label = CustomLabel.objects.get(pk=label_id, wallet=user_wallet)
+        except (CustomLabel.DoesNotExist, TypeError, ValueError):
+            raise ValidationError({'label': 'Category does not belong to this wallet.'})
+
+        amount = cls._parse_amount(data.get('amount'))
+        month = cls._parse_month(data.get('month', date.today().month))
+        year = cls._parse_year(data.get('year', date.today().year))
+
+        if cls.objects.filter(wallet=user_wallet, label=label, month=month, year=year).exists():
+            raise ValidationError({'non_field_errors': 'A budget for this category and month already exists.'})
+
+        budget = cls.objects.create(
+            wallet=user_wallet,
+            label=label,
+            amount=amount,
+            month=month,
+            year=year,
+        )
+        return budget
+
+    @classmethod
+    def update_from_json(cls, budget_pk: int, user: HubUser, data: dict) -> 'CategoryBudget':
+        if not isinstance(data, dict):
+            raise ValidationError('Budget payload must be an object.')
+
+        try:
+            budget = cls.objects.get(pk=budget_pk, wallet__user=user)
+        except cls.DoesNotExist:
+            raise cls.DoesNotExist()
+
+        if 'label_id' in data or 'label' in data:
+            label_id = data.get('label_id', data.get('label'))
+            if isinstance(label_id, dict):
+                label_id = label_id.get('id')
+            try:
+                budget.label = CustomLabel.objects.get(pk=label_id, wallet=budget.wallet)
+            except (CustomLabel.DoesNotExist, TypeError, ValueError):
+                raise ValidationError({'label': 'Category does not belong to this wallet.'})
+
+        if 'amount' in data:
+            budget.amount = cls._parse_amount(data['amount'])
+
+        if 'month' in data:
+            budget.month = cls._parse_month(data['month'])
+
+        if 'year' in data:
+            budget.year = cls._parse_year(data['year'])
+
+        duplicate_qs = cls.objects.filter(
+            wallet=budget.wallet,
+            label=budget.label,
+            month=budget.month,
+            year=budget.year
+        ).exclude(pk=budget.pk)
+        if duplicate_qs.exists():
+            raise ValidationError({'non_field_errors': 'A budget for this category and month already exists.'})
+
+        budget.save()
+        return budget
+
+    def get_spent(self) -> Decimal:
+        spent = Transaction.objects.filter(
+            wallet=self.wallet,
+            label=self.label,
+            type='EXPENSE',
+            date__year=self.year,
+            date__month=self.month,
+        ).aggregate(total=Sum('value'))['total']
+        return spent or Decimal('0.00')
+
+    def get_remaining(self) -> Decimal:
+        spent = self.get_spent()
+        return max(Decimal('0.00'), self.amount - spent)
+
+    def get_percentage(self) -> float:
+        if self.amount <= 0:
+            return 0.0
+        return round(float(self.get_spent() / self.amount) * 100, 2)
+
+    def is_over_budget(self) -> bool:
+        return self.get_spent() > self.amount
+

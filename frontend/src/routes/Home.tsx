@@ -7,6 +7,7 @@ import LatestTransactions from "../components/LatestTransactions";
 import CurrentMonthChart from "../components/charts/CurrentMonthChart";
 import ProfileChart from "../components/charts/ProfileChart";
 import WalletGridRow from "../components/dashboard/WalletGridRow";
+import DashboardBudgetSummary from "../components/dashboard/DashboardBudgetSummary";
 import AddLabel from "../components/modals/AddLabel";
 import AddTransaction from "../components/modals/AddTransaction";
 import ImportInvoice from "../components/modals/ImportInvoices";
@@ -91,6 +92,7 @@ function Home() {
           isPending={isPending}
           isError={isError}
         />
+        <DashboardBudgetSummary />
         <Grid item xs={12} lg={6}>
           {transactions ? (
             <CurrentMonthChart />

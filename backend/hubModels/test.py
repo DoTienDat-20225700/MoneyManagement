@@ -6,7 +6,7 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 from .factory import TransactionFactory
 
-from .models import CustomLabel, Transaction, TransactionRecurrency, SavingPlan
+from .models import CustomLabel, Transaction, TransactionRecurrency, SavingPlan, CategoryBudget
 
 
 class TransactionTestCase(TestCase):
@@ -454,4 +454,490 @@ class TransactionSearchAndSerializationTestCase(TestCase):
         self.assertEqual(res.data[0]['title'], 'Trans 4')
         self.assertEqual(res.data[1]['title'], 'Trans 3')
         self.assertEqual(res.data[2]['title'], 'Trans 2')
+
+
+class CategoryBudgetModelTestCase(TestCase):
+    def setUp(self):
+        self.factory = TransactionFactory()
+        self.user = self.factory.create_user()
+        self.wallet = self.user.get_wallet()
+        self.food_label = CustomLabel.objects.create(wallet=self.wallet, name='Food', color='#2ecc71')
+        self.bills_label = CustomLabel.objects.create(wallet=self.wallet, name='Bills', color='#e74c3c')
+
+    def test_create_budget_and_uniqueness_constraint(self):
+        budget = CategoryBudget.create_from_json({
+            'label': self.food_label.pk,
+            'amount': 2000000,
+            'month': 10,
+            'year': 2026,
+        }, user_pk=self.user.pk)
+
+        self.assertEqual(budget.amount, Decimal('2000000.00'))
+        self.assertEqual(budget.month, 10)
+        self.assertEqual(budget.year, 2026)
+        self.assertIsNotNone(budget.created_at)
+        self.assertIsNotNone(budget.updated_at)
+
+        # Duplicate budget for same wallet, label, month, year must fail
+        from django.core.exceptions import ValidationError
+        with self.assertRaises(ValidationError):
+            CategoryBudget.create_from_json({
+                'label': self.food_label.pk,
+                'amount': 3000000,
+                'month': 10,
+                'year': 2026,
+            }, user_pk=self.user.pk)
+
+    def test_budget_validations(self):
+        from django.core.exceptions import ValidationError
+
+        # Amount must be positive
+        with self.assertRaises(ValidationError):
+            CategoryBudget.create_from_json({
+                'label': self.food_label.pk,
+                'amount': -100,
+                'month': 10,
+                'year': 2026,
+            }, user_pk=self.user.pk)
+
+        # Month must be between 1 and 12
+        with self.assertRaises(ValidationError):
+            CategoryBudget.create_from_json({
+                'label': self.food_label.pk,
+                'amount': 500000,
+                'month': 13,
+                'year': 2026,
+            }, user_pk=self.user.pk)
+
+        # Label from another user's wallet
+        other_user = self.factory.create_user()
+        other_label = CustomLabel.objects.create(wallet=other_user.get_wallet(), name='Other', color='#000000')
+        with self.assertRaises(ValidationError):
+            CategoryBudget.create_from_json({
+                'label': other_label.pk,
+                'amount': 500000,
+                'month': 10,
+                'year': 2026,
+            }, user_pk=self.user.pk)
+
+    def test_budget_spent_calculation_and_over_budget(self):
+        budget = CategoryBudget.objects.create(
+            wallet=self.wallet,
+            label=self.food_label,
+            amount=Decimal('1000000.00'),
+            month=10,
+            year=2026,
+        )
+
+        # In-scope expenses
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EXPENSE', value=300000, date=datetime.date(2026, 10, 5)
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EXPENSE', value=400000, date=datetime.date(2026, 10, 10)
+        )
+
+        # Out-of-scope: different month
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EXPENSE', value=200000, date=datetime.date(2026, 9, 15)
+        )
+
+        # Out-of-scope: different label
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.bills_label, type='EXPENSE', value=500000, date=datetime.date(2026, 10, 12)
+        )
+
+        # Out-of-scope: earning transaction with same label
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EARNING', value=100000, date=datetime.date(2026, 10, 8)
+        )
+
+        # Total spent should only be 300,000 + 400,000 = 700,000
+        self.assertEqual(budget.get_spent(), Decimal('700000.00'))
+        self.assertEqual(budget.get_remaining(), Decimal('300000.00'))
+        self.assertEqual(budget.get_percentage(), 70.0)
+        self.assertFalse(budget.is_over_budget())
+
+        # Exceed budget
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EXPENSE', value=400000, date=datetime.date(2026, 10, 20)
+        )
+        self.assertEqual(budget.get_spent(), Decimal('1100000.00'))
+        self.assertEqual(budget.get_remaining(), Decimal('0.00'))
+        self.assertEqual(budget.get_percentage(), 110.0)
+        self.assertTrue(budget.is_over_budget())
+
+
+class CategoryBudgetAPITestCase(TestCase):
+    def setUp(self):
+        self.factory = TransactionFactory()
+        self.user = self.factory.create_user()
+        self.wallet = self.user.get_wallet()
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
+        self.food_label = CustomLabel.objects.create(wallet=self.wallet, name='Food', color='#2ecc71')
+        self.util_label = CustomLabel.objects.create(wallet=self.wallet, name='Utilities', color='#3498db')
+        self.shop_label = CustomLabel.objects.create(wallet=self.wallet, name='Shopping', color='#e74c3c')
+
+    def test_list_budgets_for_month_with_calculated_fields_and_statuses(self):
+        # 1. Normal status (50%)
+        b_food = CategoryBudget.objects.create(
+            wallet=self.wallet, label=self.food_label, amount=Decimal('1000000.00'), month=10, year=2026
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EXPENSE', value=500000, date=datetime.date(2026, 10, 2)
+        )
+
+        # 2. Approaching status (85%)
+        b_util = CategoryBudget.objects.create(
+            wallet=self.wallet, label=self.util_label, amount=Decimal('1000000.00'), month=10, year=2026
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.util_label, type='EXPENSE', value=850000, date=datetime.date(2026, 10, 5)
+        )
+
+        # 3. Exceeded status (120%)
+        b_shop = CategoryBudget.objects.create(
+            wallet=self.wallet, label=self.shop_label, amount=Decimal('1000000.00'), month=10, year=2026
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.shop_label, type='EXPENSE', value=1200000, date=datetime.date(2026, 10, 10)
+        )
+
+        res = self.client.get('/api/budgets/?month=10&year=2026')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.data), 3)
+
+        budgets_by_label = {item['label']['name']: item for item in res.data}
+
+        # Food assertions
+        food_res = budgets_by_label['Food']
+        self.assertEqual(food_res['limit'], '1000000.00')
+        self.assertEqual(food_res['spent'], '500000.00')
+        self.assertEqual(food_res['remaining'], '500000.00')
+        self.assertEqual(food_res['percentage'], 50.0)
+        self.assertEqual(food_res['status'], 'normal')
+        self.assertFalse(food_res['is_over_budget'])
+
+        # Utilities assertions
+        util_res = budgets_by_label['Utilities']
+        self.assertEqual(util_res['limit'], '1000000.00')
+        self.assertEqual(util_res['spent'], '850000.00')
+        self.assertEqual(util_res['remaining'], '150000.00')
+        self.assertEqual(util_res['percentage'], 85.0)
+        self.assertEqual(util_res['status'], 'approaching')
+        self.assertFalse(util_res['is_over_budget'])
+
+        # Shopping assertions
+        shop_res = budgets_by_label['Shopping']
+        self.assertEqual(shop_res['limit'], '1000000.00')
+        self.assertEqual(shop_res['spent'], '1200000.00')
+        self.assertEqual(shop_res['remaining'], '0.00')
+        self.assertEqual(shop_res['percentage'], 120.0)
+        self.assertEqual(shop_res['status'], 'exceeded')
+        self.assertTrue(shop_res['is_over_budget'])
+
+    def test_create_and_retrieve_budget_detail(self):
+        # Create budget via POST
+        create_res = self.client.post('/api/budgets/', {
+            'label': self.food_label.pk,
+            'amount': 2500000,
+            'month': 11,
+            'year': 2026,
+        }, format='json')
+        self.assertEqual(create_res.status_code, 201)
+        budget_id = create_res.data['id']
+        self.assertEqual(create_res.data['limit'], '2500000.00')
+        self.assertEqual(create_res.data['month'], 11)
+
+        # Retrieve single detail via GET /api/budgets/<id>
+        detail_res = self.client.get(f'/api/budgets/{budget_id}')
+        self.assertEqual(detail_res.status_code, 200)
+        self.assertEqual(detail_res.data['id'], budget_id)
+        self.assertEqual(detail_res.data['label']['id'], self.food_label.pk)
+
+        # Retrieve non-existent budget
+        not_found_res = self.client.get('/api/budgets/99999')
+        self.assertEqual(not_found_res.status_code, 404)
+
+    def test_create_budget_validations_and_boundary_behavior(self):
+        # Missing category
+        res1 = self.client.post('/api/budgets/', {
+            'amount': 500000,
+            'month': 10,
+            'year': 2026,
+        }, format='json')
+        self.assertEqual(res1.status_code, 400)
+
+        # Zero amount
+        res2 = self.client.post('/api/budgets/', {
+            'label': self.food_label.pk,
+            'amount': 0,
+            'month': 10,
+            'year': 2026,
+        }, format='json')
+        self.assertEqual(res2.status_code, 400)
+
+        # Negative amount
+        res3 = self.client.post('/api/budgets/', {
+            'label': self.food_label.pk,
+            'amount': -100000,
+            'month': 10,
+            'year': 2026,
+        }, format='json')
+        self.assertEqual(res3.status_code, 400)
+
+        # Invalid month
+        res4 = self.client.post('/api/budgets/', {
+            'label': self.food_label.pk,
+            'amount': 100000,
+            'month': 0,
+            'year': 2026,
+        }, format='json')
+        self.assertEqual(res4.status_code, 400)
+
+        # Duplicate budget creation
+        self.client.post('/api/budgets/', {
+            'label': self.food_label.pk,
+            'amount': 500000,
+            'month': 10,
+            'year': 2026,
+        }, format='json')
+        dup_res = self.client.post('/api/budgets/', {
+            'label': self.food_label.pk,
+            'amount': 700000,
+            'month': 10,
+            'year': 2026,
+        }, format='json')
+        self.assertEqual(dup_res.status_code, 400)
+
+    def test_update_and_delete_budget(self):
+        budget = CategoryBudget.objects.create(
+            wallet=self.wallet, label=self.food_label, amount=Decimal('500000.00'), month=10, year=2026
+        )
+
+        # Update budget
+        update_res = self.client.put(f'/api/budgets/{budget.pk}', {
+            'amount': 800000,
+        }, format='json')
+        self.assertEqual(update_res.status_code, 200)
+        self.assertEqual(update_res.data['limit'], '800000.00')
+
+        budget.refresh_from_db()
+        self.assertEqual(budget.amount, Decimal('800000.00'))
+
+        # Delete budget
+        del_res = self.client.delete(f'/api/budgets/{budget.pk}')
+        self.assertEqual(del_res.status_code, 200)
+        self.assertFalse(CategoryBudget.objects.filter(pk=budget.pk).exists())
+
+    def test_budget_summary_endpoint_and_user_isolation(self):
+        # Set up budgets for current user
+        CategoryBudget.objects.create(
+            wallet=self.wallet, label=self.food_label, amount=Decimal('1000000.00'), month=10, year=2026
+        )
+        CategoryBudget.objects.create(
+            wallet=self.wallet, label=self.util_label, amount=Decimal('2000000.00'), month=10, year=2026
+        )
+
+        # Expenses for current user
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EXPENSE', value=600000, date=datetime.date(2026, 10, 5)
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.util_label, type='EXPENSE', value=1700000, date=datetime.date(2026, 10, 8)
+        )
+        # Earning with food label should not be subtracted from expense spending
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EARNING', value=500000, date=datetime.date(2026, 10, 10)
+        )
+        # Unbudgeted expense (shopping label has no budget for this month)
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.shop_label, type='EXPENSE', value=200000, date=datetime.date(2026, 10, 12)
+        )
+
+        # Other user's budget and transactions
+        other_user = self.factory.create_user()
+        other_wallet = other_user.get_wallet()
+        other_label = CustomLabel.objects.create(wallet=other_wallet, name='OtherFood', color='#111111')
+        CategoryBudget.objects.create(
+            wallet=other_wallet, label=other_label, amount=Decimal('5000000.00'), month=10, year=2026
+        )
+        self.factory.create_transaction_filled(
+            other_wallet, label=other_label, type='EXPENSE', value=4000000, date=datetime.date(2026, 10, 5)
+        )
+
+        summary_res = self.client.get('/api/budgets/summary/?month=10&year=2026')
+        self.assertEqual(summary_res.status_code, 200)
+        data = summary_res.data
+        self.assertEqual(data['month'], 10)
+        self.assertEqual(data['year'], 2026)
+        # Total budget: 1,000,000 + 2,000,000 = 3,000,000 (other user's 5,000,000 strictly excluded)
+        self.assertEqual(data['total_budget'], '3000000.00')
+        # Total spent in budgeted categories: 600,000 + 1,700,000 = 2,300,000
+        self.assertEqual(data['total_spent'], '2300000.00')
+        # Total remaining: 700,000
+        self.assertEqual(data['total_remaining'], '700000.00')
+        # Overall percentage: 2,300,000 / 3,000,000 = 76.67%
+        self.assertEqual(data['overall_percentage'], 76.67)
+        # Total monthly expenses across all categories: 2,300,000 + 200,000 = 2,500,000
+        self.assertEqual(data['total_monthly_expenses'], '2500000.00')
+        # Unbudgeted expenses: 200,000
+        self.assertEqual(data['unbudgeted_spent'], '200000.00')
+        self.assertEqual(data['budget_count'], 2)
+        # Statuses: Food (60%) -> normal, Util (85%) -> approaching
+        self.assertEqual(data['status_counts']['normal'], 1)
+        self.assertEqual(data['status_counts']['approaching'], 1)
+        self.assertEqual(data['status_counts']['exceeded'], 0)
+
+    def test_user_ownership_and_unauthorized_access(self):
+        other_user = self.factory.create_user()
+        other_wallet = other_user.get_wallet()
+        other_label = CustomLabel.objects.create(wallet=other_wallet, name='OtherLabel', color='#555555')
+        other_budget = CategoryBudget.objects.create(
+            wallet=other_wallet, label=other_label, amount=Decimal('500000.00'), month=10, year=2026
+        )
+
+        # 1. Current user cannot retrieve other user's budget detail
+        res = self.client.get(f'/api/budgets/{other_budget.pk}')
+        self.assertEqual(res.status_code, 404)
+
+        # 2. Current user cannot update other user's budget
+        update_res = self.client.put(f'/api/budgets/{other_budget.pk}', {'amount': 900000}, format='json')
+        self.assertEqual(update_res.status_code, 404)
+
+        # 3. Current user cannot delete other user's budget
+        del_res = self.client.delete(f'/api/budgets/{other_budget.pk}')
+        self.assertEqual(del_res.status_code, 404)
+        self.assertTrue(CategoryBudget.objects.filter(pk=other_budget.pk).exists())
+
+        # 4. Unauthenticated user gets 401
+        anon_client = APIClient()
+        anon_res = anon_client.get('/api/budgets/')
+        self.assertEqual(anon_res.status_code, 401)
+
+    def test_monthly_period_boundaries(self):
+        # Budget for October 2026
+        budget = CategoryBudget.objects.create(
+            wallet=self.wallet, label=self.food_label, amount=Decimal('1000000.00'), month=10, year=2026
+        )
+
+        # Transaction on last day of September (2026-09-30) -> MUST NOT be included
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EXPENSE', value=100000, date=datetime.date(2026, 9, 30)
+        )
+        # Transaction on first day of October (2026-10-01) -> MUST be included
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EXPENSE', value=200000, date=datetime.date(2026, 10, 1)
+        )
+        # Transaction on last day of October (2026-10-31) -> MUST be included
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EXPENSE', value=300000, date=datetime.date(2026, 10, 31)
+        )
+        # Transaction on first day of November (2026-11-01) -> MUST NOT be included
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EXPENSE', value=400000, date=datetime.date(2026, 11, 1)
+        )
+
+        res = self.client.get('/api/budgets/?month=10&year=2026')
+        self.assertEqual(res.status_code, 200)
+        food_budget_data = res.data[0]
+        # Only 200,000 + 300,000 = 500,000 in October
+        self.assertEqual(food_budget_data['spent'], '500000.00')
+        self.assertEqual(food_budget_data['remaining'], '500000.00')
+        self.assertEqual(food_budget_data['percentage'], 50.0)
+
+    def test_expense_aggregation_and_different_categories(self):
+        # Two category budgets
+        b_food = CategoryBudget.objects.create(
+            wallet=self.wallet, label=self.food_label, amount=Decimal('1000000.00'), month=10, year=2026
+        )
+        b_util = CategoryBudget.objects.create(
+            wallet=self.wallet, label=self.util_label, amount=Decimal('800000.00'), month=10, year=2026
+        )
+
+        # Multiple transactions for Food on different dates
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EXPENSE', value=150000, date=datetime.date(2026, 10, 3)
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EXPENSE', value=250000, date=datetime.date(2026, 10, 14)
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EXPENSE', value=100000, date=datetime.date(2026, 10, 25)
+        )
+
+        # Multiple transactions for Utilities on different dates
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.util_label, type='EXPENSE', value=300000, date=datetime.date(2026, 10, 5)
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.util_label, type='EXPENSE', value=340000, date=datetime.date(2026, 10, 20)
+        )
+
+        # Income transactions (should NOT reduce expense totals)
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EARNING', value=500000, date=datetime.date(2026, 10, 15)
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.util_label, type='EARNING', value=200000, date=datetime.date(2026, 10, 22)
+        )
+
+        # Unlabeled expense (should not affect either category)
+        self.factory.create_transaction_filled(
+            self.wallet, label=None, type='EXPENSE', value=99000, date=datetime.date(2026, 10, 18)
+        )
+
+        res = self.client.get('/api/budgets/?month=10&year=2026')
+        self.assertEqual(res.status_code, 200)
+        budgets_by_label = {item['label']['name']: item for item in res.data}
+
+        # Food: 150,000 + 250,000 + 100,000 = 500,000 (50%)
+        self.assertEqual(budgets_by_label['Food']['spent'], '500000.00')
+        self.assertEqual(budgets_by_label['Food']['remaining'], '500000.00')
+        self.assertEqual(budgets_by_label['Food']['status'], 'normal')
+
+        # Utilities: 300,000 + 340,000 = 640,000 (640,000 / 800,000 = 80%) -> approaching
+        self.assertEqual(budgets_by_label['Utilities']['spent'], '640000.00')
+        self.assertEqual(budgets_by_label['Utilities']['remaining'], '160000.00')
+        self.assertEqual(budgets_by_label['Utilities']['percentage'], 80.0)
+        self.assertEqual(budgets_by_label['Utilities']['status'], 'approaching')
+
+    def test_percentage_and_remaining_balance_edge_cases(self):
+        # 1. Zero spending
+        b_food = CategoryBudget.objects.create(
+            wallet=self.wallet, label=self.food_label, amount=Decimal('500000.00'), month=10, year=2026
+        )
+        res = self.client.get(f'/api/budgets/{b_food.pk}')
+        self.assertEqual(res.data['spent'], '0.00')
+        self.assertEqual(res.data['remaining'], '500000.00')
+        self.assertEqual(res.data['percentage'], 0.0)
+        self.assertEqual(res.data['status'], 'normal')
+        self.assertFalse(res.data['is_over_budget'])
+
+        # 2. Exact limit (100%)
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EXPENSE', value=500000, date=datetime.date(2026, 10, 5)
+        )
+        res_100 = self.client.get(f'/api/budgets/{b_food.pk}')
+        self.assertEqual(res_100.data['spent'], '500000.00')
+        self.assertEqual(res_100.data['remaining'], '0.00')
+        self.assertEqual(res_100.data['percentage'], 100.0)
+        self.assertEqual(res_100.data['status'], 'approaching')
+        self.assertFalse(res_100.data['is_over_budget'])
+
+        # 3. Exceeded (140%)
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EXPENSE', value=200000, date=datetime.date(2026, 10, 15)
+        )
+        res_140 = self.client.get(f'/api/budgets/{b_food.pk}')
+        self.assertEqual(res_140.data['spent'], '700000.00')
+        self.assertEqual(res_140.data['remaining'], '0.00')
+        self.assertEqual(res_140.data['percentage'], 140.0)
+        self.assertEqual(res_140.data['status'], 'exceeded')
+        self.assertTrue(res_140.data['is_over_budget'])
+
+
+
 

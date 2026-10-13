@@ -73,6 +73,12 @@ function NewInvoiceForm() {
       queryClient.invalidateQueries({
         queryKey: ["wallet"],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["budgets"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["budget_summary"],
+      });
       enqueueSnackbar(t("invoice_import_success"), {
         variant: "success",
         autoHideDuration: 3000,

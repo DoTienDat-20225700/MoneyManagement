@@ -4,7 +4,8 @@ from rest_framework_simplejwt.views import (
 )
 
 from .views import (MyTokenObtainPairView, MyTokenRefreshView, TransactionAPIView, get_saving_plans, get_transactions,
-                    get_routes, create_user, WalletAPIView, LabelAPIView, ImportInvoicesAPIView, SavingPlanAPIView)
+                    get_routes, create_user, WalletAPIView, LabelAPIView, ImportInvoicesAPIView, SavingPlanAPIView,
+                    BudgetAPIView, BudgetSummaryAPIView)
 
 urlpatterns = [
     path('', get_routes),
@@ -20,6 +21,12 @@ urlpatterns = [
     path('savingplan/', SavingPlanAPIView.as_view(), name='saving_plan'),
     path('savingplans/<int:saving_plan_pk>', SavingPlanAPIView.as_view(), name='saving_plan_detail'),
     path('savingplan/<int:saving_plan_pk>', SavingPlanAPIView.as_view(), name='saving_plan_detail_singular'),
+    path('budgets/', BudgetAPIView.as_view(), name='budgets'),
+    path('budget/', BudgetAPIView.as_view(), name='budget'),
+    path('budgets/summary/', BudgetSummaryAPIView.as_view(), name='budgets_summary'),
+    path('budget/summary/', BudgetSummaryAPIView.as_view(), name='budget_summary_singular'),
+    path('budgets/<int:budget_pk>', BudgetAPIView.as_view(), name='budget_detail'),
+    path('budget/<int:budget_pk>', BudgetAPIView.as_view(), name='budget_detail_singular'),
     path('transactions/', get_transactions, name='transactions'),
     path('transaction/', TransactionAPIView.as_view(), name='transaction'),
     path('transaction/<int:transaction_pk>', TransactionAPIView.as_view(), name='transaction'),

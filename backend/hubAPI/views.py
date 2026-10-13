@@ -5,13 +5,13 @@ from django.http import JsonResponse
 from django.db.models import QuerySet, Sum, Q
 from .utils import custom_server_error_response, custom_success_response, custom_user_error_response
 from hubModels.serializers import MyTokenObtainPairSerializer, MyTokenRefreshSerializer
-from hubModels.models import HubUser, Transaction, CustomLabel, SavingPlan
+from hubModels.models import HubUser, Transaction, CustomLabel, SavingPlan, CategoryBudget
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import FileUploadParser
-from hubModels.serializers import SavingPlanSerializer, WalletSerializer, TransactionSerializer
+from hubModels.serializers import SavingPlanSerializer, WalletSerializer, TransactionSerializer, CategoryBudgetSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from datetime import date
@@ -263,6 +263,9 @@ def get_routes(request):
         '/api/savingplans',
         '/api/transactions',
         '/api/transaction',
+        '/api/budgets',
+        '/api/budget',
+        '/api/budgets/summary',
     ]
 
     return Response(routes)
@@ -362,6 +365,198 @@ def get_saving_plans(request):
     saving_plans_serialized = SavingPlanSerializer(saving_plans, many=True)
 
     return Response(saving_plans_serialized.data)
+
+
+class BudgetAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = CategoryBudgetSerializer
+
+    def get(self, request, budget_pk=None):
+        user: HubUser = request.user
+        wallet = user.get_wallet()
+        if not wallet:
+            return custom_user_error_response("Wallet was not found.", 404)
+
+        if budget_pk:
+            try:
+                budget = wallet.category_budgets.select_related('label').get(pk=budget_pk)
+                serializer = self.serializer_class(budget)
+                return Response(serializer.data)
+            except CategoryBudget.DoesNotExist:
+                return custom_user_error_response("Không tìm thấy ngân sách.", 404)
+
+        month_param = request.query_params.get('month')
+        year_param = request.query_params.get('year')
+
+        today = date.today()
+        try:
+            month = int(month_param) if month_param else today.month
+            year = int(year_param) if year_param else today.year
+        except (TypeError, ValueError):
+            return custom_user_error_response("Month and year must be valid integers.", 400)
+
+        if month < 1 or month > 12:
+            return custom_user_error_response("Month must be between 1 and 12.", 400)
+        if year < 2000 or year > 2100:
+            return custom_user_error_response("Year must be between 2000 and 2100.", 400)
+
+        budgets = wallet.category_budgets.filter(
+            year=year, month=month
+        ).select_related('label').order_by('label__name')
+
+        # Single aggregated query to compute actual expense spending by label for this month
+        # Excludes earnings, transfers, and transactions belonging to other users.
+        expenses_by_label = dict(
+            Transaction.objects.filter(
+                wallet=wallet,
+                type='EXPENSE',
+                date__year=year,
+                date__month=month,
+                label__isnull=False,
+            ).values('label_id').annotate(total=Sum('value')).values_list('label_id', 'total')
+        )
+
+        serializer = self.serializer_class(
+            budgets,
+            many=True,
+            context={'expenses_by_label': expenses_by_label}
+        )
+        return Response(serializer.data)
+
+    def post(self, request):
+        user: HubUser = request.user
+        try:
+            budget = CategoryBudget.create_from_json(request.data, user_pk=user.pk)
+            serializer = self.serializer_class(budget)
+            return Response(serializer.data, status=201)
+        except ValidationError as error:
+            msg = error.message if hasattr(error, 'message') else str(error)
+            if hasattr(error, 'message_dict'):
+                for k, v in error.message_dict.items():
+                    msg = v[0] if isinstance(v, list) and v else str(v)
+                    break
+            return custom_user_error_response(msg, 400)
+        except PermissionError:
+            return custom_user_error_response("Wallet was not found.", 404)
+
+    def put(self, request, budget_pk=None):
+        user: HubUser = request.user
+        pk = budget_pk or request.data.get('id')
+        if not pk:
+            return custom_user_error_response("No budget id was given. Please try again.", 400)
+
+        try:
+            budget = CategoryBudget.update_from_json(pk, user, request.data)
+            serializer = self.serializer_class(budget)
+            return Response(serializer.data, status=200)
+        except CategoryBudget.DoesNotExist:
+            return custom_user_error_response("Không tìm thấy ngân sách.", 404)
+        except ValidationError as error:
+            msg = error.message if hasattr(error, 'message') else str(error)
+            if hasattr(error, 'message_dict'):
+                for k, v in error.message_dict.items():
+                    msg = v[0] if isinstance(v, list) and v else str(v)
+                    break
+            return custom_user_error_response(msg, 400)
+
+    def delete(self, request, budget_pk=None):
+        user: HubUser = request.user
+        pk = budget_pk or request.data.get('id')
+        if not pk:
+            return custom_user_error_response("No budget id was given. Please try again.", 400)
+
+        try:
+            budget = CategoryBudget.objects.get(pk=pk, wallet__user=user)
+        except CategoryBudget.DoesNotExist:
+            return custom_user_error_response("Không tìm thấy ngân sách.", 404)
+
+        budget.delete()
+        return custom_success_response("Ngân sách đã được xoá thành công!")
+
+
+class BudgetSummaryAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        user: HubUser = request.user
+        wallet = user.get_wallet()
+        if not wallet:
+            return custom_user_error_response("Wallet was not found.", 404)
+
+        month_param = request.query_params.get('month')
+        year_param = request.query_params.get('year')
+
+        today = date.today()
+        try:
+            month = int(month_param) if month_param else today.month
+            year = int(year_param) if year_param else today.year
+        except (TypeError, ValueError):
+            return custom_user_error_response("Month and year must be valid integers.", 400)
+
+        if month < 1 or month > 12:
+            return custom_user_error_response("Month must be between 1 and 12.", 400)
+        if year < 2000 or year > 2100:
+            return custom_user_error_response("Year must be between 2000 and 2100.", 400)
+
+        budgets = wallet.category_budgets.filter(year=year, month=month).select_related('label')
+
+        expenses_by_label = dict(
+            Transaction.objects.filter(
+                wallet=wallet,
+                type='EXPENSE',
+                date__year=year,
+                date__month=month,
+                label__isnull=False,
+            ).values('label_id').annotate(total=Sum('value')).values_list('label_id', 'total')
+        )
+
+        total_budget = Decimal('0.00')
+        total_spent = Decimal('0.00')
+        normal_count = 0
+        approaching_count = 0
+        exceeded_count = 0
+
+        for b in budgets:
+            spent = expenses_by_label.get(b.label_id, Decimal('0.00'))
+            total_budget += b.amount
+            total_spent += spent
+            pct = (spent / b.amount * 100) if b.amount > 0 else 0
+            if pct > 100:
+                exceeded_count += 1
+            elif pct >= 80:
+                approaching_count += 1
+            else:
+                normal_count += 1
+
+        total_remaining = max(Decimal('0.00'), total_budget - total_spent)
+        overall_percentage = round(float(total_spent / total_budget * 100), 2) if total_budget > 0 else 0.0
+
+        # Total monthly expenses across all categories (including uncategorized/unbudgeted)
+        total_monthly_expenses = Transaction.objects.filter(
+            wallet=wallet,
+            type='EXPENSE',
+            date__year=year,
+            date__month=month,
+        ).aggregate(total=Sum('value'))['total'] or Decimal('0.00')
+
+        unbudgeted_spent = max(Decimal('0.00'), total_monthly_expenses - total_spent)
+
+        return Response({
+            'month': month,
+            'year': year,
+            'total_budget': f"{total_budget:.2f}",
+            'total_spent': f"{total_spent:.2f}",
+            'total_remaining': f"{total_remaining:.2f}",
+            'overall_percentage': overall_percentage,
+            'total_monthly_expenses': f"{total_monthly_expenses:.2f}",
+            'unbudgeted_spent': f"{unbudgeted_spent:.2f}",
+            'budget_count': budgets.count(),
+            'status_counts': {
+                'normal': normal_count,
+                'approaching': approaching_count,
+                'exceeded': exceeded_count,
+            }
+        })
 
 
 @api_view(['GET'])

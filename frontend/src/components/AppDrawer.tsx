@@ -33,6 +33,7 @@ export default function DrawerAppBar(props: Props) {
   const getNavLabel = (path: string) => {
     if (path === "/") return t("dashboard");
     if (path === "/transactions") return t("transactions");
+    if (path === "/budgets") return t("budgets");
     if (path === "/saving-plans") return t("saving_plans");
     return path;
   };
