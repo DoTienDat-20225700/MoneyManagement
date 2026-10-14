@@ -23,7 +23,8 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({
     return "vi"; // default to Vietnamese
   });
 
-  const dateFormat = language === "vi" ? "DD/MM/YYYY" : "MM/DD/YYYY";
+  // Universal system-wide default date format (DD/MM/YYYY) regardless of language
+  const dateFormat = "DD/MM/YYYY";
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);

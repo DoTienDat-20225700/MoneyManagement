@@ -5,13 +5,13 @@ from django.http import JsonResponse
 from django.db.models import QuerySet, Sum, Q
 from .utils import custom_server_error_response, custom_success_response, custom_user_error_response
 from hubModels.serializers import MyTokenObtainPairSerializer, MyTokenRefreshSerializer
-from hubModels.models import HubUser, Transaction, CustomLabel, SavingPlan, CategoryBudget
+from hubModels.models import HubUser, Transaction, CustomLabel, SavingPlan, CategoryBudget, SavingPlanContribution
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import FileUploadParser
-from hubModels.serializers import SavingPlanSerializer, WalletSerializer, TransactionSerializer, CategoryBudgetSerializer
+from hubModels.serializers import SavingPlanSerializer, WalletSerializer, TransactionSerializer, CategoryBudgetSerializer, SavingPlanContributionSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from datetime import date
@@ -266,6 +266,9 @@ def get_routes(request):
         '/api/budgets',
         '/api/budget',
         '/api/budgets/summary',
+        '/api/reports/summary',
+        '/api/reports/transactions',
+        '/api/reports/export/csv',
     ]
 
     return Response(routes)
@@ -295,6 +298,9 @@ class SavingPlanAPIView(APIView):
                 return custom_user_error_response("Không tìm thấy kế hoạch tiết kiệm.", 404)
 
         plans = user.get_saving_plans()
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            plans = [p for p in plans if p.get_status() == status_filter]
         return Response(self.serializer_class(plans, many=True).data)
 
     def post(self, request):
@@ -354,6 +360,98 @@ class SavingPlanAPIView(APIView):
 
         plan.delete()
         return custom_success_response("Kế hoạch tiết kiệm đã được xoá thành công!")
+
+
+class SavingPlanContributionAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = SavingPlanContributionSerializer
+
+    def get_plan(self, user: HubUser, saving_plan_pk: int):
+        try:
+            return SavingPlan.objects.get(pk=saving_plan_pk, wallet__user=user)
+        except SavingPlan.DoesNotExist:
+            return None
+
+    def get(self, request, saving_plan_pk=None, contribution_pk=None):
+        user: HubUser = request.user
+        plan = self.get_plan(user, saving_plan_pk)
+        if not plan:
+            return custom_user_error_response("Không tìm thấy kế hoạch tiết kiệm.", 404)
+
+        if contribution_pk:
+            try:
+                contrib = plan.contributions.get(pk=contribution_pk, user=user)
+                return Response(self.serializer_class(contrib).data)
+            except SavingPlanContribution.DoesNotExist:
+                return custom_user_error_response("Không tìm thấy khoản đóng góp.", 404)
+
+        contributions = plan.contributions.filter(user=user)
+        return Response(self.serializer_class(contributions, many=True).data)
+
+    def post(self, request, saving_plan_pk=None):
+        user: HubUser = request.user
+        plan = self.get_plan(user, saving_plan_pk)
+        if not plan:
+            return custom_user_error_response("Không tìm thấy kế hoạch tiết kiệm.", 404)
+
+        try:
+            idempotency_key = request.data.get('idempotency_key') or request.data.get('idempotencyKey')
+            if idempotency_key:
+                existing = SavingPlanContribution.objects.filter(
+                    user=user, idempotency_key=str(idempotency_key).strip()
+                ).first()
+                if existing:
+                    return Response(self.serializer_class(existing).data, status=200)
+
+            contribution = SavingPlanContribution.create_from_json(
+                plan_pk=plan.pk,
+                user=user,
+                data=request.data,
+            )
+            return Response(self.serializer_class(contribution).data, status=201)
+        except ValidationError as error:
+            msg = error.message if hasattr(error, 'message') else str(error)
+            return custom_user_error_response(msg, 400)
+        except SavingPlan.DoesNotExist:
+            return custom_user_error_response("Không tìm thấy kế hoạch tiết kiệm.", 404)
+
+    def put(self, request, saving_plan_pk=None, contribution_pk=None):
+        user: HubUser = request.user
+        plan = self.get_plan(user, saving_plan_pk)
+        if not plan:
+            return custom_user_error_response("Không tìm thấy kế hoạch tiết kiệm.", 404)
+
+        pk = contribution_pk or request.data.get('id')
+        if not pk:
+            return custom_user_error_response("Thiếu mã khoản đóng góp.", 400)
+
+        try:
+            if not plan.contributions.filter(pk=pk, user=user).exists():
+                return custom_user_error_response("Không tìm thấy khoản đóng góp.", 404)
+
+            contribution = SavingPlanContribution.update_from_json(pk, user, request.data)
+            return Response(self.serializer_class(contribution).data, status=200)
+        except SavingPlanContribution.DoesNotExist:
+            return custom_user_error_response("Không tìm thấy khoản đóng góp.", 404)
+        except ValidationError as error:
+            msg = error.message if hasattr(error, 'message') else str(error)
+            return custom_user_error_response(msg, 400)
+
+    def delete(self, request, saving_plan_pk=None, contribution_pk=None):
+        user: HubUser = request.user
+        plan = self.get_plan(user, saving_plan_pk)
+        if not plan:
+            return custom_user_error_response("Không tìm thấy kế hoạch tiết kiệm.", 404)
+
+        if not contribution_pk:
+            return custom_user_error_response("Thiếu mã khoản đóng góp.", 400)
+
+        try:
+            contrib = plan.contributions.get(pk=contribution_pk, user=user)
+            contrib.delete()
+            return custom_success_response("Khoản đóng góp đã được xoá thành công!")
+        except SavingPlanContribution.DoesNotExist:
+            return custom_user_error_response("Không tìm thấy khoản đóng góp.", 404)
 
 
 @api_view(['GET'])

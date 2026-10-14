@@ -133,7 +133,7 @@ function WalletGridRow(props: Props) {
             </Typography>
           ) : (
             <Box display="flex" alignItems="center" gap={2}>
-              <Typography component="span" variant="h5" fontWeight={600}>
+              <Typography component="span" variant="h5" fontWeight={600} sx={{ color: "#48cc90" }}>
                 +{formatValue(Math.abs(Number(props.wallet?.monthly_earnings || 0)))}
               </Typography>
             </Box>
@@ -168,7 +168,7 @@ function WalletGridRow(props: Props) {
             </Typography>
           ) : (
             <Box display="flex" alignItems="center" gap={2}>
-              <Typography component="span" variant="h5" fontWeight={600}>
+              <Typography component="span" variant="h5" fontWeight={600} sx={{ color: "#f25659" }}>
                 -{formatValue(Math.abs(Number(props.wallet?.monthly_expenses || 0)))}
               </Typography>
             </Box>

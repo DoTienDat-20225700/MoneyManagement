@@ -1,5 +1,4 @@
 import { Box, Button, Chip, Grid, LinearProgress, Skeleton, Stack, Typography } from "@mui/material";
-import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
@@ -103,7 +102,6 @@ export default function DashboardBudgetSummary() {
           }}
         >
           <Stack direction="row" alignItems="center" spacing={1.2}>
-            <AccountBalanceWalletIcon sx={{ color: "#48cc90", fontSize: 24 }} />
             <Typography variant="h6" fontWeight={700}>
               {t("budget_summary_widget_title")}
             </Typography>

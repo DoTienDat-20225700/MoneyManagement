@@ -34,6 +34,7 @@ export default function DrawerAppBar(props: Props) {
     if (path === "/") return t("dashboard");
     if (path === "/transactions") return t("transactions");
     if (path === "/budgets") return t("budgets");
+    if (path === "/reports") return t("reports");
     if (path === "/saving-plans") return t("saving_plans");
     return path;
   };

@@ -3,6 +3,7 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import ReceiptIcon from "@mui/icons-material/Receipt";
 import SavingsIcon from "@mui/icons-material/Savings";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import AssessmentIcon from "@mui/icons-material/Assessment";
 
 interface NavigationItem {
   label: string;
@@ -25,6 +26,11 @@ export const navigation: NavigationItem[] = [
     label: "Budgets",
     path: "/budgets",
     icon: <AccountBalanceWalletIcon />,
+  },
+  {
+    label: "Reports",
+    path: "/reports",
+    icon: <AssessmentIcon />,
   },
   {
     label: "SavingPlans",

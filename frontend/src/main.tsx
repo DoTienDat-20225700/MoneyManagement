@@ -8,6 +8,7 @@ import Home from "./routes/Home";
 import Transactions from "./routes/Transactions";
 import Budgets from "./routes/Budgets";
 import SavingPlans from "./routes/SavingPlans";
+import Reports from "./routes/Reports";
 import App from "./App";
 import PersistLogin from "./components/auth/PersistLogin";
 import "./main.css";
@@ -33,6 +34,10 @@ export const router = createBrowserRouter([
           {
             path: "budgets",
             element: <Budgets />,
+          },
+          {
+            path: "reports",
+            element: <Reports />,
           },
           {
             path: "saving-plans",

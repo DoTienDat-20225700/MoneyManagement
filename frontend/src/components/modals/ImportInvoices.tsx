@@ -2,9 +2,11 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  IconButton,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import { useSearchParams } from "react-router-dom";
 import NewInvoiceForm from "../forms/NewInvoiceForm";
 import { useLanguage } from "../../context/LanguageContext";
@@ -33,7 +35,12 @@ export default function ImportInvoice() {
         style: { background: "#0d0d0d" },
       }}
     >
-      <DialogTitle>{t("import_invoices")}</DialogTitle>
+      <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span>{t("import_invoices")}</span>
+        <IconButton size="small" onClick={closeModal} sx={{ color: "text.secondary" }}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
       <DialogContent>
         {isOpen && <NewInvoiceForm />}
       </DialogContent>

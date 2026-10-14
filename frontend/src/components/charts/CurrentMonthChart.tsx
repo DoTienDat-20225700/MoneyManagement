@@ -69,7 +69,7 @@ function CurrentMonthChart() {
             },
             show: true,
             formatter: function (value: string) {
-              return dayjs(value).format(language === "vi" ? "DD/MM" : "MM/DD");
+              return dayjs(value).format("DD/MM");
             },
           },
         },

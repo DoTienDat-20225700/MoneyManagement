@@ -3,12 +3,9 @@ import {
   Alert,
   Box,
   Button,
-  Card,
-  CardContent,
   Chip,
   CircularProgress,
   Dialog,
-  DialogActions,
   DialogContent,
   DialogTitle,
   FormControl,
@@ -19,20 +16,18 @@ import {
   LinearProgress,
   MenuItem,
   Select,
-  Stack,
   TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
+import { grey } from "@mui/material/colors";
 import AddIcon from "@mui/icons-material/Add";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import CloseIcon from "@mui/icons-material/Close";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
-import WarningAmberIcon from "@mui/icons-material/WarningAmber";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import TodayIcon from "@mui/icons-material/Today";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -250,19 +245,17 @@ export default function Budgets() {
   const approachingBudgets = budgets?.filter((b) => b.status === "approaching") ?? [];
   const exceededBudgets = budgets?.filter((b) => b.status === "exceeded") ?? [];
 
-  // Helper for status chip
+  // Helper for status chip matching app palette
   const renderStatusChip = (status: "normal" | "approaching" | "exceeded") => {
     switch (status) {
       case "exceeded":
         return (
           <Chip
             size="small"
-            icon={<ErrorOutlineIcon sx={{ fontSize: "14px !important", color: "#ff4d4f !important" }} />}
             label={t("status_exceeded")}
             sx={{
-              backgroundColor: "rgba(255, 77, 79, 0.15)",
-              color: "#ff4d4f",
-              border: "1px solid rgba(255, 77, 79, 0.35)",
+              backgroundColor: "rgba(242, 86, 89, 0.15)",
+              color: "#f25659",
               fontWeight: 600,
               fontSize: "12px",
             }}
@@ -272,12 +265,10 @@ export default function Budgets() {
         return (
           <Chip
             size="small"
-            icon={<WarningAmberIcon sx={{ fontSize: "14px !important", color: "#faad14 !important" }} />}
             label={t("status_approaching")}
             sx={{
               backgroundColor: "rgba(250, 173, 20, 0.15)",
               color: "#faad14",
-              border: "1px solid rgba(250, 173, 20, 0.35)",
               fontWeight: 600,
               fontSize: "12px",
             }}
@@ -287,12 +278,10 @@ export default function Budgets() {
         return (
           <Chip
             size="small"
-            icon={<CheckCircleOutlineIcon sx={{ fontSize: "14px !important", color: "#52c41a !important" }} />}
             label={t("status_normal")}
             sx={{
-              backgroundColor: "rgba(82, 196, 26, 0.15)",
-              color: "#52c41a",
-              border: "1px solid rgba(82, 196, 26, 0.35)",
+              backgroundColor: "rgba(72, 204, 144, 0.15)",
+              color: "#48cc90",
               fontWeight: 600,
               fontSize: "12px",
             }}
@@ -301,86 +290,64 @@ export default function Budgets() {
     }
   };
 
-  // Helper for progress bar color
+  // Helper for progress bar color matching app theme
   const getProgressColor = (status: "normal" | "approaching" | "exceeded") => {
-    if (status === "exceeded") return "#ff4d4f";
+    if (status === "exceeded") return "#f25659";
     if (status === "approaching") return "#faad14";
-    return "#00863A";
+    return "#48cc90";
   };
 
   return (
     <Box>
-      {/* Page Header */}
+      {/* Header matching Home.tsx */}
       <Box
         sx={{
           display: "flex",
+          flexDirection: {
+            xs: "column",
+            md: "row",
+          },
           justifyContent: "space-between",
-          alignItems: { xs: "flex-start", md: "center" },
-          flexDirection: { xs: "column", md: "row" },
-          gap: 2,
-          mb: 3,
+          alignItems: {
+            xs: "start",
+            md: "center",
+          },
         }}
       >
-        <Box>
-          <Typography component="h1" variant="h4" fontWeight={700}>
-            {t("budget_management")}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            {t("budget_subtitle")}
-          </Typography>
+        <Typography component="h1" variant="h4" fontWeight={600}>
+          {t("budget_management")}
+        </Typography>
+        <Box sx={{ marginTop: { xs: 2, md: 0 } }}>
+          <Button
+            variant="contained"
+            size="medium"
+            startIcon={<AddIcon />}
+            onClick={handleOpenCreate}
+          >
+            {t("add_budget")}
+          </Button>
         </Box>
-
-        {/* Add Budget Button */}
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleOpenCreate}
-          sx={{
-            borderRadius: 2,
-            px: 2.5,
-            py: 1,
-            fontWeight: 600,
-            boxShadow: "0 4px 14px rgba(0, 134, 58, 0.35)",
-          }}
-        >
-          {t("add_budget")}
-        </Button>
       </Box>
 
-      {/* Month Navigator Toolbar */}
+      {/* Filters Bar matching Reports.tsx and Transactions.tsx */}
       <Box
         sx={{
           display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
           flexWrap: "wrap",
           gap: 1.5,
-          p: 1.5,
-          px: 2,
-          mb: 3,
-          borderRadius: 2,
-          backgroundColor: "rgba(255, 255, 255, 0.03)",
-          border: `1px solid ${darkTheme.palette.background.paper}`,
+          alignItems: "center",
+          mt: 3,
+          mb: 1,
         }}
       >
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <Tooltip title={language === "vi" ? "Tháng trước" : "Previous Month"}>
-            <IconButton onClick={handlePrevMonth} size="small" sx={{ color: "text.primary" }}>
-              <ChevronLeftIcon />
-            </IconButton>
-          </Tooltip>
-
-          {/* Month & Year Selectors */}
-          <FormControl size="small" sx={{ minWidth: 110 }}>
+        <Box display="flex" alignItems="center" gap={1}>
+          <IconButton onClick={handlePrevMonth} size="small" sx={{ color: "text.primary" }}>
+            <ChevronLeftIcon />
+          </IconButton>
+          <FormControl size="small" sx={{ minWidth: 120 }}>
             <Select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(Number(e.target.value))}
-              sx={{
-                borderRadius: 1.5,
-                fontSize: "14px",
-                fontWeight: 600,
-                backgroundColor: "rgba(0,0,0,0.2)",
-              }}
             >
               {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
                 <MenuItem key={m} value={m}>
@@ -390,16 +357,10 @@ export default function Budgets() {
             </Select>
           </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 95 }}>
+          <FormControl size="small" sx={{ minWidth: 100 }}>
             <Select
               value={selectedYear}
               onChange={(e) => setSelectedYear(Number(e.target.value))}
-              sx={{
-                borderRadius: 1.5,
-                fontSize: "14px",
-                fontWeight: 600,
-                backgroundColor: "rgba(0,0,0,0.2)",
-              }}
             >
               {[2024, 2025, 2026, 2027, 2028].map((y) => (
                 <MenuItem key={y} value={y}>
@@ -409,161 +370,127 @@ export default function Budgets() {
             </Select>
           </FormControl>
 
-          <Tooltip title={language === "vi" ? "Tháng tiếp theo" : "Next Month"}>
-            <IconButton onClick={handleNextMonth} size="small" sx={{ color: "text.primary" }}>
-              <ChevronRightIcon />
-            </IconButton>
-          </Tooltip>
-        </Stack>
+          <IconButton onClick={handleNextMonth} size="small" sx={{ color: "text.primary" }}>
+            <ChevronRightIcon />
+          </IconButton>
+        </Box>
 
-        {/* Current Month Quick Jump */}
         {!isCurrentMonth && (
           <Button
             size="small"
             variant="outlined"
             startIcon={<TodayIcon fontSize="small" />}
             onClick={handleCurrentMonth}
-            sx={{
-              borderRadius: 1.5,
-              borderColor: "rgba(255, 255, 255, 0.2)",
-              color: "text.primary",
-              fontSize: "13px",
-            }}
           >
             {t("current_month")}
           </Button>
         )}
       </Box>
 
-      {/* Overview Statistics Cards */}
-      <Box sx={{ mb: 1 }}>
-        <Typography
-          variant="caption"
-          sx={{
-            color: "text.secondary",
-            textTransform: "uppercase",
-            letterSpacing: 1.2,
-            fontWeight: 700,
-            fontSize: "11px",
-          }}
-        >
-          {t("budget_overview")} ({language === "vi" ? `Tháng ${selectedMonth}/${selectedYear}` : `${selectedMonth}/${selectedYear}`})
-        </Typography>
-      </Box>
-
-      <Grid container spacing={2} sx={{ mb: 3 }} alignItems="stretch">
+      {/* 1. KPI Cards matching WalletGridRow.tsx and Home.tsx */}
+      <Grid mt={1} container spacing={2} alignItems={"stretch"}>
         {/* Total Budget */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} lg={3}>
           <Box
             border="1px solid"
             borderColor={darkTheme.palette.background.paper}
             borderRadius={2}
-            p={2.5}
-            height="100%"
-            sx={{
-              backgroundColor: "rgba(255, 255, 255, 0.02)",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-            }}
+            padding={3}
+            height={"100%"}
           >
-            <Typography variant="body2" color="text.secondary" mb={1}>
+            <Typography component="h2" variant="body1" mb={1}>
               {t("total_budget")}
             </Typography>
-            <Typography variant="h5" fontWeight={700} color="text.primary">
-              {formatValue(summary?.total_budget ?? 0)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+            <Box display="flex" alignItems="center" gap={2}>
+              <Typography component="span" variant="h5" fontWeight={600}>
+                {formatValue(summary?.total_budget ?? 0)}
+              </Typography>
+            </Box>
+            <Typography component="p" variant="caption" color="text.secondary" sx={{ mt: 1 }}>
               {summary?.budget_count ?? 0} {t("categories_budgeted")}
             </Typography>
           </Box>
         </Grid>
 
         {/* Total Spent */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} lg={3}>
           <Box
             border="1px solid"
             borderColor={darkTheme.palette.background.paper}
             borderRadius={2}
-            p={2.5}
-            height="100%"
-            sx={{
-              backgroundColor: "rgba(255, 255, 255, 0.02)",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-            }}
+            padding={3}
+            height={"100%"}
           >
-            <Typography variant="body2" color="text.secondary" mb={1}>
+            <Typography component="h2" variant="body1" mb={1}>
               {t("total_spent")}
             </Typography>
-            <Typography variant="h5" fontWeight={700} color="#ff7875">
-              {formatValue(summary?.total_spent ?? 0)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+            <Box display="flex" alignItems="center" gap={2}>
+              <Typography
+                component="span"
+                variant="h5"
+                fontWeight={600}
+                sx={{ color: "#f25659" }}
+              >
+                -{formatValue(summary?.total_spent ?? 0)}
+              </Typography>
+            </Box>
+            <Typography component="p" variant="caption" color="text.secondary" sx={{ mt: 1 }}>
               {summary?.overall_percentage ?? 0}% {t("percentage_used")}
             </Typography>
           </Box>
         </Grid>
 
         {/* Total Remaining */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} lg={3}>
           <Box
             border="1px solid"
             borderColor={darkTheme.palette.background.paper}
             borderRadius={2}
-            p={2.5}
-            height="100%"
-            sx={{
-              backgroundColor: "rgba(255, 255, 255, 0.02)",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-            }}
+            padding={3}
+            height={"100%"}
           >
-            <Typography variant="body2" color="text.secondary" mb={1}>
+            <Typography component="h2" variant="body1" mb={1}>
               {t("total_remaining")}
             </Typography>
-            <Typography
-              variant="h5"
-              fontWeight={700}
-              color={Number(summary?.total_remaining || 0) > 0 ? "#52c41a" : "text.secondary"}
-            >
-              {formatValue(summary?.total_remaining ?? 0)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+            <Box display="flex" alignItems="center" gap={2}>
+              <Typography
+                component="span"
+                variant="h5"
+                fontWeight={600}
+                sx={{
+                  color: Number(summary?.total_remaining || 0) >= 0 ? "#48cc90" : "#f25659",
+                }}
+              >
+                {formatValue(summary?.total_remaining ?? 0)}
+              </Typography>
+            </Box>
+            <Typography component="p" variant="caption" color="text.secondary" sx={{ mt: 1 }}>
               {language === "vi" ? "Khả dụng trong tháng" : "Available in month"}
             </Typography>
           </Box>
         </Grid>
 
         {/* Status Breakdown */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} lg={3}>
           <Box
             border="1px solid"
             borderColor={darkTheme.palette.background.paper}
             borderRadius={2}
-            p={2.5}
-            height="100%"
-            sx={{
-              backgroundColor: "rgba(255, 255, 255, 0.02)",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-            }}
+            padding={3}
+            height={"100%"}
           >
-            <Typography variant="body2" color="text.secondary" mb={1}>
+            <Typography component="h2" variant="body1" mb={1}>
               {language === "vi" ? "Tình trạng hạn mức" : "Status Summary"}
             </Typography>
-            <Stack direction="row" spacing={1} flexWrap="wrap" gap={0.5}>
+            <Box display="flex" alignItems="center" gap={1} flexWrap="wrap" sx={{ mt: 1 }}>
               <Chip
                 size="small"
                 label={`${t("status_normal")}: ${summary?.status_counts?.normal ?? 0}`}
                 sx={{
-                  backgroundColor: "rgba(82, 196, 26, 0.12)",
-                  color: "#52c41a",
+                  backgroundColor: "rgba(72, 204, 144, 0.12)",
+                  color: "#48cc90",
                   fontWeight: 600,
-                  fontSize: "11px",
+                  fontSize: "12px",
                 }}
               />
               <Chip
@@ -573,282 +500,259 @@ export default function Budgets() {
                   backgroundColor: "rgba(250, 173, 20, 0.12)",
                   color: "#faad14",
                   fontWeight: 600,
-                  fontSize: "11px",
+                  fontSize: "12px",
                 }}
               />
               <Chip
                 size="small"
                 label={`${t("status_exceeded")}: ${summary?.status_counts?.exceeded ?? 0}`}
                 sx={{
-                  backgroundColor: "rgba(255, 77, 79, 0.12)",
-                  color: "#ff4d4f",
+                  backgroundColor: "rgba(242, 86, 89, 0.12)",
+                  color: "#f25659",
                   fontWeight: 600,
-                  fontSize: "11px",
+                  fontSize: "12px",
                 }}
               />
-            </Stack>
+            </Box>
           </Box>
         </Grid>
       </Grid>
 
-      {/* Warning Alert Banner for Exceeded or Approaching Categories */}
+      {/* Alert banners */}
       {exceededBudgets.length > 0 && (
-        <Alert
-          severity="error"
-          icon={<ErrorOutlineIcon />}
-          sx={{
-            mb: 2,
-            borderRadius: 2,
-            backgroundColor: "rgba(255, 77, 79, 0.12)",
-            color: "#ff7875",
-            border: "1px solid rgba(255, 77, 79, 0.3)",
-          }}
-        >
+        <Alert severity="error" sx={{ mt: 2 }}>
           <strong>{exceededBudgets.length} {t("budget_exceeded_alert")}</strong>{" "}
           ({exceededBudgets.map((b) => b.label.name).join(", ")})
         </Alert>
       )}
 
       {approachingBudgets.length > 0 && (
-        <Alert
-          severity="warning"
-          icon={<WarningAmberIcon />}
-          sx={{
-            mb: 2,
-            borderRadius: 2,
-            backgroundColor: "rgba(250, 173, 20, 0.12)",
-            color: "#ffc53d",
-            border: "1px solid rgba(250, 173, 20, 0.3)",
-          }}
-        >
+        <Alert severity="warning" sx={{ mt: 2 }}>
           <strong>{approachingBudgets.length} {t("budget_approaching_alert")}</strong>{" "}
           ({approachingBudgets.map((b) => b.label.name).join(", ")})
         </Alert>
       )}
 
-      {/* Main Budget Cards Content */}
-      {isBudgetsLoading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-          <CircularProgress color="primary" />
-        </Box>
-      ) : isBudgetsError ? (
-        <Alert
-          severity="error"
-          sx={{ borderRadius: 2 }}
-          action={
-            <Button color="inherit" size="small" onClick={() => refetchBudgets()}>
-              {language === "vi" ? "Thử lại" : "Retry"}
-            </Button>
-          }
-        >
-          {t("unable_to_load_data")}
-        </Alert>
-      ) : budgets && budgets.length > 0 ? (
-        <Grid container spacing={2.5}>
-          {budgets.map((budget) => {
-            const spentNum = Number(budget.spent);
-            const limitNum = Number(budget.limit);
-            const remainingNum = Number(budget.remaining);
-            const pct = budget.percentage;
-            const progressColor = getProgressColor(budget.status);
+      {/* 2. Category Budgets Section */}
+      <Box height={"auto"} mt={3} mb={4}>
+        <Typography component="h2" variant="h6" mb={1.5}>
+          {language === "vi" ? "Danh sách ngân sách danh mục" : "Category Budgets"}
+        </Typography>
 
-            return (
-              <Grid item xs={12} sm={6} lg={4} key={budget.id}>
-                <Card
-                  sx={{
-                    borderRadius: 2.5,
-                    border: `1px solid ${
-                      budget.status === "exceeded"
-                        ? "rgba(255, 77, 79, 0.4)"
-                        : budget.status === "approaching"
-                        ? "rgba(250, 173, 20, 0.4)"
-                        : darkTheme.palette.background.paper
-                    }`,
-                    backgroundColor: "rgba(255, 255, 255, 0.02)",
-                    backdropFilter: "blur(10px)",
-                    transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                    "&:hover": {
-                      transform: "translateY(-3px)",
-                      boxShadow: "0 8px 24px rgba(0, 0, 0, 0.3)",
-                    },
-                  }}
-                >
-                  <CardContent sx={{ p: 2.5 }}>
-                    {/* Header: Label + Color Dot + Status Chip + Actions */}
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        mb: 2,
-                      }}
-                    >
-                      <Stack direction="row" alignItems="center" spacing={1.2}>
-                        <Box
-                          sx={{
-                            width: 14,
-                            height: 14,
-                            borderRadius: "50%",
-                            backgroundColor: budget.label.color || "#00863A",
-                            boxShadow: `0 0 8px ${budget.label.color || "#00863A"}88`,
+        {isBudgetsLoading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+            <CircularProgress color="primary" />
+          </Box>
+        ) : isBudgetsError ? (
+          <Alert
+            severity="error"
+            action={
+              <Button color="inherit" size="small" onClick={() => refetchBudgets()}>
+                {language === "vi" ? "Thử lại" : "Retry"}
+              </Button>
+            }
+          >
+            {t("unable_to_load_data")}
+          </Alert>
+        ) : budgets && budgets.length > 0 ? (
+          <Grid container spacing={2}>
+            {budgets.map((budget) => {
+              const spentNum = Number(budget.spent);
+              const limitNum = Number(budget.limit);
+              const remainingNum = Number(budget.remaining);
+              const pct = budget.percentage;
+              const progressColor = getProgressColor(budget.status);
+
+              return (
+                <Grid item xs={12} sm={6} lg={4} key={budget.id}>
+                  <Box
+                    border="1px solid"
+                    borderColor={darkTheme.palette.background.paper}
+                    borderRadius={2}
+                    padding={3}
+                    height="100%"
+                    display="flex"
+                    flexDirection="column"
+                    justifyContent="space-between"
+                  >
+                    <Box>
+                      {/* Header: Label Chip + Status Chip + Actions */}
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          mb: 2,
+                        }}
+                      >
+                        <Chip
+                          label={budget.label.name}
+                          variant="outlined"
+                          size="small"
+                          style={{
+                            borderColor: budget.label.color || darkTheme.palette.primary.main,
+                            color: budget.label.color || "inherit",
+                            fontWeight: 600,
                           }}
                         />
-                        <Typography variant="h6" fontWeight={700} noWrap>
-                          {budget.label.name}
-                        </Typography>
-                      </Stack>
 
-                      <Stack direction="row" alignItems="center" spacing={0.5}>
-                        {renderStatusChip(budget.status)}
-                        <Tooltip title={t("edit_budget")}>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleOpenEdit(budget)}
-                            sx={{ color: "text.secondary", "&:hover": { color: "#fff" } }}
-                          >
-                            <EditOutlinedIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title={t("delete_budget")}>
-                          <IconButton
-                            size="small"
-                            onClick={() => setDeleteTarget(budget)}
-                            sx={{ color: "text.secondary", "&:hover": { color: "#ff4d4f" } }}
-                          >
-                            <DeleteOutlineIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
-                    </Box>
-
-                    {/* Progress Bar with Clamped Value */}
-                    <Box sx={{ mb: 2 }}>
-                      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.8 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          {t("percentage_used")}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          fontWeight={700}
-                          sx={{ color: progressColor }}
-                        >
-                          {pct.toFixed(1)}%
-                        </Typography>
+                        <Box display="flex" alignItems="center" gap={0.5}>
+                          {renderStatusChip(budget.status)}
+                          <Tooltip title={t("edit_budget")}>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleOpenEdit(budget)}
+                              sx={{ color: grey[500], "&:hover": { color: "#fff" } }}
+                            >
+                              <EditOutlinedIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title={t("delete_budget")}>
+                            <IconButton
+                              size="small"
+                              onClick={() => setDeleteTarget(budget)}
+                              sx={{ color: grey[500], "&:hover": { color: "#f25659" } }}
+                            >
+                              <DeleteOutlineIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
                       </Box>
-                      <LinearProgress
-                        variant="determinate"
-                        value={Math.min(100, Math.max(0, pct))}
-                        sx={{
-                          height: 9,
-                          borderRadius: 4.5,
-                          backgroundColor: "rgba(255, 255, 255, 0.08)",
-                          "& .MuiLinearProgress-bar": {
-                            backgroundColor: progressColor,
-                            borderRadius: 4.5,
-                          },
-                        }}
-                      />
+
+                      {/* Progress Bar */}
+                      <Box sx={{ mb: 2 }}>
+                        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.8 }}>
+                          <Typography variant="caption" color="text.secondary">
+                            {t("percentage_used")}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            fontWeight={700}
+                            sx={{ color: progressColor }}
+                          >
+                            {pct.toFixed(1)}%
+                          </Typography>
+                        </Box>
+                        <LinearProgress
+                          variant="determinate"
+                          value={Math.min(100, Math.max(0, pct))}
+                          sx={{
+                            height: 8,
+                            borderRadius: 4,
+                            backgroundColor: "rgba(255, 255, 255, 0.08)",
+                            "& .MuiLinearProgress-bar": {
+                              backgroundColor: progressColor,
+                              borderRadius: 4,
+                            },
+                          }}
+                        />
+                      </Box>
                     </Box>
 
                     {/* Financial Numbers */}
-                    <Grid container spacing={1.5} sx={{ pt: 1, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-                      <Grid item xs={4}>
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          {t("budget_limit")}
-                        </Typography>
-                        <Typography variant="body2" fontWeight={600}>
-                          {formatValue(limitNum)}
-                        </Typography>
+                    <Box>
+                      <Grid
+                        container
+                        spacing={1.5}
+                        sx={{ pt: 1.5, borderTop: `1px solid ${darkTheme.palette.background.paper}` }}
+                      >
+                        <Grid item xs={4}>
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            {t("budget_limit")}
+                          </Typography>
+                          <Typography variant="body2" fontWeight={600}>
+                            {formatValue(limitNum)}
+                          </Typography>
+                        </Grid>
+
+                        <Grid item xs={4}>
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            {t("actual_spent")}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            fontWeight={600}
+                            sx={{ color: budget.status === "exceeded" ? "#f25659" : "text.primary" }}
+                          >
+                            {formatValue(spentNum)}
+                          </Typography>
+                        </Grid>
+
+                        <Grid item xs={4}>
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            {t("remaining_balance")}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            fontWeight={600}
+                            sx={{
+                              color: remainingNum >= 0 ? "#48cc90" : "#f25659",
+                            }}
+                          >
+                            {formatValue(remainingNum)}
+                          </Typography>
+                        </Grid>
                       </Grid>
 
-                      <Grid item xs={4}>
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          {t("actual_spent")}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          fontWeight={600}
-                          sx={{ color: budget.status === "exceeded" ? "#ff7875" : "text.primary" }}
-                        >
-                          {formatValue(spentNum)}
-                        </Typography>
-                      </Grid>
-
-                      <Grid item xs={4}>
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          {t("remaining_balance")}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          fontWeight={600}
+                      {/* Exceeded footnote indicator */}
+                      {budget.is_over_budget && (
+                        <Box
                           sx={{
-                            color: remainingNum > 0 ? "#52c41a" : "#ff4d4f",
+                            mt: 1.5,
+                            p: 0.8,
+                            px: 1.2,
+                            borderRadius: 1,
+                            backgroundColor: "rgba(242, 86, 89, 0.1)",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.8,
                           }}
                         >
-                          {formatValue(remainingNum)}
-                        </Typography>
-                      </Grid>
-                    </Grid>
-
-                    {/* Exceeded footnote indicator */}
-                    {budget.is_over_budget && (
-                      <Box
-                        sx={{
-                          mt: 1.5,
-                          p: 0.8,
-                          px: 1.2,
-                          borderRadius: 1.5,
-                          backgroundColor: "rgba(255, 77, 79, 0.1)",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 0.8,
-                        }}
-                      >
-                        <ArrowUpwardIcon sx={{ fontSize: 14, color: "#ff7875" }} />
-                        <Typography variant="caption" sx={{ color: "#ff7875", fontWeight: 600 }}>
-                          {language === "vi"
-                            ? `Vượt ${formatValue(spentNum - limitNum)}`
-                            : `Exceeded by ${formatValue(spentNum - limitNum)}`}
-                        </Typography>
-                      </Box>
-                    )}
-                  </CardContent>
-                </Card>
-              </Grid>
-            );
-          })}
-        </Grid>
-      ) : (
-        /* Empty State */
-        <Box
-          sx={{
-            py: 8,
-            px: 3,
-            textAlign: "center",
-            borderRadius: 3,
-            border: `1px dashed ${darkTheme.palette.background.paper}`,
-            backgroundColor: "rgba(255, 255, 255, 0.01)",
-          }}
-        >
-          <AccountBalanceWalletOutlinedIcon
-            sx={{ fontSize: 64, color: "text.secondary", opacity: 0.5, mb: 2 }}
-          />
-          <Typography variant="h6" fontWeight={600} mb={1}>
-            {t("no_budgets_found")}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" maxWidth={480} mx="auto" mb={3}>
-            {t("create_first_budget")}
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleOpenCreate}
-            sx={{ borderRadius: 2, px: 3, fontWeight: 600 }}
+                          <ArrowUpwardIcon sx={{ fontSize: 14, color: "#f25659" }} />
+                          <Typography variant="caption" sx={{ color: "#f25659", fontWeight: 600 }}>
+                            {language === "vi"
+                              ? `Vượt ${formatValue(spentNum - limitNum)}`
+                              : `Exceeded by ${formatValue(spentNum - limitNum)}`}
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
+                  </Box>
+                </Grid>
+              );
+            })}
+          </Grid>
+        ) : (
+          /* Empty State */
+          <Box
+            sx={{
+              py: 8,
+              px: 3,
+              textAlign: "center",
+              borderRadius: 2,
+              border: `1px dashed ${darkTheme.palette.background.paper}`,
+            }}
           >
-            {t("add_budget")}
-          </Button>
-        </Box>
-      )}
+            <AccountBalanceWalletOutlinedIcon
+              sx={{ fontSize: 48, color: "text.secondary", opacity: 0.5, mb: 1.5 }}
+            />
+            <Typography variant="h6" fontWeight={600} mb={1}>
+              {t("no_budgets_found")}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" maxWidth={480} mx="auto" mb={2}>
+              {t("create_first_budget")}
+            </Typography>
+            <Button
+              variant="contained"
+              size="medium"
+              startIcon={<AddIcon />}
+              onClick={handleOpenCreate}
+            >
+              {t("add_budget")}
+            </Button>
+          </Box>
+        )}
+      </Box>
 
       {/* Create / Edit Budget Dialog */}
       <Dialog
@@ -857,26 +761,38 @@ export default function Budgets() {
         fullWidth
         maxWidth="xs"
       >
-        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
-          {editingBudget ? t("edit_budget") : t("add_budget")}
+        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>{editingBudget ? t("edit_budget") : t("add_budget")}</span>
+          <IconButton size="small" onClick={handleCloseModal} sx={{ color: "text.secondary" }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
         </DialogTitle>
 
-        <DialogContent sx={{ pt: 2 }}>
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: "16px !important" }}>
           {formError && (
-            <Alert severity="error" sx={{ mb: 2, borderRadius: 1.5 }}>
+            <Alert severity="error" sx={{ borderRadius: 1.5 }}>
               {formError}
             </Alert>
           )}
 
-          {/* Month Indicator info */}
-          <Typography variant="caption" color="text.secondary" display="block" mb={2}>
-            {language === "vi"
-              ? `Áp dụng cho kỳ: Tháng ${selectedMonth}/${selectedYear}`
-              : `Period: Month ${selectedMonth}/${selectedYear}`}
-          </Typography>
+          {/* Month Indicator info styled in a dark pill */}
+          <Box
+            sx={{
+              backgroundColor: grey[900],
+              p: 1.5,
+              borderRadius: 2,
+              border: `1px solid ${darkTheme.palette.background.paper}`,
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              {language === "vi"
+                ? `Áp dụng cho kỳ: Tháng ${selectedMonth}/${selectedYear}`
+                : `Period: Month ${selectedMonth}/${selectedYear}`}
+            </Typography>
+          </Box>
 
           {/* Category Selector */}
-          <FormControl fullWidth sx={{ mb: 2.5 }} disabled={!!editingBudget}>
+          <FormControl fullWidth size="small" disabled={!!editingBudget}>
             <InputLabel id="budget-category-label">{t("label")}</InputLabel>
             <Select
               labelId="budget-category-label"
@@ -886,7 +802,6 @@ export default function Budgets() {
                 setSelectedLabelId(e.target.value as number);
                 setFormError("");
               }}
-              sx={{ borderRadius: 1.5 }}
             >
               {labels?.map((label: CustomLabel) => {
                 const isAlreadyBudgeted =
@@ -923,6 +838,7 @@ export default function Budgets() {
           {/* Budget Limit Amount */}
           <TextField
             fullWidth
+            size="small"
             label={t("budget_limit")}
             value={amountInput}
             onChange={(e) => {
@@ -934,19 +850,14 @@ export default function Budgets() {
             InputProps={{
               endAdornment: <InputAdornment position="end">đ</InputAdornment>,
             }}
-            sx={{ borderRadius: 1.5 }}
           />
-        </DialogContent>
 
-        <DialogActions sx={{ px: 3, pb: 2.5 }}>
-          <Button onClick={handleCloseModal} sx={{ color: "text.secondary" }}>
-            {t("cancel")}
-          </Button>
           <Button
+            fullWidth
             variant="contained"
             onClick={handleSave}
             disabled={createMutation.isPending || updateMutation.isPending}
-            sx={{ borderRadius: 2, px: 2.5 }}
+            sx={{ height: 42, mt: 1, borderRadius: 2, fontWeight: 600 }}
           >
             {createMutation.isPending || updateMutation.isPending ? (
               <CircularProgress size={20} color="inherit" />
@@ -956,7 +867,7 @@ export default function Budgets() {
               t("add")
             )}
           </Button>
-        </DialogActions>
+        </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
@@ -966,10 +877,13 @@ export default function Budgets() {
         maxWidth="xs"
         fullWidth
       >
-        <DialogTitle sx={{ fontWeight: 700 }}>
-          {t("delete_budget")}
+        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>{t("delete_budget")}</span>
+          <IconButton size="small" onClick={() => setDeleteTarget(null)} sx={{ color: "text.secondary" }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: "16px !important" }}>
           <Typography variant="body2" color="text.secondary">
             {t("confirm_delete_budget")} (<strong>{deleteTarget?.label.name}</strong> -{" "}
             {language === "vi"
@@ -977,17 +891,14 @@ export default function Budgets() {
               : `Month ${deleteTarget?.month}/${deleteTarget?.year}`}
             )
           </Typography>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2.5 }}>
-          <Button onClick={() => setDeleteTarget(null)} sx={{ color: "text.secondary" }}>
-            {t("cancel")}
-          </Button>
+
           <Button
+            fullWidth
             variant="contained"
             color="error"
             onClick={handleDeleteConfirm}
             disabled={deleteMutation.isPending}
-            sx={{ borderRadius: 2, px: 2.5 }}
+            sx={{ height: 42, borderRadius: 2, fontWeight: 600 }}
           >
             {deleteMutation.isPending ? (
               <CircularProgress size={20} color="inherit" />
@@ -995,7 +906,7 @@ export default function Budgets() {
               t("delete")
             )}
           </Button>
-        </DialogActions>
+        </DialogContent>
       </Dialog>
     </Box>
   );

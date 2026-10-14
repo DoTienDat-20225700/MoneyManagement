@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from rest_framework import serializers
-from .models import Transaction, SavingPlan, Wallet, CustomLabel, CategoryBudget
+from .models import Transaction, SavingPlan, Wallet, CustomLabel, CategoryBudget, SavingPlanContribution
 
 from django.utils import timezone
 
@@ -86,13 +86,59 @@ class TransactionSerializer(serializers.ModelSerializer):
         return None
 
 
+class SavingPlanContributionSerializer(serializers.ModelSerializer):
+    amount = serializers.DecimalField(decimal_places=2, max_digits=15)
+    date = serializers.DateField(format="%Y-%m-%d", input_formats=['%Y-%m-%d', '%m-%d-%Y'])
+
+    class Meta:
+        model = SavingPlanContribution
+        fields = ('id', 'saving_plan', 'amount', 'date', 'description', 'idempotency_key', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'saving_plan', 'created_at', 'updated_at')
+
+
 class SavingPlanSerializer(serializers.ModelSerializer):
     amount = serializers.DecimalField(decimal_places=2, max_digits=15)
+    target_amount = serializers.DecimalField(source='amount', decimal_places=2, max_digits=15, read_only=True)
     goal_date = serializers.DateField(format="%Y-%m-%d", input_formats=['%Y-%m-%d', '%m-%d-%Y'], required=False, allow_null=True)
+    target_date = serializers.DateField(source='goal_date', format="%Y-%m-%d", read_only=True, allow_null=True)
+    amount_saved = serializers.SerializerMethodField()
+    remaining_amount = serializers.SerializerMethodField()
+    completion_percentage = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+    contribution_count = serializers.SerializerMethodField()
+    estimated_completion = serializers.SerializerMethodField()
 
     class Meta:
         model = SavingPlan
-        fields = ('id', 'title', 'amount', 'active', 'goal_date', 'description')
+        fields = (
+            'id', 'title', 'amount', 'target_amount', 'active', 'goal_date', 'target_date',
+            'description', 'amount_saved', 'remaining_amount', 'completion_percentage',
+            'status', 'contribution_count', 'estimated_completion'
+        )
+
+    @staticmethod
+    def get_amount_saved(obj):
+        return obj.get_amount_saved()
+
+    @staticmethod
+    def get_remaining_amount(obj):
+        return obj.get_remaining_amount()
+
+    @staticmethod
+    def get_completion_percentage(obj):
+        return obj.get_completion_percentage()
+
+    @staticmethod
+    def get_status(obj):
+        return obj.get_status()
+
+    @staticmethod
+    def get_contribution_count(obj):
+        return obj.contributions.count()
+
+    @staticmethod
+    def get_estimated_completion(obj):
+        return obj.get_estimated_completion()
 
 
 class CategoryBudgetSerializer(serializers.ModelSerializer):

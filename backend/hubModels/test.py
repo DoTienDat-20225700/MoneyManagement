@@ -6,7 +6,7 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 from .factory import TransactionFactory
 
-from .models import CustomLabel, Transaction, TransactionRecurrency, SavingPlan, CategoryBudget
+from .models import CustomLabel, Transaction, TransactionRecurrency, SavingPlan, CategoryBudget, SavingPlanContribution
 
 
 class TransactionTestCase(TestCase):
@@ -301,6 +301,187 @@ class SavingPlanAPITestCase(TestCase):
         # Trying to delete other user's plan
         response = self.client.delete(f'/api/savingplan/{other_plan.pk}')
         self.assertEqual(response.status_code, 404)
+
+
+class SavingPlanAdvancedTrackingTestCase(TestCase):
+    def setUp(self):
+        self.factory = TransactionFactory()
+        self.user = self.factory.create_user()
+        self.wallet = self.user.get_wallet()
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
+        self.plan = self.wallet.saving_plans.create(
+            title='House Deposit',
+            amount=Decimal('10000.00'),
+            goal_date=datetime.date(2027, 12, 31),
+            description='Saving for first apartment'
+        )
+
+    def test_goal_progress_serialization(self):
+        # Initial state: 0 contributions
+        response = self.client.get(f'/api/savingplan/{self.plan.pk}')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Decimal(str(response.data['amount_saved'])), Decimal('0.00'))
+        self.assertEqual(Decimal(str(response.data['remaining_amount'])), Decimal('10000.00'))
+        self.assertEqual(response.data['completion_percentage'], 0.0)
+        self.assertEqual(response.data['status'], 'active')
+
+        # Add contribution
+        self.client.post(f'/api/savingplans/{self.plan.pk}/contributions/', {
+            'amount': '2500.00',
+            'date': '2026-10-01',
+            'description': 'Initial bonus'
+        }, format='json')
+
+        response = self.client.get(f'/api/savingplan/{self.plan.pk}')
+        self.assertEqual(Decimal(str(response.data['amount_saved'])), Decimal('2500.00'))
+        self.assertEqual(Decimal(str(response.data['remaining_amount'])), Decimal('7500.00'))
+        self.assertEqual(response.data['completion_percentage'], 25.0)
+        self.assertEqual(response.data['status'], 'active')
+
+        # Add more contribution to reach 100%
+        self.client.post(f'/api/savingplans/{self.plan.pk}/contributions/', {
+            'amount': '7500.00',
+            'date': '2026-10-10',
+            'description': 'Final payment'
+        }, format='json')
+
+        response = self.client.get(f'/api/savingplan/{self.plan.pk}')
+        self.assertEqual(Decimal(str(response.data['amount_saved'])), Decimal('10000.00'))
+        self.assertEqual(Decimal(str(response.data['remaining_amount'])), Decimal('0.00'))
+        self.assertEqual(response.data['completion_percentage'], 100.0)
+        self.assertEqual(response.data['status'], 'completed')
+
+    def test_contribution_crud_and_idempotency(self):
+        # 1. Add contribution with idempotency key
+        key = 'unique-contrib-key-123'
+        resp1 = self.client.post(f'/api/savingplans/{self.plan.pk}/contributions/', {
+            'amount': '1000.00',
+            'date': '2026-10-05',
+            'description': 'Monthly saving',
+            'idempotency_key': key,
+        }, format='json')
+        self.assertEqual(resp1.status_code, 201)
+        contrib_id = resp1.data['id']
+
+        # 2. Resubmit with identical idempotency key -> duplicate prevented
+        resp2 = self.client.post(f'/api/savingplans/{self.plan.pk}/contributions/', {
+            'amount': '1000.00',
+            'date': '2026-10-05',
+            'description': 'Monthly saving',
+            'idempotency_key': key,
+        }, format='json')
+        self.assertEqual(resp2.status_code, 200)
+        self.assertEqual(resp2.data['id'], contrib_id)
+        self.assertEqual(self.plan.contributions.count(), 1)
+
+        # 3. List contributions
+        list_resp = self.client.get(f'/api/savingplans/{self.plan.pk}/contributions/')
+        self.assertEqual(list_resp.status_code, 200)
+        self.assertEqual(len(list_resp.data), 1)
+
+        # 4. Update contribution
+        update_resp = self.client.put(f'/api/savingplans/{self.plan.pk}/contributions/{contrib_id}', {
+            'amount': '1200.00',
+            'description': 'Adjusted monthly saving',
+        }, format='json')
+        self.assertEqual(update_resp.status_code, 200)
+        self.assertEqual(Decimal(str(update_resp.data['amount'])), Decimal('1200.00'))
+
+        # 5. Delete contribution
+        del_resp = self.client.delete(f'/api/savingplans/{self.plan.pk}/contributions/{contrib_id}')
+        self.assertEqual(del_resp.status_code, 200)
+        self.assertEqual(self.plan.contributions.count(), 0)
+
+    def test_contribution_validation(self):
+        # Negative amount
+        resp = self.client.post(f'/api/savingplans/{self.plan.pk}/contributions/', {
+            'amount': '-500.00',
+        }, format='json')
+        self.assertEqual(resp.status_code, 400)
+
+        # Zero amount
+        resp = self.client.post(f'/api/savingplans/{self.plan.pk}/contributions/', {
+            'amount': '0.00',
+        }, format='json')
+        self.assertEqual(resp.status_code, 400)
+
+        # Invalid date
+        resp = self.client.post(f'/api/savingplans/{self.plan.pk}/contributions/', {
+            'amount': '500.00',
+            'date': 'invalid-date',
+        }, format='json')
+        self.assertEqual(resp.status_code, 400)
+
+    def test_contribution_cross_user_isolation(self):
+        other_user = self.factory.create_user()
+        other_client = APIClient()
+        other_client.force_authenticate(other_user)
+
+        # Other user cannot add contribution to self.plan
+        resp = other_client.post(f'/api/savingplans/{self.plan.pk}/contributions/', {
+            'amount': '500.00',
+        }, format='json')
+        self.assertEqual(resp.status_code, 404)
+
+        # Create a contribution by owner
+        contrib = self.plan.contributions.create(
+            user=self.user,
+            amount=Decimal('500.00'),
+            date=datetime.date.today()
+        )
+
+        # Other user cannot view contributions
+        resp = other_client.get(f'/api/savingplans/{self.plan.pk}/contributions/')
+        self.assertEqual(resp.status_code, 404)
+
+        # Other user cannot edit contribution
+        resp = other_client.put(f'/api/savingplans/{self.plan.pk}/contributions/{contrib.pk}', {
+            'amount': '1000.00',
+        }, format='json')
+        self.assertEqual(resp.status_code, 404)
+
+        # Other user cannot delete contribution
+        resp = other_client.delete(f'/api/savingplans/{self.plan.pk}/contributions/{contrib.pk}')
+        self.assertEqual(resp.status_code, 404)
+
+    def test_completion_estimate(self):
+        # 1. No contributions -> Insufficient history
+        est1 = self.plan.get_estimated_completion()
+        self.assertIsNone(est1['estimated_date'])
+        self.assertIn('Chưa có lịch sử', est1['message'])
+
+        # 2. Contributions spanning multiple days
+        today = datetime.date.today()
+        # Contribution 1: 10 days ago, 1000
+        self.plan.contributions.create(
+            user=self.user,
+            amount=Decimal('1000.00'),
+            date=today - datetime.timedelta(days=10)
+        )
+        # Contribution 2: 5 days ago, 1000
+        self.plan.contributions.create(
+            user=self.user,
+            amount=Decimal('1000.00'),
+            date=today - datetime.timedelta(days=5)
+        )
+        # Total contributed: 2000 in 10 days => daily_rate = 200/day
+        # Remaining: 8000 => 8000 / 200 = 40 days needed
+        est2 = self.plan.get_estimated_completion()
+        self.assertIsNotNone(est2['estimated_date'])
+        self.assertEqual(est2['days_remaining'], 40)
+        self.assertEqual(est2['daily_rate'], 200.0)
+
+        # 3. Already completed plan
+        self.plan.contributions.create(
+            user=self.user,
+            amount=Decimal('8000.00'),
+            date=today
+        )
+        est3 = self.plan.get_estimated_completion()
+        self.assertEqual(est3['status'], 'completed')
+        self.assertIn('hoàn thành', est3['message'].lower())
 
 
 class RecurringTransactionsTestCase(TestCase):
@@ -937,6 +1118,149 @@ class CategoryBudgetAPITestCase(TestCase):
         self.assertEqual(res_140.data['percentage'], 140.0)
         self.assertEqual(res_140.data['status'], 'exceeded')
         self.assertTrue(res_140.data['is_over_budget'])
+
+
+class FinancialReportAPITestCase(TestCase):
+    def setUp(self):
+        self.factory = TransactionFactory()
+        self.user = self.factory.create_user()
+        self.wallet = self.user.get_wallet()
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
+        self.food_label = CustomLabel.objects.create(wallet=self.wallet, name='Food', color='#2ecc71')
+        self.bills_label = CustomLabel.objects.create(wallet=self.wallet, name='Bills', color='#e74c3c')
+        self.salary_label = CustomLabel.objects.create(wallet=self.wallet, name='Salary', color='#3498db')
+
+    def test_report_summary_calculations_and_filtering(self):
+        # Current period: 2026-10-01 to 2026-10-10 (10 days)
+        # Earnings
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.salary_label, type='EARNING', value=10000000, date=datetime.date(2026, 10, 1)
+        )
+        # Expenses
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EXPENSE', value=1500000, date=datetime.date(2026, 10, 2)
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.bills_label, type='EXPENSE', value=2500000, date=datetime.date(2026, 10, 5)
+        )
+        # Uncategorized expense
+        self.factory.create_transaction_filled(
+            self.wallet, label=None, type='EXPENSE', value=1000000, date=datetime.date(2026, 10, 8)
+        )
+        # Out-of-range transaction (2026-10-15)
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EXPENSE', value=500000, date=datetime.date(2026, 10, 15)
+        )
+
+        res = self.client.get('/api/reports/summary/?start_date=2026-10-01&end_date=2026-10-10')
+        self.assertEqual(res.status_code, 200)
+        data = res.data
+
+        # Period check
+        self.assertEqual(data['period']['days_count'], 10)
+        self.assertEqual(data['period']['start_date'], '2026-10-01')
+        self.assertEqual(data['period']['end_date'], '2026-10-10')
+
+        # Summary check
+        # Total income: 10,000,000
+        self.assertEqual(data['summary']['total_income'], '10000000.00')
+        # Total expense: 1,500,000 + 2,500,000 + 1,000,000 = 5,000,000
+        self.assertEqual(data['summary']['total_expense'], '5000000.00')
+        # Net cash flow: 10,000,000 - 5,000,000 = 5,000,000
+        self.assertEqual(data['summary']['net_cash_flow'], '5000000.00')
+        # Average daily spending: 5,000,000 / 10 = 500,000.00
+        self.assertEqual(data['summary']['average_daily_spending'], '500000.00')
+
+        # Category breakdown
+        breakdown = {item['label_name']: item for item in data['category_breakdown']}
+        self.assertIn('Food', breakdown)
+        self.assertIn('Bills', breakdown)
+        self.assertIn('Chưa phân loại', breakdown)
+        self.assertEqual(breakdown['Bills']['total'], '2500000.00')
+        self.assertEqual(breakdown['Bills']['percentage'], 50.0)
+        self.assertEqual(breakdown['Food']['total'], '1500000.00')
+        self.assertEqual(breakdown['Food']['percentage'], 30.0)
+        self.assertEqual(breakdown['Chưa phân loại']['total'], '1000000.00')
+        self.assertEqual(breakdown['Chưa phân loại']['percentage'], 20.0)
+
+    def test_report_comparison_with_previous_period(self):
+        # Previous period: 2026-10-01 to 2026-10-10 (10 days)
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EXPENSE', value=1000000, date=datetime.date(2026, 10, 5)
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.salary_label, type='EARNING', value=6000000, date=datetime.date(2026, 10, 1)
+        )
+
+        # Current period: 2026-10-11 to 2026-10-20 (10 days)
+        # Food increased from 1,000,000 to 2,500,000 (+1,500,000, +150%)
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EXPENSE', value=2500000, date=datetime.date(2026, 10, 15)
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.salary_label, type='EARNING', value=8000000, date=datetime.date(2026, 10, 12)
+        )
+
+        res = self.client.get('/api/reports/summary/?start_date=2026-10-11&end_date=2026-10-20')
+        self.assertEqual(res.status_code, 200)
+        data = res.data
+
+        comp = data['comparison']
+        self.assertEqual(comp['previous_period']['total_income'], '6000000.00')
+        self.assertEqual(comp['previous_period']['total_expense'], '1000000.00')
+        # Income change: (8,000,000 - 6,000,000) / 6,000,000 * 100 = 33.33%
+        self.assertEqual(comp['income_change_percentage'], 33.33)
+        # Expense change: (2,500,000 - 1,000,000) / 1,000,000 * 100 = 150.0%
+        self.assertEqual(comp['expense_change_percentage'], 150.0)
+
+        # Largest spending increases
+        increases = data['largest_spending_increases']
+        self.assertTrue(len(increases) >= 1)
+        self.assertEqual(increases[0]['label_name'], 'Food')
+        self.assertEqual(increases[0]['increase_amount'], '1500000.00')
+        self.assertEqual(increases[0]['increase_percentage'], 150.0)
+
+    def test_report_export_csv_and_injection_prevention(self):
+        # Create normal transaction and potentially malicious formula title
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EXPENSE', value=120000, date=datetime.date(2026, 10, 2),
+            title='=cmd|/c calc!A0'
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.salary_label, type='EARNING', value=5000000, date=datetime.date(2026, 10, 1),
+            title='Lương tháng 10'
+        )
+
+        res = self.client.get('/api/reports/export/csv/?start_date=2026-10-01&end_date=2026-10-31')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res['Content-Type'], 'text/csv; charset=utf-8-sig')
+        self.assertIn('attachment; filename=', res['Content-Disposition'])
+
+        content = res.content.decode('utf-8-sig')
+        # Check metadata in header
+        self.assertIn('BÁO CÁO TÀI CHÍNH MONEYMANAGER', content)
+        self.assertIn('01/10/2026 đến 31/10/2026', content)
+        # Formula injection check: '=cmd...' MUST be sanitized to ''=cmd...'
+        self.assertIn("'=cmd|/c calc!A0", content)
+        self.assertIn('Lương tháng 10', content)
+
+    def test_report_user_isolation(self):
+        other_user = self.factory.create_user()
+        other_wallet = other_user.get_wallet()
+        other_label = CustomLabel.objects.create(wallet=other_wallet, name='SecretOther', color='#000000')
+        self.factory.create_transaction_filled(
+            other_wallet, label=other_label, type='EXPENSE', value=99999999, date=datetime.date(2026, 10, 5)
+        )
+
+        res = self.client.get('/api/reports/summary/?start_date=2026-10-01&end_date=2026-10-31')
+        self.assertEqual(res.status_code, 200)
+        # Other user's expense of 99,999,999 must NOT appear in this user's summary
+        self.assertNotEqual(res.data['summary']['total_expense'], '99999999.00')
+        breakdown_names = [item['label_name'] for item in res.data['category_breakdown']]
+        self.assertNotIn('SecretOther', breakdown_names)
+
 
 
 

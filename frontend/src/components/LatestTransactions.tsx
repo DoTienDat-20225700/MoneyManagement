@@ -1,20 +1,28 @@
-import { WarningAmberRounded, EditOutlined, RepeatRounded } from "@mui/icons-material";
+import { WarningAmberRounded, EditOutlined, RepeatRounded, Close as CloseIcon } from "@mui/icons-material";
 import {
   Box,
   Button,
   Chip,
+  CircularProgress,
   Dialog,
-  DialogActions,
   DialogContent,
   DialogTitle,
   FormControl,
+  FormControlLabel,
+  FormLabel,
+  IconButton,
   InputAdornment,
   InputLabel,
   MenuItem,
+  Radio,
+  RadioGroup,
   Select,
   TextField,
   Tooltip,
 } from "@mui/material";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { grey } from "@mui/material/colors";
 import {
   DataGrid,
@@ -48,6 +56,8 @@ interface Props {
   data: Transaction[] | null;
   headOnly: boolean;
   limit?: number;
+  hideActions?: boolean;
+  defaultPageSize?: number;
 }
 
 function LatestTransactions(props: Props) {
@@ -79,6 +89,8 @@ function LatestTransactions(props: Props) {
       queryClient.invalidateQueries({ queryKey: ["wallet"] });
       queryClient.invalidateQueries({ queryKey: ["budgets"] });
       queryClient.invalidateQueries({ queryKey: ["budget_summary"] });
+      queryClient.invalidateQueries({ queryKey: ["report_summary"] });
+      queryClient.invalidateQueries({ queryKey: ["report_transactions"] });
       enqueueSnackbar(t("transaction_deleted"), {
         variant: "success",
         autoHideDuration: 3000,
@@ -101,6 +113,8 @@ function LatestTransactions(props: Props) {
       queryClient.invalidateQueries({ queryKey: ["wallet"] });
       queryClient.invalidateQueries({ queryKey: ["budgets"] });
       queryClient.invalidateQueries({ queryKey: ["budget_summary"] });
+      queryClient.invalidateQueries({ queryKey: ["report_summary"] });
+      queryClient.invalidateQueries({ queryKey: ["report_transactions"] });
       enqueueSnackbar(t("transaction_updated"), {
         variant: "success",
         autoHideDuration: 3000,
@@ -227,29 +241,33 @@ function LatestTransactions(props: Props) {
       headerName: t("col_date"),
       width: 120,
     },
-    {
-      field: "actions",
-      type: "actions",
-      headerName: t("col_actions"),
-      width: 100,
-      cellClassName: "actions",
-      getActions: ({ id }) => {
-        return [
-          <GridActionsCellItem
-            icon={<EditOutlined sx={{ fontSize: 19 }} />}
-            label={t("edit_transaction")}
-            onClick={() => handleOpenEdit(id)}
-            color="inherit"
-          />,
-          <GridActionsCellItem
-            icon={<GridDeleteIcon sx={{ fontSize: 19 }} />}
-            label={t("delete")}
-            onClick={() => deleteMutation.mutate({ transactionId: Number(id) })}
-            color="inherit"
-          />,
-        ];
-      },
-    },
+    ...(!props.hideActions
+      ? [
+          {
+            field: "actions",
+            type: "actions" as const,
+            headerName: t("col_actions"),
+            width: 100,
+            cellClassName: "actions",
+            getActions: ({ id }: { id: GridRowId }) => {
+              return [
+                <GridActionsCellItem
+                  icon={<EditOutlined sx={{ fontSize: 19 }} />}
+                  label={t("edit_transaction")}
+                  onClick={() => handleOpenEdit(id)}
+                  color="inherit"
+                />,
+                <GridActionsCellItem
+                  icon={<GridDeleteIcon sx={{ fontSize: 19 }} />}
+                  label={t("delete")}
+                  onClick={() => deleteMutation.mutate({ transactionId: Number(id) })}
+                  color="inherit"
+                />,
+              ];
+            },
+          },
+        ]
+      : []),
     {
       field: "imported",
       headerName: "",
@@ -317,6 +335,12 @@ function LatestTransactions(props: Props) {
         hideFooter={props.headOnly}
         autoHeight
         disableRowSelectionOnClick
+        initialState={{
+          pagination: {
+            paginationModel: { page: 0, pageSize: props.defaultPageSize ?? 25 },
+          },
+        }}
+        pageSizeOptions={[10, 25, 50, 100]}
         localeText={
           language === "vi"
             ? viVN.components.MuiDataGrid.defaultProps.localeText
@@ -338,13 +362,15 @@ function LatestTransactions(props: Props) {
         onClose={() => setEditDialogOpen(false)}
         maxWidth="xs"
         fullWidth
-        PaperProps={{
-          style: { background: "#141414", borderRadius: 12 },
-        }}
       >
-        <DialogTitle>{t("edit_transaction")}</DialogTitle>
+        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>{t("edit_transaction")}</span>
+          <IconButton size="small" onClick={() => setEditDialogOpen(false)} sx={{ color: "text.secondary" }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
         <DialogContent
-          sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: "20px !important" }}
+          sx={{ display: "flex", flexDirection: "column", gap: 2, pt: "16px !important" }}
         >
           <TextField
             label={t("col_name")}
@@ -403,12 +429,47 @@ function LatestTransactions(props: Props) {
             </Select>
           </FormControl>
 
-          <FormControl size="small" fullWidth>
-            <InputLabel id="edit-transaction-type-label">{t("col_type")}</InputLabel>
-            <Select
-              labelId="edit-transaction-type-label"
-              id="edit-transaction-type-select"
-              label={t("col_type")}
+          {/* Amount and Date in 2-column row matching NewTransactionForm */}
+          <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 2 }}>
+            <TextField
+              label={t("col_value")}
+              size="small"
+              fullWidth
+              value={editItem?.value ?? ""}
+              onChange={(e) =>
+                setEditItem((prev) =>
+                  prev ? { ...prev, value: formatCurrency(e.target.value) } : null
+                )
+              }
+              InputProps={{
+                endAdornment: <InputAdornment position="end">đ</InputAdornment>,
+              }}
+            />
+
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DatePicker
+                label={t("col_date")}
+                value={editItem?.date ? dayjs(editItem.date) : null}
+                format={dateFormat}
+                onChange={(val) =>
+                  setEditItem((prev) =>
+                    prev ? { ...prev, date: val ? val.format("YYYY-MM-DD") : "" } : null
+                  )
+                }
+                slotProps={{ textField: { size: "small", fullWidth: true } }}
+              />
+            </LocalizationProvider>
+          </Box>
+
+          {/* Type radio group in dark pill boxes matching NewTransactionForm */}
+          <FormControl>
+            <FormLabel
+              sx={{ mb: 1, "&.Mui-disabled": { color: "white" } }}
+              disabled={true}
+            >
+              {t("col_type")}
+            </FormLabel>
+            <RadioGroup
               value={editItem?.type || TypeOption.EXPENSE}
               onChange={(e) =>
                 setEditItem((prev) =>
@@ -416,56 +477,37 @@ function LatestTransactions(props: Props) {
                 )
               }
             >
-              <MenuItem value={TypeOption.EXPENSE}>
-                {typeOptionMask(TypeOption.EXPENSE, language)}
-              </MenuItem>
-              <MenuItem value={TypeOption.EARNING}>
-                {typeOptionMask(TypeOption.EARNING, language)}
-              </MenuItem>
-            </Select>
+              {Object.values(TypeOption).map((item, i) => (
+                <FormControlLabel
+                  key={i}
+                  value={item}
+                  control={<Radio />}
+                  label={typeOptionMask(item, language)}
+                  sx={{
+                    backgroundColor: grey[900],
+                    p: 1,
+                    m: 0.5,
+                    borderRadius: 2,
+                  }}
+                />
+              ))}
+            </RadioGroup>
           </FormControl>
 
-          <TextField
-            label={t("col_value")}
-            size="small"
-            fullWidth
-            value={editItem?.value ?? ""}
-            onChange={(e) =>
-              setEditItem((prev) =>
-                prev ? { ...prev, value: formatCurrency(e.target.value) } : null
-              )
-            }
-            InputProps={{
-              endAdornment: <InputAdornment position="end">đ</InputAdornment>,
-            }}
-          />
-
-          <TextField
-            label={t("col_date")}
-            type="date"
-            size="small"
-            fullWidth
-            InputLabelProps={{ shrink: true }}
-            value={editItem?.date || ""}
-            onChange={(e) =>
-              setEditItem((prev) =>
-                prev ? { ...prev, date: e.target.value } : null
-              )
-            }
-          />
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setEditDialogOpen(false)} color="inherit">
-            {t("cancel")}
-          </Button>
           <Button
-            onClick={handleSaveEdit}
+            fullWidth
             variant="contained"
+            onClick={handleSaveEdit}
             disabled={updateMutation.isPending}
+            sx={{ height: 42, mt: 1, borderRadius: 2, fontWeight: 600 }}
           >
-            {t("save_changes")}
+            {updateMutation.isPending ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : (
+              t("save_changes")
+            )}
           </Button>
-        </DialogActions>
+        </DialogContent>
       </Dialog>
     </>
   );

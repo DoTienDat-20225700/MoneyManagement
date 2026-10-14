@@ -9,7 +9,9 @@ from django.contrib.auth.base_user import AbstractBaseUser
 from .managers import HubUserManager, TransactionsManager, TransactionsQueryset
 
 from datetime import date, datetime, timedelta
+import math
 from dateutil.relativedelta import relativedelta
+from django.utils import timezone
 
 
 class HubUser(AbstractBaseUser, PermissionsMixin):
@@ -727,6 +729,184 @@ class SavingPlan(WalletBasedModel):
 
         plan.save()
         return plan
+
+    def get_amount_saved(self) -> Decimal:
+        total = self.contributions.aggregate(total=Sum('amount'))['total']
+        return total if total is not None else Decimal('0.00')
+
+    def get_remaining_amount(self) -> Decimal:
+        saved = self.get_amount_saved()
+        target = self.amount or Decimal('0.00')
+        rem = target - saved
+        return rem if rem > Decimal('0.00') else Decimal('0.00')
+
+    def get_completion_percentage(self) -> float:
+        if not self.amount or self.amount <= Decimal('0.00'):
+            return 0.0
+        saved = self.get_amount_saved()
+        pct = float((saved / self.amount) * 100)
+        return round(pct, 1)
+
+    def get_status(self) -> str:
+        if not self.active:
+            return 'closed'
+        if self.get_amount_saved() >= self.amount:
+            return 'completed'
+        return 'active'
+
+    def get_estimated_completion(self) -> dict:
+        saved = self.get_amount_saved()
+        if saved >= self.amount:
+            return {
+                'status': 'completed',
+                'estimated_date': None,
+                'message': 'Mục tiêu đã hoàn thành!',
+                'daily_rate': 0.0,
+                'days_remaining': 0,
+            }
+        if not self.active:
+            return {
+                'status': 'closed',
+                'estimated_date': None,
+                'message': 'Kế hoạch đang tạm dừng hoặc đã đóng.',
+                'daily_rate': 0.0,
+                'days_remaining': None,
+            }
+
+        contribs = list(self.contributions.order_by('date', 'created_at'))
+        if not contribs:
+            return {
+                'status': 'active',
+                'estimated_date': None,
+                'message': 'Chưa có lịch sử đóng góp nào để ước tính ngày hoàn thành.',
+                'daily_rate': 0.0,
+                'days_remaining': None,
+            }
+
+        first_date = contribs[0].date
+        today = date.today()
+        days_span = (today - first_date).days
+        total_contributed = sum((c.amount for c in contribs), Decimal('0.00'))
+
+        if days_span <= 0:
+            if len(contribs) < 2:
+                return {
+                    'status': 'active',
+                    'estimated_date': None,
+                    'message': 'Cần thêm thời gian và các lần đóng góp tiếp theo để dự đoán chính xác.',
+                    'daily_rate': 0.0,
+                    'days_remaining': None,
+                }
+            effective_days = Decimal('1.0')
+        else:
+            effective_days = Decimal(str(days_span))
+
+        daily_rate = total_contributed / effective_days
+        if daily_rate <= Decimal('0.00'):
+            return {
+                'status': 'active',
+                'estimated_date': None,
+                'message': 'Tốc độ đóng góp không đủ để dự đoán ngày hoàn thành.',
+                'daily_rate': 0.0,
+                'days_remaining': None,
+            }
+
+        remaining = self.get_remaining_amount()
+        days_needed = math.ceil(float(remaining / daily_rate))
+        estimated_date = today + timedelta(days=days_needed)
+
+        return {
+            'status': 'active',
+            'estimated_date': estimated_date.isoformat(),
+            'message': None,
+            'daily_rate': round(float(daily_rate), 2),
+            'days_remaining': days_needed,
+        }
+
+
+class SavingPlanContribution(models.Model):
+    saving_plan = models.ForeignKey(
+        SavingPlan, on_delete=models.CASCADE, related_name='contributions')
+    user = models.ForeignKey(
+        HubUser, on_delete=models.CASCADE, related_name='saving_contributions')
+    amount = models.DecimalField(decimal_places=2, max_digits=15)
+    date = models.DateField(default=timezone.now)
+    description = models.CharField(max_length=200, blank=True, default='')
+    idempotency_key = models.CharField(max_length=64, blank=True, null=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-date', '-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'idempotency_key'],
+                condition=models.Q(idempotency_key__isnull=False) & ~models.Q(idempotency_key=''),
+                name='unique_user_saving_contrib_idempotency'
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.user.email} -> {self.saving_plan.title}: {self.amount} ({self.date})"
+
+    @classmethod
+    def create_from_json(cls, plan_pk: int, user: HubUser, data: dict) -> 'SavingPlanContribution':
+        if not isinstance(data, dict):
+            raise ValidationError('Saving contribution payload must be an object.')
+
+        try:
+            plan = SavingPlan.objects.get(pk=plan_pk, wallet__user=user)
+        except SavingPlan.DoesNotExist:
+            raise SavingPlan.DoesNotExist()
+
+        idempotency_key = data.get('idempotency_key') or data.get('idempotencyKey')
+        if idempotency_key:
+            idempotency_key = str(idempotency_key).strip()
+            existing = cls.objects.filter(user=user, idempotency_key=idempotency_key).first()
+            if existing:
+                return existing
+
+        amount = SavingPlan._parse_amount(data.get('amount'))
+        contrib_date = SavingPlan._parse_date(data.get('date')) or date.today()
+        description = data.get('description', '')
+        if description and len(str(description).strip()) > 200:
+            raise ValidationError({'description': 'Description must not exceed 200 characters.'})
+
+        return cls.objects.create(
+            saving_plan=plan,
+            user=user,
+            amount=amount,
+            date=contrib_date,
+            description=str(description).strip() if description else '',
+            idempotency_key=idempotency_key or None,
+        )
+
+    @classmethod
+    def update_from_json(cls, contrib_pk: int, user: HubUser, data: dict) -> 'SavingPlanContribution':
+        if not isinstance(data, dict):
+            raise ValidationError('Saving contribution payload must be an object.')
+
+        try:
+            contribution = cls.objects.get(pk=contrib_pk, user=user)
+        except cls.DoesNotExist:
+            raise cls.DoesNotExist()
+
+        if 'amount' in data:
+            contribution.amount = SavingPlan._parse_amount(data['amount'])
+
+        if 'date' in data:
+            contrib_date = SavingPlan._parse_date(data['date'])
+            if contrib_date:
+                contribution.date = contrib_date
+
+        if 'description' in data:
+            description = data['description'] or ''
+            if len(str(description).strip()) > 200:
+                raise ValidationError({'description': 'Description must not exceed 200 characters.'})
+            contribution.description = str(description).strip()
+
+        contribution.save()
+        return contribution
 
 
 class CategoryBudget(WalletBasedModel):
