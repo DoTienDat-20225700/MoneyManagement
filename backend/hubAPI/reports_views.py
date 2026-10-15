@@ -1,10 +1,13 @@
 import csv
 from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
-from io import StringIO
+from io import BytesIO, StringIO
 
 from django.db.models import Count, Q, Sum
 from django.http import HttpResponse
+import openpyxl
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -13,6 +16,7 @@ from rest_framework.views import APIView
 from hubModels.models import CustomLabel, HubUser, Transaction, Wallet
 from hubModels.serializers import TransactionSerializer
 from .utils import custom_user_error_response
+
 
 
 def sanitize_csv_cell(value):
@@ -356,9 +360,10 @@ class ReportExportCSVAPIView(APIView):
         total_expense = wallet.transactions.filter(date__range=[start_date, end_date], type='EXPENSE').aggregate(total=Sum('value'))['total'] or Decimal('0.00')
         net_flow = total_income - total_expense
 
-        # Build CSV buffer with UTF-8 BOM (\ufeff) for Excel compatibility
+        # Build CSV buffer with UTF-8 BOM (\ufeff) and sep=, directive for Excel compatibility
         output = StringIO()
         output.write('\ufeff')  # UTF-8 BOM
+        output.write('sep=,\r\n')  # Tell Excel to split by comma
         writer = csv.writer(output, quoting=csv.QUOTE_MINIMAL)
 
         # Report Header metadata
@@ -406,3 +411,213 @@ class ReportExportCSVAPIView(APIView):
         response = HttpResponse(csv_content, content_type='text/csv; charset=utf-8-sig')
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
+
+
+class ReportExportExcelAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        user: HubUser = request.user
+        wallet: Wallet = user.get_wallet()
+        if not wallet:
+            return custom_user_error_response("Wallet was not found.", 404)
+
+        start_date_str = request.query_params.get('start_date')
+        end_date_str = request.query_params.get('end_date')
+        tx_type = request.query_params.get('type')
+        label_id_param = request.query_params.get('label_id') or request.query_params.get('label')
+
+        today = date.today()
+        if not start_date_str and not end_date_str:
+            start_date = date(today.year, today.month, 1)
+            if today.month == 12:
+                end_date = date(today.year, 12, 31)
+            else:
+                end_date = date(today.year, today.month + 1, 1) - timedelta(days=1)
+        elif bool(start_date_str) != bool(end_date_str):
+            return custom_user_error_response("Both start_date and end_date are required.", 400)
+        else:
+            try:
+                start_date = date.fromisoformat(start_date_str)
+                end_date = date.fromisoformat(end_date_str)
+                if start_date > end_date:
+                    return custom_user_error_response("start_date must not be after end_date.", 400)
+            except ValueError:
+                return custom_user_error_response("Dates must use YYYY-MM-DD format.", 400)
+
+        tx_qs = wallet.transactions.filter(date__range=[start_date, end_date])
+
+        if tx_type and tx_type.upper() in ['EXPENSE', 'EARNING']:
+            tx_qs = tx_qs.filter(type=tx_type.upper())
+
+        if label_id_param:
+            try:
+                label_id = int(label_id_param)
+                tx_qs = tx_qs.filter(label_id=label_id)
+            except ValueError:
+                return custom_user_error_response("Invalid label_id.", 400)
+
+        tx_qs = tx_qs.select_related('label').order_by('-date', '-id')
+
+        # Summary figures
+        total_income = wallet.transactions.filter(date__range=[start_date, end_date], type='EARNING').aggregate(total=Sum('value'))['total'] or Decimal('0.00')
+        total_expense = wallet.transactions.filter(date__range=[start_date, end_date], type='EXPENSE').aggregate(total=Sum('value'))['total'] or Decimal('0.00')
+        net_flow = total_income - total_expense
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Báo cáo tài chính"
+        ws.views.sheetView[0].showGridLines = True
+
+        font_family = "Arial"
+        thin_border = Border(
+            left=Side(style='thin', color='CBD5E1'),
+            right=Side(style='thin', color='CBD5E1'),
+            top=Side(style='thin', color='CBD5E1'),
+            bottom=Side(style='thin', color='CBD5E1'),
+        )
+
+        # Title Row
+        ws.merge_cells('A2:H2')
+        title_cell = ws['A2']
+        title_cell.value = "BÁO CÁO TÀI CHÍNH MONEYMANAGER"
+        title_cell.font = Font(name=font_family, size=15, bold=True, color="FFFFFF")
+        title_cell.fill = PatternFill(start_color="00863A", end_color="00863A", fill_type="solid")
+        title_cell.alignment = Alignment(horizontal="center", vertical="center")
+        ws.row_dimensions[2].height = 42
+
+        # Subtitle / Metadata block
+        meta_data = [
+            ("Kỳ báo cáo:", f"{start_date.strftime('%d/%m/%Y')} đến {end_date.strftime('%d/%m/%Y')}",
+             "Tổng thu nhập:", f"+{total_income:,.0f} đ".replace(',', '.'), "15803D"),
+            ("Ngày xuất:", datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
+             "Tổng chi tiêu:", f"-{total_expense:,.0f} đ".replace(',', '.'), "DC2626"),
+            ("Người dùng:", f"{user.first_name} {user.last_name} ({user.email})".strip(),
+             "Dòng tiền ròng:", f"{net_flow:,.0f} đ".replace(',', '.'), "15803D" if net_flow >= 0 else "DC2626"),
+        ]
+
+        for i, (label_left, val_left, label_right, val_right, color_right) in enumerate(meta_data, start=4):
+            ws.row_dimensions[i].height = 22
+
+            # Left key-value
+            c_lbl_l = ws.cell(row=i, column=1, value=label_left)
+            c_lbl_l.font = Font(name=font_family, size=10, bold=True, color="475569")
+            c_lbl_l.alignment = Alignment(horizontal="right", vertical="center")
+
+            ws.merge_cells(start_row=i, start_column=2, end_row=i, end_column=3)
+            c_val_l = ws.cell(row=i, column=2, value=val_left)
+            c_val_l.font = Font(name=font_family, size=10, color="0F172A")
+            c_val_l.alignment = Alignment(horizontal="left", vertical="center")
+
+            # Right key-value
+            ws.merge_cells(start_row=i, start_column=4, end_row=i, end_column=5)
+            c_lbl_r = ws.cell(row=i, column=4, value=label_right)
+            c_lbl_r.font = Font(name=font_family, size=10, bold=True, color="475569")
+            c_lbl_r.alignment = Alignment(horizontal="right", vertical="center")
+
+            ws.merge_cells(start_row=i, start_column=6, end_row=i, end_column=8)
+            c_val_r = ws.cell(row=i, column=6, value=val_right)
+            c_val_r.font = Font(name=font_family, size=10, bold=True, color=color_right)
+            c_val_r.alignment = Alignment(horizontal="left", vertical="center")
+
+        ws.row_dimensions[7].height = 14
+
+        # Table Headers (Row 8)
+        headers = [
+            ("Mã GD", 10, Alignment(horizontal="center", vertical="center")),
+            ("Ngày", 14, Alignment(horizontal="center", vertical="center")),
+            ("Tiêu đề", 28, Alignment(horizontal="left", vertical="center")),
+            ("Loại", 14, Alignment(horizontal="center", vertical="center")),
+            ("Danh mục", 18, Alignment(horizontal="left", vertical="center")),
+            ("Số tiền (VND)", 18, Alignment(horizontal="right", vertical="center")),
+            ("Định kỳ", 12, Alignment(horizontal="center", vertical="center")),
+            ("Nhập từ hoá đơn", 18, Alignment(horizontal="center", vertical="center")),
+        ]
+
+        ws.row_dimensions[8].height = 28
+        header_fill = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid")
+        header_font = Font(name=font_family, size=11, bold=True, color="FFFFFF")
+
+        for col_idx, (col_name, col_width, col_align) in enumerate(headers, start=1):
+            cell = ws.cell(row=8, column=col_idx, value=col_name)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = col_align
+            cell.border = thin_border
+            ws.column_dimensions[get_column_letter(col_idx)].width = col_width
+
+        # Rows
+        row_idx = 9
+        zebra_fill = PatternFill(start_color="F8FAFC", end_color="F8FAFC", fill_type="solid")
+        white_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+
+        tx_count = tx_qs.count()
+        for tx in tx_qs:
+            ws.row_dimensions[row_idx].height = 22
+            fill = zebra_fill if row_idx % 2 == 1 else white_fill
+            type_display = "Khoản thu" if tx.type == "EARNING" else "Khoản chi"
+            type_color = "15803D" if tx.type == "EARNING" else "DC2626"
+            label_name = tx.label.name if tx.label else "Chưa phân loại"
+
+            row_data = [
+                (tx.id, Alignment(horizontal="center", vertical="center"), Font(name=font_family, size=10)),
+                (tx.date.strftime('%d/%m/%Y'), Alignment(horizontal="center", vertical="center"), Font(name=font_family, size=10)),
+                (sanitize_csv_cell(tx.title), Alignment(horizontal="left", vertical="center"), Font(name=font_family, size=10)),
+                (type_display, Alignment(horizontal="center", vertical="center"), Font(name=font_family, size=10, bold=True, color=type_color)),
+                (label_name, Alignment(horizontal="left", vertical="center"), Font(name=font_family, size=10)),
+                (float(tx.value), Alignment(horizontal="right", vertical="center"), Font(name=font_family, size=10, bold=True)),
+                ("Có" if tx.recurrent else "Không", Alignment(horizontal="center", vertical="center"), Font(name=font_family, size=10)),
+                ("Có" if tx.imported else "Không", Alignment(horizontal="center", vertical="center"), Font(name=font_family, size=10)),
+            ]
+
+            for col_idx, (val, align, font) in enumerate(row_data, start=1):
+                cell = ws.cell(row=row_idx, column=col_idx, value=val)
+                cell.font = font
+                cell.alignment = align
+                cell.fill = fill
+                cell.border = thin_border
+                if col_idx == 6:  # Số tiền
+                    cell.number_format = '#,##0'
+
+            row_idx += 1
+
+        # Summary total row
+        ws.row_dimensions[row_idx].height = 26
+        ws.merge_cells(start_row=row_idx, start_column=1, end_row=row_idx, end_column=5)
+        tot_label = ws.cell(row=row_idx, column=1, value=f"TỔNG CỘNG ({tx_count} giao dịch)")
+        tot_label.font = Font(name=font_family, size=10, bold=True, color="0F172A")
+        tot_label.alignment = Alignment(horizontal="right", vertical="center")
+        tot_label.fill = PatternFill(start_color="E2E8F0", end_color="E2E8F0", fill_type="solid")
+
+        for col_idx in range(1, 6):
+            ws.cell(row=row_idx, column=col_idx).border = thin_border
+            ws.cell(row=row_idx, column=col_idx).fill = PatternFill(start_color="E2E8F0", end_color="E2E8F0", fill_type="solid")
+
+        tot_val = ws.cell(row=row_idx, column=6)
+        if row_idx > 9:
+            tot_val.value = f"=SUM(F9:F{row_idx-1})"
+        else:
+            tot_val.value = 0
+        tot_val.font = Font(name=font_family, size=10, bold=True, color="0F172A")
+        tot_val.alignment = Alignment(horizontal="right", vertical="center")
+        tot_val.number_format = '#,##0'
+        tot_val.fill = PatternFill(start_color="E2E8F0", end_color="E2E8F0", fill_type="solid")
+        tot_val.border = thin_border
+
+        for col_idx in (7, 8):
+            c_empty = ws.cell(row=row_idx, column=col_idx, value="")
+            c_empty.fill = PatternFill(start_color="E2E8F0", end_color="E2E8F0", fill_type="solid")
+            c_empty.border = thin_border
+
+        buf = BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+
+        filename = f"bao_cao_tai_chinh_{start_date.isoformat()}_{end_date.isoformat()}.xlsx"
+        response = HttpResponse(
+            buf.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
+

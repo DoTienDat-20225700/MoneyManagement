@@ -34,27 +34,36 @@ class HubUser(AbstractBaseUser, PermissionsMixin):
 
     @staticmethod
     def create_from_json(data: dict):
-        # TODO: Field validations
-        user = HubUser()
-        if data.get("firstName"):
-            user.first_name = data.get("firstName")
-        if data.get("lastName"):
-            user.last_name = data.get("lastName")
-        if data.get("password"):
-            user.set_password(data.get("password"))
-        if data.get("email"):
-            user.email = data.get("email")
+        if not isinstance(data, dict):
+            raise ValidationError('Dữ liệu tạo tài khoản phải là một đối tượng.')
 
-        user.save()
+        email = data.get("email")
+        if not email or not isinstance(email, str) or not email.strip():
+            raise ValidationError({'email': 'Email là bắt buộc.'})
+        email = email.strip()
 
-        # Creation of a related wallet for the created user
-        user_wallet = Wallet.objects.create(
-            user_id=user.pk,
-            current_amount=0
+        from django.core.validators import validate_email
+        try:
+            validate_email(email)
+        except ValidationError:
+            raise ValidationError({'email': 'Địa chỉ email không hợp lệ.'})
+
+        if HubUser.objects.filter(email__iexact=email).exists():
+            raise ValidationError({'email': 'Email này đã được sử dụng.'})
+
+        password = data.get("password")
+        if not password or not isinstance(password, str) or not password.strip():
+            raise ValidationError({'password': 'Mật khẩu là bắt buộc.'})
+
+        first_name = str(data.get("firstName") or "").strip()
+        last_name = str(data.get("lastName") or "").strip()
+
+        user = HubUser.objects.create_user(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            password=password,
         )
-
-        user_wallet.save()
-
         return user
 
     def get_wallet(self) -> 'Wallet':
@@ -605,6 +614,7 @@ class Transaction(WalletBasedModel):
         transaction.date = Transaction._parse_date(imported_data.get("date"))
 
         transaction.save(is_first_save=True)
+        return transaction
 
     def is_recurrent(self):
         return self.recurrent

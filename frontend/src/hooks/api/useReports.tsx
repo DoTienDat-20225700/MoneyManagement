@@ -64,9 +64,40 @@ export function useReports() {
     window.URL.revokeObjectURL(url);
   }
 
+  async function downloadReportExcel(params: ReportFilterParams): Promise<void> {
+    const cleanParams: Record<string, string | number> = {};
+    if (params.start_date) cleanParams.start_date = params.start_date;
+    if (params.end_date) cleanParams.end_date = params.end_date;
+    if (params.type && params.type !== "ALL") cleanParams.type = params.type;
+    if (params.label_id !== undefined && params.label_id !== "" && params.label_id !== "all") {
+      cleanParams.label_id = params.label_id;
+    }
+
+    const response = await axiosPrivate.get("/reports/export/excel/", {
+      params: cleanParams,
+      responseType: "blob",
+    });
+
+    const blob = new Blob([response.data], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    const startStr = params.start_date || "from";
+    const endStr = params.end_date || "to";
+    link.setAttribute("download", `bao_cao_tai_chinh_${startStr}_${endStr}.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  }
+
   return {
     getReportSummary,
     getReportTransactions,
     downloadReportCSV,
+    downloadReportExcel,
   };
 }
+

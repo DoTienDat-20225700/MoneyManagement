@@ -3,9 +3,9 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
-from .reports_views import ReportSummaryAPIView, ReportTransactionsAPIView, ReportExportCSVAPIView
+from .reports_views import ReportSummaryAPIView, ReportTransactionsAPIView, ReportExportCSVAPIView, ReportExportExcelAPIView
 from .views import (MyTokenObtainPairView, MyTokenRefreshView, TransactionAPIView, get_saving_plans, get_transactions,
-                    get_routes, create_user, WalletAPIView, LabelAPIView, ImportInvoicesAPIView, SavingPlanAPIView,
+                    get_routes, create_user, WalletAPIView, LabelAPIView, ImportInvoicesAPIView, ImportPreviewAPIView, SavingPlanAPIView,
                     SavingPlanContributionAPIView, BudgetAPIView, BudgetSummaryAPIView)
 
 urlpatterns = [
@@ -37,8 +37,12 @@ urlpatterns = [
     path('reports/summary/', ReportSummaryAPIView.as_view(), name='reports_summary'),
     path('reports/transactions/', ReportTransactionsAPIView.as_view(), name='reports_transactions'),
     path('reports/export/csv/', ReportExportCSVAPIView.as_view(), name='reports_export_csv'),
+    path('reports/export/excel/', ReportExportExcelAPIView.as_view(), name='reports_export_excel'),
     path('transactions/', get_transactions, name='transactions'),
     path('transaction/', TransactionAPIView.as_view(), name='transaction'),
     path('transaction/<int:transaction_pk>', TransactionAPIView.as_view(), name='transaction'),
-    path('import/', ImportInvoicesAPIView.as_view(), name='import')
+    path('import/', ImportInvoicesAPIView.as_view(), name='import'),
+    path('import/preview/', ImportPreviewAPIView.as_view(), name='import_preview'),
 ]
+
+

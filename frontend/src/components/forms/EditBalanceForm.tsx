@@ -33,7 +33,7 @@ function EditBalanceForm(props: Props) {
     },
   });
 
-  const { mutateAsync } = useMutation({
+  const { mutateAsync, isPending } = useMutation({
     mutationFn: updateWallet,
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -72,6 +72,7 @@ function EditBalanceForm(props: Props) {
         render={({ field: { onChange, value }, fieldState: { error } }) => (
           <TextField
             error={!!error}
+            disabled={isPending}
             onChange={(e) => {
               const formattedValue = formatCurrency(e.target.value);
               onChange(formattedValue);

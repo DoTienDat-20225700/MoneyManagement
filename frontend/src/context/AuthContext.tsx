@@ -30,8 +30,8 @@ interface AuthTokens {
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 export const AuthProvider = ({ children }: Props) => {
-  let [authTokens, setAuthTokens] = useState<AuthTokens | null>(null);
-  let [loggedUser, setLoggedUser] = useState<User | null>(null);
+  const [authTokens, setAuthTokens] = useState<AuthTokens | null>(null);
+  const [loggedUser, setLoggedUser] = useState<User | null>(null);
 
   async function SignIn({
     email,

@@ -1,9 +1,11 @@
+import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { HelpOutlineRounded } from "@mui/icons-material";
+import { HelpOutlineRounded, CheckCircleOutlineRounded as CheckCircleIcon } from "@mui/icons-material";
 import {
   Box,
   Button,
   Checkbox,
+  CircularProgress,
   FormControl,
   FormControlLabel,
   FormGroup,
@@ -23,7 +25,7 @@ import { useSnackbar } from "notistack";
 import { Controller, useForm } from "react-hook-form";
 import { useSearchParams } from "react-router-dom";
 import { TypeOption } from "../../enums/Enums";
-import { useInvoice } from "../../hooks/api/useInvoice";
+import { useInvoice, ParsedInvoiceResult } from "../../hooks/api/useInvoice";
 import { useLabels } from "../../hooks/api/useLabels";
 import { BankInstitutions } from "../../models/Invoices";
 import { typeOptionMask } from "../../models/Transaction";
@@ -36,7 +38,7 @@ import { useLanguage } from "../../context/LanguageContext";
 function NewInvoiceForm() {
   const { language, t } = useLanguage();
   const queryClient = useQueryClient();
-  const { uploadInvoices } = useInvoice();
+  const { uploadInvoices, previewInvoices } = useInvoice();
   const { getLabels } = useLabels();
   const { data: labels } = useQuery({
     queryKey: ["labels"],
@@ -44,11 +46,17 @@ function NewInvoiceForm() {
   });
   const { enqueueSnackbar } = useSnackbar();
   const [_, setSearchParams] = useSearchParams();
+
+  const [previewResults, setPreviewResults] = useState<ParsedInvoiceResult[] | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
+
   const {
     handleSubmit,
     control,
     formState: { errors },
     setValue,
+    watch,
   } = useForm<NewInvoiceImportFormData>({
     resolver: zodResolver(newInvoiceImportSchema),
     defaultValues: {
@@ -60,9 +68,58 @@ function NewInvoiceForm() {
     },
   });
 
-  const { mutateAsync } = useMutation({
+  const currentInstitution = watch("institution");
+
+  // Live scan handler when user picks files
+  const handleFileChange = async (files: FileList | null) => {
+    setSelectedFiles(files);
+    setValue("invoices", files as any);
+    if (!files || files.length === 0) {
+      setPreviewResults(null);
+      return;
+    }
+    try {
+      setIsPreviewLoading(true);
+      const results = await previewInvoices({
+        invoices: files,
+        institution: currentInstitution || BankInstitutions.GENERAL_VN,
+      });
+      setPreviewResults(results);
+    } catch (err) {
+      console.error(err);
+      setPreviewResults(null);
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
+
+  // Re-scan if institution changes and files are already chosen
+  useEffect(() => {
+    if (selectedFiles && selectedFiles.length > 0) {
+      let isCancelled = false;
+      setIsPreviewLoading(true);
+      previewInvoices({
+        invoices: selectedFiles,
+        institution: currentInstitution || BankInstitutions.GENERAL_VN,
+      })
+        .then((res) => {
+          if (!isCancelled) setPreviewResults(res);
+        })
+        .catch(() => {
+          if (!isCancelled) setPreviewResults(null);
+        })
+        .finally(() => {
+          if (!isCancelled) setIsPreviewLoading(false);
+        });
+      return () => {
+        isCancelled = true;
+      };
+    }
+  }, [currentInstitution]);
+
+  const { mutateAsync, isPending } = useMutation({
     mutationFn: uploadInvoices,
-    onSuccess: () => {
+    onSuccess: (res) => {
       setSearchParams((state) => {
         state.delete("invoice");
         return state;
@@ -79,9 +136,27 @@ function NewInvoiceForm() {
       queryClient.invalidateQueries({
         queryKey: ["budget_summary"],
       });
-      enqueueSnackbar(t("invoice_import_success"), {
+
+      const imported = res?.imported || [];
+      let successMsg = t("invoice_import_success");
+      if (imported.length === 1 && (imported[0].title || imported[0].formatted_value)) {
+        const it = imported[0];
+        const detailParts: string[] = [];
+        if (it.title) detailParts.push(it.title);
+        if (it.formatted_value) detailParts.push(it.formatted_value);
+        if (it.date) detailParts.push(it.date);
+        successMsg = language === "vi"
+          ? `Đã nhập hoá đơn: ${detailParts.join(" • ")}`
+          : `Imported invoice: ${detailParts.join(" • ")}`;
+      } else if (imported.length > 1) {
+        successMsg = language === "vi"
+          ? `Đã nhập thành công ${imported.length} hoá đơn!`
+          : `Successfully imported ${imported.length} invoices!`;
+      }
+
+      enqueueSnackbar(successMsg, {
         variant: "success",
-        autoHideDuration: 3000,
+        autoHideDuration: 4500,
         anchorOrigin: { horizontal: "right", vertical: "bottom" },
       });
     },
@@ -143,7 +218,7 @@ function NewInvoiceForm() {
               }
               error={!!errors.invoices}
               onChange={(e: any) => {
-                setValue("invoices", e.target.files);
+                handleFileChange(e.target.files);
               }}
               size="small"
               inputProps={{
@@ -155,9 +230,97 @@ function NewInvoiceForm() {
         )}
       />
 
+      {/* Loading state when scanning image */}
+      {isPreviewLoading && (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+            p: 1.5,
+            borderRadius: 2,
+            backgroundColor: "rgba(0, 134, 58, 0.05)",
+            border: "1px dashed #00863A",
+          }}
+        >
+          <CircularProgress size={18} sx={{ color: "#48cc90" }} />
+          <Typography variant="body2" sx={{ color: "#48cc90", fontWeight: 500 }}>
+            {language === "vi"
+              ? "Đang quét và đọc thông tin trong ảnh..."
+              : "Scanning and extracting information from image..."}
+          </Typography>
+        </Box>
+      )}
+
+      {/* Extracted Information Message Box */}
+      {!isPreviewLoading && previewResults && previewResults.length > 0 && (
+        <Box
+          sx={{
+            p: 2,
+            borderRadius: 2,
+            backgroundColor: "rgba(0, 134, 58, 0.08)",
+            border: "1px solid #00863A",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+            <CheckCircleIcon sx={{ color: "#48cc90", fontSize: 20 }} />
+            <Typography variant="subtitle2" fontWeight={700} sx={{ color: "#48cc90" }}>
+              {language === "vi"
+                ? "Đã đọc được thông tin trong ảnh:"
+                : "Successfully read from image:"}
+            </Typography>
+          </Box>
+
+          {previewResults.map((item, idx) => {
+            const hasData = item.value || item.formatted_date || (item.title && item.title !== "Giao dịch chuyển khoản");
+            return (
+              <Box
+                key={idx}
+                sx={{
+                  mt: idx > 0 ? 1.5 : 0,
+                  pt: idx > 0 ? 1.5 : 0,
+                  borderTop: idx > 0 ? "1px dashed rgba(255,255,255,0.15)" : "none",
+                }}
+              >
+                {previewResults.length > 1 && (
+                  <Typography variant="caption" sx={{ color: grey[400], fontWeight: 600 }}>
+                    {item.file_name}:
+                  </Typography>
+                )}
+                {hasData ? (
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, mt: 0.5 }}>
+                    <Typography variant="body2" sx={{ color: grey[200] }}>
+                      • <strong>{language === "vi" ? "Tiêu đề / Lời nhắn" : "Title / Note"}:</strong>{" "}
+                      <span>{item.title || "—"}</span>
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: grey[200] }}>
+                      • <strong>{language === "vi" ? "Số tiền" : "Amount"}:</strong>{" "}
+                      <span style={{ color: "#48cc90", fontWeight: 700, fontSize: "15px" }}>
+                        {item.formatted_value || "—"}
+                      </span>
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: grey[200] }}>
+                      • <strong>{language === "vi" ? "Ngày giao dịch" : "Date"}:</strong>{" "}
+                      <span>{item.formatted_date || "—"}</span>
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Typography variant="caption" sx={{ color: "#facc15", mt: 0.5, display: "block" }}>
+                    {language === "vi"
+                      ? "⚠️ Ảnh mờ hoặc chưa nhận diện rõ chữ số. Hệ thống sẽ tự phân tích lại khi bấm Nhập hoá đơn."
+                      : "⚠️ Could not clearly extract fields. System will re-attempt upon submit."}
+                  </Typography>
+                )}
+              </Box>
+            );
+          })}
+        </Box>
+      )}
+
       <Controller
         name="institution"
         control={control}
+
         render={({ field: { onChange, value } }) => (
           <FormControl fullWidth size="small">
             <InputLabel id="import-bank-institution-label">
@@ -308,9 +471,17 @@ function NewInvoiceForm() {
         />
       </FormGroup>
 
-      <Button type="submit" variant="contained">
-        {t("import_btn")}
+      <Button
+        type="submit"
+        variant="contained"
+        disabled={isPending || isPreviewLoading}
+        startIcon={isPending ? <CircularProgress size={16} color="inherit" /> : null}
+      >
+        {isPending
+          ? (language === "vi" ? "Đang nhập hoá đơn..." : "Importing...")
+          : t("import_btn")}
       </Button>
+
     </form>
   );
 }

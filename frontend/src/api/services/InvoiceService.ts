@@ -8,7 +8,7 @@ class InvoiceService {
   }: {
     accessToken: string;
     files: FileList;
-    institution?: String;
+    institution?: string;
   }): Promise<{ [key: string]: string } | null> {
     try {
       const response = await api.post(`/import/${institution}`, files, {

@@ -1,4 +1,6 @@
 import os
+import re
+import datetime
 from decimal import Decimal, InvalidOperation
 from django.core.exceptions import ValidationError
 from django.http import JsonResponse
@@ -9,7 +11,8 @@ from hubModels.models import HubUser, Transaction, CustomLabel, SavingPlan, Cate
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
+import uuid
 from rest_framework.parsers import FileUploadParser
 from hubModels.serializers import SavingPlanSerializer, WalletSerializer, TransactionSerializer, CategoryBudgetSerializer, SavingPlanContributionSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -18,10 +21,11 @@ from datetime import date
 from datetime import timedelta
 from hubModels.models import CustomLabel
 from hubModels.serializers import LabelSerializer
-from hubModels.importer import InvoiceImporter, PDFInvoiceImporter, InvoiceProcessingException
+from hubModels.importer import InvoiceImporter, PDFInvoiceImporter, InvoiceProcessingException, parse_date
 from django.conf import settings
 from django.db import transaction as db_transaction
 from django.db.models.functions import TruncDate
+
 
 
 class MyTokenObtainPairView(TokenObtainPairView):
@@ -197,6 +201,10 @@ class LabelAPIView(APIView):
         return custom_success_response("Label deleted with success!")
 
 
+ALLOWED_UPLOAD_EXTENSIONS = {'.pdf', '.png', '.jpg', '.jpeg', '.webp', '.heic', '.tiff', '.bmp'}
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB per file
+
+
 class ImportInvoicesAPIView(APIView):
     permission_classes = (IsAuthenticated,)
 
@@ -204,6 +212,22 @@ class ImportInvoicesAPIView(APIView):
         user: HubUser = request.user
 
         files_list = request.FILES.getlist('files[]')
+        if not files_list:
+            return custom_user_error_response("Vui lòng chọn ít nhất một tệp để tải lên.", 400)
+
+        for uploaded_file in files_list:
+            _, ext = os.path.splitext(uploaded_file.name)
+            ext = ext.lower()
+            if not ext or ext not in ALLOWED_UPLOAD_EXTENSIONS:
+                return custom_user_error_response(
+                    f"Định dạng tệp '{uploaded_file.name}' không được hỗ trợ. Vui lòng chỉ tải lên tệp PDF hoặc ảnh (PNG, JPG, WEBP).",
+                    400
+                )
+            if uploaded_file.size > MAX_UPLOAD_SIZE:
+                return custom_user_error_response(
+                    f"Tệp '{uploaded_file.name}' vượt quá dung lượng tối đa cho phép (10MB).",
+                    400
+                )
 
         institution = request.query_params.get('institution')
         update_wallet = request.query_params.get('updateWallet') in ['1', 'true', 'True', True]
@@ -215,13 +239,13 @@ class ImportInvoicesAPIView(APIView):
             update_wallet = False
 
         os.makedirs('hubAPI/imported_files', exist_ok=True)
+        imported_items = []
 
         for uploaded_file in files_list:
             _, ext = os.path.splitext(uploaded_file.name)
-            if not ext:
-                ext = '.pdf'
-            ext = ext.lower()
-            file_path = f'hubAPI/imported_files/buffer_{user.pk}{ext}'
+            ext = ext.lower() or '.pdf'
+            file_name = f"buffer_{user.pk}_{uuid.uuid4().hex}{ext}"
+            file_path = os.path.join('hubAPI', 'imported_files', file_name)
 
             try:
                 with open(file_path, 'wb') as file:
@@ -243,17 +267,122 @@ class ImportInvoicesAPIView(APIView):
                     return custom_user_error_response(InvoiceProcessingException.message)
 
                 try:
-                    Transaction.create_from_import(imported_data=invoice_dict, optional_data=optional_data, user=user)
+                    tx = Transaction.create_from_import(imported_data=invoice_dict, optional_data=optional_data, user=user)
+                    val_num = float(tx.value) if tx.value is not None else 0.0
+                    val_str = f"{val_num:,.0f} đ".replace(',', '.')
+                    date_str = tx.date.strftime('%d/%m/%Y') if tx.date else ''
+                    imported_items.append({
+                        'id': tx.id,
+                        'title': tx.title,
+                        'value': val_num,
+                        'formatted_value': val_str,
+                        'date': date_str,
+                    })
                 except Exception as e:
                     return custom_user_error_response('Có lỗi xảy ra khi lưu giao dịch từ hoá đơn. Vui lòng thử lại.')
             finally:
                 if os.path.exists(file_path):
                     os.remove(file_path)
 
-        return custom_success_response('Đã nhập hoá đơn thành công! Vui lòng cập nhật các thông tin còn thiếu.')
+        return Response({
+            'success': True,
+            'message': 'Đã nhập hoá đơn thành công! Vui lòng cập nhật các thông tin còn thiếu.',
+            'imported': imported_items,
+        }, status=200)
+
+
+class ImportPreviewAPIView(APIView):
+    """
+    API trích xuất và đọc thông tin từ ảnh biên lai / PDF trước khi lưu giao dịch.
+    Trả về dữ liệu đã đọc được (tiêu đề, số tiền, ngày tháng, định dạng) để hiển thị thông báo trực quan cho người dùng.
+    """
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        user: HubUser = request.user
+        files_list = request.FILES.getlist('files[]')
+        institution = request.query_params.get('institution')
+
+        if not files_list:
+            return custom_user_error_response('Vui lòng chọn ít nhất một tệp để phân tích.', 400)
+
+        for uploaded_file in files_list:
+            _, ext = os.path.splitext(uploaded_file.name)
+            ext = ext.lower()
+            if not ext or ext not in ALLOWED_UPLOAD_EXTENSIONS:
+                return custom_user_error_response(
+                    f"Định dạng tệp '{uploaded_file.name}' không được hỗ trợ. Vui lòng chỉ tải lên tệp PDF hoặc ảnh (PNG, JPG, WEBP).",
+                    400
+                )
+            if uploaded_file.size > MAX_UPLOAD_SIZE:
+                return custom_user_error_response(
+                    f"Tệp '{uploaded_file.name}' vượt quá dung lượng tối đa cho phép (10MB).",
+                    400
+                )
+
+        os.makedirs('hubAPI/imported_files', exist_ok=True)
+        parsed_results = []
+
+        for idx, uploaded_file in enumerate(files_list):
+            _, ext = os.path.splitext(uploaded_file.name)
+            ext = ext.lower() or '.pdf'
+            file_name = f"preview_{user.pk}_{idx}_{uuid.uuid4().hex}{ext}"
+            file_path = os.path.join('hubAPI', 'imported_files', file_name)
+
+            try:
+                with open(file_path, 'wb') as file:
+                    for chunk in uploaded_file.chunks():
+                        file.write(chunk)
+
+                try:
+                    invoice_dict = InvoiceImporter(file_path, institution).process_file()
+                except Exception as e:
+                    invoice_dict = {'value': None, 'date': None, 'title': None}
+
+                val = invoice_dict.get('value')
+                date_val = invoice_dict.get('date')
+                title = invoice_dict.get('title')
+
+                formatted_date = ''
+                if isinstance(date_val, (datetime.date, datetime.datetime)):
+                    formatted_date = date_val.strftime('%d/%m/%Y')
+                elif date_val:
+                    d_parsed = parse_date(str(date_val))
+                    formatted_date = d_parsed.strftime('%d/%m/%Y') if d_parsed else str(date_val)
+
+                val_num = None
+                formatted_val = ''
+                if val is not None:
+                    try:
+                        val_num = float(val)
+                        formatted_val = f"{val_num:,.0f} đ".replace(',', '.')
+                    except (ValueError, TypeError):
+                        pass
+
+                parsed_results.append({
+                    'file_name': uploaded_file.name,
+                    'title': title or 'Giao dịch chuyển khoản',
+                    'value': val_num,
+                    'formatted_value': formatted_val,
+                    'date': str(date_val) if date_val else '',
+                    'formatted_date': formatted_date,
+                    'institution': institution or 'Ngân hàng Việt Nam (Chung / VietQR)',
+                    'is_valid': bool(val_num or formatted_date),
+                })
+            finally:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+
+        return Response({
+            'success': True,
+            'message': 'Đã phân tích thông tin hoá đơn thành công.',
+            'results': parsed_results,
+        }, status=200)
+
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def get_routes(request):
     routes = [
         '/api/token',
@@ -275,13 +404,25 @@ def get_routes(request):
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def create_user(request):
     data = request.data
+    if not isinstance(data, dict):
+        return custom_user_error_response("Dữ liệu không hợp lệ.", 400)
     try:
-        user = HubUser.create_from_json(data)
-        return custom_success_response("Tạo tài khoản thành công!")
+        HubUser.create_from_json(data)
+        return Response({"message": "Tạo tài khoản thành công!"}, status=201)
+    except ValidationError as e:
+        if hasattr(e, 'message_dict'):
+            first_err = next(iter(e.message_dict.values()))
+            msg = first_err[0] if isinstance(first_err, list) else str(first_err)
+        elif hasattr(e, 'message'):
+            msg = e.message
+        else:
+            msg = str(e)
+        return custom_user_error_response(msg, 400)
     except Exception as e:
-        return custom_user_error_response("Email này đã được sử dụng hoặc thông tin không hợp lệ.")
+        return custom_user_error_response("Email này đã được sử dụng hoặc thông tin không hợp lệ.", 400)
 
 
 class SavingPlanAPIView(APIView):

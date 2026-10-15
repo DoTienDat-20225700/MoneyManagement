@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   Checkbox,
+  CircularProgress,
   FormControl,
   FormControlLabel,
   FormGroup,
@@ -46,7 +47,7 @@ function NewTransactionForm() {
     handleSubmit,
     control,
     watch,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<NewTransactionFormInput, any, NewTransactionFormData>({
     resolver: zodResolver(newTransactionFormSchema),
     defaultValues: {
@@ -64,7 +65,7 @@ function NewTransactionForm() {
 
   const isRecurring = watch("recurring");
 
-  const { mutateAsync } = useMutation({
+  const { mutateAsync, isPending } = useMutation({
     mutationFn: createTransaction,
     onSuccess: () => {
       setSearchParams((state) => {
@@ -350,8 +351,13 @@ function NewTransactionForm() {
         </Box>
       )}
 
-      <Button type="submit" variant="contained">
-        {t("add")}
+      <Button
+        type="submit"
+        variant="contained"
+        disabled={isSubmitting || isPending}
+        startIcon={isSubmitting || isPending ? <CircularProgress size={16} color="inherit" /> : null}
+      >
+        {isSubmitting || isPending ? t("loading") : t("add")}
       </Button>
     </form>
   );

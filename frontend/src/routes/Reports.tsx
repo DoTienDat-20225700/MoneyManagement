@@ -100,7 +100,7 @@ export default function Reports() {
   const { user } = useContext(AuthContext);
   const { language, dateFormat, t } = useLanguage();
   const { enqueueSnackbar } = useSnackbar();
-  const { getReportSummary, getReportTransactions, downloadReportCSV } = useReports();
+  const { getReportSummary, getReportTransactions, downloadReportExcel } = useReports();
   const { getLabels } = useLabels();
 
   // Filters state
@@ -177,24 +177,24 @@ export default function Reports() {
     enabled: !isDateInvalid,
   });
 
-  // Export CSV handler
-  const handleExportCSV = async () => {
+  // Export Excel (.xlsx) handler
+  const handleExportExcel = async () => {
     try {
       setIsExporting(true);
-      await downloadReportCSV({
+      await downloadReportExcel({
         start_date: startDate,
         end_date: endDate,
         type: transactionType,
         label_id: selectedLabelId === "all" ? undefined : selectedLabelId,
       });
       enqueueSnackbar(
-        language === "vi" ? "Xuất báo cáo CSV thành công!" : "CSV report exported successfully!",
+        language === "vi" ? "Xuất báo cáo Excel thành công!" : "Excel report exported successfully!",
         { variant: "success", autoHideDuration: 3000 }
       );
     } catch (err) {
       console.error(err);
       enqueueSnackbar(
-        language === "vi" ? "Lỗi khi xuất báo cáo CSV." : "Failed to export CSV report.",
+        language === "vi" ? "Lỗi khi xuất báo cáo Excel." : "Failed to export Excel report.",
         { variant: "error", autoHideDuration: 3000 }
       );
     } finally {
@@ -206,6 +206,8 @@ export default function Reports() {
   const handlePrint = () => {
     window.print();
   };
+
+
 
   // Numbers parsing
   const totalIncome = Number(reportSummary?.summary?.total_income || 0);
@@ -347,18 +349,85 @@ export default function Reports() {
       <style>
         {`
           @media print {
-            body {
-              background: #ffffff !important;
-              color: #000000 !important;
+            @page {
+              size: auto;
+              margin: 10mm 12mm;
             }
-            .no-print, header, nav, .MuiDrawer-root, .MuiButton-root {
+            html, body, #root, .MuiBox-root {
+              background: #ffffff !important;
+              color: #0f172a !important;
+            }
+            .no-print, header, nav, .MuiDrawer-root, .MuiButton-root, .MuiAppBar-root, .MuiPagination-root, .MuiTablePagination-root {
               display: none !important;
             }
             .print-only {
               display: block !important;
             }
+            .print-avoid-break {
+              break-inside: avoid !important;
+              page-break-inside: avoid !important;
+            }
+            .print-card {
+              border: 1px solid #e2e8f0 !important;
+              background: #ffffff !important;
+              box-shadow: none !important;
+              break-inside: avoid !important;
+              page-break-inside: avoid !important;
+            }
+            .print-chart-container {
+              height: 320px !important;
+              border: 1px solid #e2e8f0 !important;
+              background: #ffffff !important;
+              box-shadow: none !important;
+              break-inside: avoid !important;
+              page-break-inside: avoid !important;
+              overflow: visible !important;
+            }
             .MuiTypography-root {
-              color: #111827 !important;
+              color: #0f172a !important;
+            }
+            /* ApexCharts text fix in print */
+            .apexcharts-canvas, .apexcharts-svg {
+              background: transparent !important;
+            }
+            .apexcharts-text {
+              fill: #1e293b !important;
+            }
+            .apexcharts-legend-text {
+              color: #1e293b !important;
+            }
+            .apexcharts-gridline {
+              stroke: #e2e8f0 !important;
+            }
+            /* Printable Report Table */
+            .report-print-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 10px;
+              font-size: 11px;
+              font-family: inherit;
+            }
+            .report-print-table th {
+              background-color: #f1f5f9 !important;
+              color: #0f172a !important;
+              font-weight: 700;
+              border: 1px solid #cbd5e1 !important;
+              padding: 6px 8px;
+            }
+            .report-print-table td {
+              border: 1px solid #e2e8f0 !important;
+              padding: 5px 8px;
+              color: #1e293b !important;
+            }
+            .report-print-table tr {
+              break-inside: avoid !important;
+              page-break-inside: avoid !important;
+            }
+            .report-print-table thead {
+              display: table-header-group !important;
+            }
+            .report-print-table tr:nth-of-type(even) {
+              background-color: #f8fafc !important;
             }
           }
           @media screen {
@@ -370,26 +439,46 @@ export default function Reports() {
       </style>
 
       {/* Printable Header (Visible only in Print / PDF) */}
-      <Box className="print-only" sx={{ mb: 3, pb: 2, borderBottom: "2px solid #333" }}>
-        <Typography variant="h4" sx={{ fontWeight: 700 }}>
-          {language === "vi" ? "BÁO CÁO TÀI CHÍNH" : "FINANCIAL REPORT"}
-        </Typography>
-        <Typography variant="subtitle1" sx={{ mt: 0.5 }}>
-          MoneyManager
-        </Typography>
-        <Grid container spacing={2} sx={{ mt: 1 }}>
+      <Box className="print-only" sx={{ mb: 2.5, pb: 2, borderBottom: "2px solid #00863A" }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: 800, color: "#00863A !important", letterSpacing: 0.5 }}>
+              MONEYMANAGER
+            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.3 }}>
+              {language === "vi" ? "BÁO CÁO TÀI CHÍNH" : "FINANCIAL REPORT"}
+            </Typography>
+          </Box>
+          <Box sx={{ textAlign: "right" }}>
+            <Typography variant="caption" sx={{ color: "#64748b !important", display: "block" }}>
+              {t("generated_at")}: {dayjs().format("DD/MM/YYYY HH:mm:ss")}
+            </Typography>
+          </Box>
+        </Box>
+
+        <Grid container spacing={2} sx={{ mt: 1, pt: 1, borderTop: "1px solid #e2e8f0" }}>
           <Grid item xs={6}>
-            <Typography variant="body2">
+            <Typography variant="body2" sx={{ fontSize: 12 }}>
               <strong>{t("report_user")}:</strong> {userName}
             </Typography>
-            <Typography variant="body2">
-              <strong>{language === "vi" ? "Kỳ báo cáo" : "Period"}:</strong> {startDate ? dayjs(startDate).format(dateFormat) : "-"} → {endDate ? dayjs(endDate).format(dateFormat) : "-"} (
-              {reportSummary?.period?.days_count || 0} {language === "vi" ? "ngày" : "days"})
+            <Typography variant="body2" sx={{ fontSize: 12, mt: 0.5 }}>
+              <strong>{language === "vi" ? "Kỳ báo cáo" : "Period"}:</strong> {startDate ? dayjs(startDate).format(dateFormat) : "-"} → {endDate ? dayjs(endDate).format(dateFormat) : "-"} ({reportSummary?.period?.days_count || 0} {language === "vi" ? "ngày" : "days"})
             </Typography>
           </Grid>
           <Grid item xs={6} sx={{ textAlign: "right" }}>
-            <Typography variant="body2">
-              <strong>{t("generated_at")}:</strong> {dayjs().format("DD/MM/YYYY HH:mm:ss")}
+            <Typography variant="body2" sx={{ fontSize: 12 }}>
+              <strong>{language === "vi" ? "Bộ lọc giao dịch" : "Filter"}:</strong>{" "}
+              {transactionType === "ALL"
+                ? (language === "vi" ? "Tất cả giao dịch" : "All transactions")
+                : transactionType === "EXPENSE"
+                ? (language === "vi" ? "Khoản chi" : "Expense only")
+                : (language === "vi" ? "Khoản thu" : "Earning only")}
+            </Typography>
+            <Typography variant="body2" sx={{ fontSize: 12, mt: 0.5 }}>
+              <strong>{language === "vi" ? "Danh mục" : "Category"}:</strong>{" "}
+              {selectedLabelId === "all"
+                ? (language === "vi" ? "Tất cả danh mục" : "All categories")
+                : labels?.find((l: CustomLabel) => l.id === selectedLabelId)?.name || "-"}
             </Typography>
           </Grid>
         </Grid>
@@ -414,19 +503,23 @@ export default function Reports() {
         <Typography component="h1" variant="h4" fontWeight={600}>
           {t("reports_title")}
         </Typography>
-        <Box sx={{ marginTop: { xs: 2, md: 0 } }}>
+        <Box sx={{ marginTop: { xs: 2, md: 0 }, display: "flex", flexWrap: "wrap", gap: 1.5 }}>
           <Button
-            variant="outlined"
+            variant="contained"
             size="medium"
-            sx={{ marginRight: 2 }}
             startIcon={
               isExporting ? <CircularProgress size={16} color="inherit" /> : <FileUploadIcon />
             }
-            onClick={handleExportCSV}
+            onClick={handleExportExcel}
             disabled={isExporting || isDateInvalid}
+            sx={{
+              backgroundColor: "#00863A",
+              "&:hover": { backgroundColor: "#006d2f" },
+            }}
           >
-            {t("export_csv")}
+            {t("export_excel")}
           </Button>
+
           <Button
             variant="contained"
             size="medium"
@@ -438,6 +531,7 @@ export default function Reports() {
           </Button>
         </Box>
       </Box>
+
 
       {/* Filter Row: clean, unboxed, natural spacing */}
       <Box
@@ -574,6 +668,7 @@ export default function Reports() {
             {/* Total Income */}
             <Grid item xs={12} sm={6} lg={3}>
               <Box
+                className="print-card print-avoid-break"
                 border="1px solid"
                 borderColor={darkTheme.palette.background.paper}
                 borderRadius={2}
@@ -608,6 +703,7 @@ export default function Reports() {
             {/* Total Expenses */}
             <Grid item xs={12} sm={6} lg={3}>
               <Box
+                className="print-card print-avoid-break"
                 border="1px solid"
                 borderColor={darkTheme.palette.background.paper}
                 borderRadius={2}
@@ -642,6 +738,7 @@ export default function Reports() {
             {/* Net Cash Flow */}
             <Grid item xs={12} sm={6} lg={3}>
               <Box
+                className="print-card print-avoid-break"
                 border="1px solid"
                 borderColor={darkTheme.palette.background.paper}
                 borderRadius={2}
@@ -676,6 +773,7 @@ export default function Reports() {
             {/* Average Daily Spending */}
             <Grid item xs={12} sm={6} lg={3}>
               <Box
+                className="print-card print-avoid-break"
                 border="1px solid"
                 borderColor={darkTheme.palette.background.paper}
                 borderRadius={2}
@@ -703,6 +801,7 @@ export default function Reports() {
         {/* Monthly Trends */}
         <Grid item xs={12} lg={6}>
           <Box
+            className="print-card print-chart-container print-avoid-break"
             border="1px solid"
             borderColor={darkTheme.palette.background.paper}
             borderRadius={2}
@@ -747,6 +846,7 @@ export default function Reports() {
         {/* Category Breakdown (Pie chart matching ProfileChart.tsx) */}
         <Grid item xs={12} lg={6}>
           <Box
+            className="print-card print-chart-container print-avoid-break"
             border="1px solid"
             borderColor={darkTheme.palette.background.paper}
             borderRadius={2}
@@ -792,6 +892,7 @@ export default function Reports() {
         {/* 3. Largest Spending Increases Section */}
         <Grid item xs={12}>
           <Box
+            className="print-card print-avoid-break"
             border="1px solid"
             borderColor={darkTheme.palette.background.paper}
             borderRadius={2}
@@ -869,13 +970,13 @@ export default function Reports() {
 
         {/* 4. Filtered Transactions List matching Transactions.tsx */}
         <Grid item xs={12}>
-          <Box height={"auto"} mt={1} mb={4}>
+          <Box className="print-avoid-break" height={"auto"} mt={1} mb={4}>
             <Typography component="h2" variant="h6" mb={1.5}>
               {t("transactions_in_period")}
             </Typography>
 
-            {/* Search Input matching Transactions.tsx */}
-            <Box component="form" onSubmit={(e) => e.preventDefault()} sx={{ mb: 2 }}>
+            {/* Search Input - Hidden in Print */}
+            <Box component="form" className="no-print" onSubmit={(e) => e.preventDefault()} sx={{ mb: 2 }}>
               <TextField
                 fullWidth
                 label=""
@@ -911,11 +1012,74 @@ export default function Reports() {
               />
             </Box>
 
-            {/* Reused LatestTransactions component without actions for report view */}
-            <LatestTransactions data={transactionsList ?? []} headOnly={false} hideActions={true} />
+            {/* Reused LatestTransactions component without actions - Screen only */}
+            <Box className="no-print">
+              <LatestTransactions data={transactionsList ?? []} headOnly={false} hideActions={true} />
+            </Box>
+
+            {/* Print-only Semantic HTML Table for PDF Report */}
+            <Box className="print-only">
+              <table className="report-print-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: "35px", textAlign: "center" }}>#</th>
+                    <th style={{ width: "85px", textAlign: "center" }}>{t("col_date")}</th>
+                    <th>{t("col_name")}</th>
+                    <th style={{ width: "95px", textAlign: "center" }}>{t("col_type")}</th>
+                    <th style={{ width: "120px" }}>{t("col_label")}</th>
+                    <th style={{ width: "120px", textAlign: "right" }}>{t("col_value")}</th>
+                    <th style={{ width: "60px", textAlign: "center" }}>{language === "vi" ? "Định kỳ" : "Recurrent"}</th>
+                    <th style={{ width: "60px", textAlign: "center" }}>{language === "vi" ? "Hoá đơn" : "Invoice"}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transactionsList && transactionsList.length > 0 ? (
+                    transactionsList.map((tx, idx) => {
+                      const isIncome = tx.type === "EARNING";
+                      return (
+                        <tr key={tx.id}>
+                          <td style={{ textAlign: "center" }}>{idx + 1}</td>
+                          <td style={{ textAlign: "center" }}>{dayjs(tx.date).format(dateFormat)}</td>
+                          <td>{tx.title}</td>
+                          <td style={{ textAlign: "center", fontWeight: 600, color: isIncome ? "#16a34a" : "#dc2626" }}>
+                            {isIncome ? (language === "vi" ? "Khoản thu" : "Earning") : (language === "vi" ? "Khoản chi" : "Expense")}
+                          </td>
+                          <td>{tx.label?.name || (language === "vi" ? "Chưa phân loại" : "Uncategorized")}</td>
+                          <td style={{ textAlign: "right", fontWeight: 600, color: isIncome ? "#16a34a" : "#dc2626" }}>
+                            {isIncome ? `+${formatValue(Number(tx.value))}` : `-${formatValue(Number(tx.value))}`}
+                          </td>
+                          <td style={{ textAlign: "center" }}>{tx.recurrent ? (language === "vi" ? "Có" : "Yes") : "-"}</td>
+                          <td style={{ textAlign: "center" }}>{tx.imported ? (language === "vi" ? "Có" : "Yes") : "-"}</td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={8} style={{ textAlign: "center", padding: "16px" }}>
+                        {t("no_data_in_period")}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+                {transactionsList && transactionsList.length > 0 && (
+                  <tfoot>
+                    <tr style={{ fontWeight: 700, backgroundColor: "#f1f5f9" }}>
+                      <td colSpan={5} style={{ textAlign: "right", paddingRight: "10px" }}>
+                        {language === "vi" ? `Tổng cộng (${transactionsList.length} giao dịch):` : `Total (${transactionsList.length} transactions):`}
+                      </td>
+                      <td style={{ textAlign: "right", color: netCashFlow >= 0 ? "#16a34a" : "#dc2626" }}>
+                        {netCashFlow >= 0 ? `+${formatValue(netCashFlow)}` : formatValue(netCashFlow)}
+                      </td>
+                      <td colSpan={2}></td>
+                    </tr>
+                  </tfoot>
+                )}
+              </table>
+            </Box>
           </Box>
         </Grid>
       </Grid>
     </>
   );
 }
+

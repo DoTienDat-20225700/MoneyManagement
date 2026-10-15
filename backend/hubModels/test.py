@@ -6,7 +6,7 @@ from django.test import TestCase
 from rest_framework.test import APIClient
 from .factory import TransactionFactory
 
-from .models import CustomLabel, Transaction, TransactionRecurrency, SavingPlan, CategoryBudget, SavingPlanContribution
+from .models import HubUser, CustomLabel, Transaction, TransactionRecurrency, SavingPlan, CategoryBudget, SavingPlanContribution
 
 
 class TransactionTestCase(TestCase):
@@ -1260,6 +1260,457 @@ class FinancialReportAPITestCase(TestCase):
         self.assertNotEqual(res.data['summary']['total_expense'], '99999999.00')
         breakdown_names = [item['label_name'] for item in res.data['category_breakdown']]
         self.assertNotIn('SecretOther', breakdown_names)
+
+    def test_report_export_excel(self):
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.salary_label, type='EARNING', value=5000000, date=datetime.date(2026, 10, 1),
+            title='Lương tháng 10'
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.food_label, type='EXPENSE', value=120000, date=datetime.date(2026, 10, 2),
+            title='Ăn uống trưa'
+        )
+
+        res = self.client.get('/api/reports/export/excel/?start_date=2026-10-01&end_date=2026-10-31')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res['Content-Type'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        self.assertIn('.xlsx', res['Content-Disposition'])
+
+        import openpyxl
+        from io import BytesIO
+        wb = openpyxl.load_workbook(BytesIO(res.content))
+        ws = wb.active
+        self.assertEqual(ws['A2'].value, 'BÁO CÁO TÀI CHÍNH MONEYMANAGER')
+        # Check table headers in row 8
+        self.assertEqual(ws['A8'].value, 'Mã GD')
+        self.assertEqual(ws['B8'].value, 'Ngày')
+        self.assertEqual(ws['C8'].value, 'Tiêu đề')
+        self.assertEqual(ws['D8'].value, 'Loại')
+        self.assertEqual(ws['E8'].value, 'Danh mục')
+        self.assertEqual(ws['F8'].value, 'Số tiền (VND)')
+        # Check data exists in columns
+        self.assertTrue(ws['A9'].value is not None)
+        self.assertTrue(ws['C9'].value in ['Lương tháng 10', 'Ăn uống trưa'])
+
+    def test_import_preview_and_import_invoices(self):
+        import os
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        sample_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../sample_invoices/bien_lai_vietcombank.png'))
+        if os.path.exists(sample_path):
+            with open(sample_path, 'rb') as f:
+                upload_file = SimpleUploadedFile('bien_lai_vietcombank.png', f.read(), content_type='image/png')
+
+            # 1. Test Preview API
+            res_preview = self.client.post(
+                '/api/import/preview/?institution=Ngân hàng Việt Nam (Chung / VietQR)',
+                {'files[]': upload_file},
+                format='multipart'
+            )
+            self.assertEqual(res_preview.status_code, 200)
+            self.assertTrue(res_preview.data['success'])
+            self.assertEqual(len(res_preview.data['results']), 1)
+            first_result = res_preview.data['results'][0]
+            self.assertEqual(first_result['value'], 850000.0)
+            self.assertIn('850.000', first_result['formatted_value'])
+            self.assertEqual(first_result['formatted_date'], '11/10/2026')
+
+            # 2. Test Import API
+            with open(sample_path, 'rb') as f:
+                upload_file_2 = SimpleUploadedFile('bien_lai_vietcombank.png', f.read(), content_type='image/png')
+            res_import = self.client.post(
+                '/api/import/?type=EXPENSE&updateWallet=1',
+                {'files[]': upload_file_2},
+                format='multipart'
+            )
+            self.assertEqual(res_import.status_code, 200)
+            self.assertTrue(res_import.data['success'])
+            self.assertTrue(len(res_import.data['imported']) >= 1)
+            self.assertEqual(res_import.data['imported'][0]['value'], 850000.0)
+
+
+class AuthenticationAndAuthorizationTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.factory = TransactionFactory()
+
+    def test_user_registration_success(self):
+        payload = {
+            'firstName': 'Nguyen',
+            'lastName': 'Van A',
+            'email': 'nguyenvana@example.com',
+            'password': 'SecurePassword123!',
+        }
+        response = self.client.post('/api/register/', payload, format='json')
+        self.assertEqual(response.status_code, 201)
+
+        user = HubUser.objects.filter(email='nguyenvana@example.com').first()
+        self.assertIsNotNone(user)
+        self.assertEqual(user.first_name, 'Nguyen')
+        self.assertEqual(user.last_name, 'Van A')
+        self.assertTrue(user.check_password('SecurePassword123!'))
+
+        wallet = user.get_wallet()
+        self.assertIsNotNone(wallet)
+        self.assertEqual(wallet.current_amount, Decimal('0.00'))
+
+    def test_user_registration_duplicate_email(self):
+        self.factory.create_user(email='existing@example.com')
+        payload = {
+            'firstName': 'Duplicate',
+            'lastName': 'User',
+            'email': 'existing@example.com',
+            'password': 'Password123!',
+        }
+        response = self.client.post('/api/register/', payload, format='json')
+        self.assertEqual(response.status_code, 400)
+
+    def test_user_registration_invalid_inputs(self):
+        # Empty email
+        res1 = self.client.post('/api/register/', {'email': '', 'password': 'Pass'}, format='json')
+        self.assertEqual(res1.status_code, 400)
+
+        # Invalid email format
+        res2 = self.client.post('/api/register/', {'email': 'invalid-email', 'password': 'Pass'}, format='json')
+        self.assertEqual(res2.status_code, 400)
+
+        # Empty password
+        res3 = self.client.post('/api/register/', {'email': 'valid@example.com', 'password': ''}, format='json')
+        self.assertEqual(res3.status_code, 400)
+
+        # Non-dictionary payload
+        res4 = self.client.post('/api/register/', 'not-a-dict', format='json')
+        self.assertEqual(res4.status_code, 400)
+
+    def test_token_obtain_and_refresh_flow(self):
+        user = HubUser.objects.create_user(
+            first_name='Test',
+            last_name='User',
+            email='jwtflow@example.com',
+            password='MyPassword123!'
+        )
+
+        # 1. Login with valid credentials
+        res_login = self.client.post('/api/token/', {
+            'email': 'jwtflow@example.com',
+            'password': 'MyPassword123!',
+        }, format='json')
+        self.assertEqual(res_login.status_code, 200)
+        self.assertIn('access', res_login.data)
+        self.assertIn('refresh_token', res_login.cookies)
+        refresh_cookie = res_login.cookies['refresh_token']
+        self.assertTrue(refresh_cookie['httponly'])
+
+        # 2. Refresh token using cookie
+        self.client.cookies['refresh_token'] = refresh_cookie.value
+        res_refresh = self.client.post('/api/token/refresh/')
+        self.assertEqual(res_refresh.status_code, 200)
+        self.assertIn('access_token', res_refresh.data)
+
+    def test_token_obtain_invalid_credentials(self):
+        HubUser.objects.create_user(
+            first_name='Test',
+            last_name='User',
+            email='wrongpwd@example.com',
+            password='CorrectPassword!'
+        )
+        res = self.client.post('/api/token/', {
+            'email': 'wrongpwd@example.com',
+            'password': 'WrongPassword!',
+        }, format='json')
+        self.assertEqual(res.status_code, 401)
+
+    def test_token_refresh_without_cookie_fails(self):
+        self.client.cookies.clear()
+        res = self.client.post('/api/token/refresh/')
+        self.assertEqual(res.status_code, 403)
+
+    def test_unauthenticated_requests_are_denied(self):
+        anonymous_client = APIClient()
+        endpoints = [
+            ('GET', '/api/wallet/'),
+            ('GET', '/api/transactions/'),
+            ('POST', '/api/transaction/'),
+            ('GET', '/api/budgets/'),
+            ('GET', '/api/budgets/summary/'),
+            ('GET', '/api/savingplans/'),
+            ('GET', '/api/reports/summary/'),
+            ('GET', '/api/reports/transactions/'),
+            ('POST', '/api/import/'),
+            ('POST', '/api/import/preview/'),
+        ]
+        for method, url in endpoints:
+            if method == 'GET':
+                resp = anonymous_client.get(url)
+            else:
+                resp = anonymous_client.post(url, {}, format='json')
+            self.assertEqual(
+                resp.status_code,
+                401,
+                f"Expected 401 Unauthorized for {method} {url}, got {resp.status_code}"
+            )
+
+
+class ObjectOwnershipAndAccessControlTestCase(TestCase):
+    def setUp(self):
+        self.factory = TransactionFactory()
+        self.user_a = self.factory.create_user(email='usera@example.com')
+        self.wallet_a = self.user_a.get_wallet()
+        self.wallet_a.set_balance(1000)
+
+        self.user_b = self.factory.create_user(email='userb@example.com')
+        self.wallet_b = self.user_b.get_wallet()
+        self.wallet_b.set_balance(500)
+
+        self.client_a = APIClient()
+        self.client_a.force_authenticate(self.user_a)
+
+    def test_user_a_cannot_view_or_update_user_b_transaction(self):
+        tx_b = self.factory.create_transaction_filled(
+            self.wallet_b, title='Secret B', value=200, type='EXPENSE', update_wallet=True
+        )
+
+        # User A tries to edit User B's transaction
+        res_put = self.client_a.put(f'/api/transaction/{tx_b.pk}', {
+            'title': 'Hacked',
+            'value': 10,
+            'type': 'EXPENSE',
+            'date': '2026-10-01'
+        }, format='json')
+        self.assertEqual(res_put.status_code, 404)
+
+        # User A tries to delete User B's transaction
+        res_del = self.client_a.delete(f'/api/transaction/{tx_b.pk}')
+        self.assertEqual(res_del.status_code, 404)
+
+        # Verify wallet B was not modified
+        self.wallet_b.refresh_from_db()
+        self.assertEqual(self.wallet_b.current_amount, Decimal('300.00'))
+
+    def test_user_a_cannot_assign_user_b_label_to_transaction(self):
+        label_b = CustomLabel.objects.create(wallet=self.wallet_b, name='B Category', color='#123456')
+
+        res = self.client_a.post('/api/transaction/', {
+            'title': 'My Transaction',
+            'value': 100,
+            'type': 'EXPENSE',
+            'date': '2026-10-01',
+            'label': {'id': label_b.pk}
+        }, format='json')
+        self.assertEqual(res.status_code, 400)
+
+    def test_user_a_cannot_delete_user_b_custom_label(self):
+        label_b = CustomLabel.objects.create(wallet=self.wallet_b, name='Private Label', color='#abcdef')
+        res = self.client_a.delete(f'/api/labels/{label_b.pk}')
+        self.assertEqual(res.status_code, 404)
+        self.assertTrue(CustomLabel.objects.filter(pk=label_b.pk).exists())
+
+    def test_user_a_cannot_access_or_modify_user_b_budget(self):
+        label_b = CustomLabel.objects.create(wallet=self.wallet_b, name='Budget B', color='#223344')
+        budget_b = CategoryBudget.objects.create(
+            wallet=self.wallet_b, label=label_b, amount=Decimal('500.00'), month=10, year=2026
+        )
+
+        # User A attempts GET on User B's budget
+        res_get = self.client_a.get(f'/api/budgets/{budget_b.pk}')
+        self.assertEqual(res_get.status_code, 404)
+
+        # User A attempts PUT
+        res_put = self.client_a.put(f'/api/budgets/{budget_b.pk}', {'amount': 100}, format='json')
+        self.assertEqual(res_put.status_code, 404)
+
+        # User A attempts DELETE
+        res_del = self.client_a.delete(f'/api/budgets/{budget_b.pk}')
+        self.assertEqual(res_del.status_code, 404)
+
+        # User A attempts to create budget with User B's category
+        res_create = self.client_a.post('/api/budgets/', {
+            'label_id': label_b.pk,
+            'amount': 300,
+            'month': 10,
+            'year': 2026,
+        }, format='json')
+        self.assertEqual(res_create.status_code, 400)
+
+    def test_user_a_cannot_access_or_contribute_to_user_b_saving_plan(self):
+        plan_b = SavingPlan.objects.create(
+            wallet=self.wallet_b, title='Car Fund', amount=Decimal('10000.00')
+        )
+
+        # User A attempts GET
+        res_get = self.client_a.get(f'/api/savingplans/{plan_b.pk}')
+        self.assertEqual(res_get.status_code, 404)
+
+        # User A attempts PUT
+        res_put = self.client_a.put(f'/api/savingplans/{plan_b.pk}', {'title': 'Stolen Plan'}, format='json')
+        self.assertEqual(res_put.status_code, 404)
+
+        # User A attempts DELETE
+        res_del = self.client_a.delete(f'/api/savingplans/{plan_b.pk}')
+        self.assertEqual(res_del.status_code, 404)
+
+        # User A attempts to add a contribution to User B's plan
+        res_contrib = self.client_a.post(f'/api/savingplans/{plan_b.pk}/contributions/', {
+            'amount': 500,
+            'date': '2026-10-15',
+        }, format='json')
+        self.assertEqual(res_contrib.status_code, 404)
+        self.assertEqual(plan_b.contributions.count(), 0)
+
+    def test_reports_wallet_isolation(self):
+        # User A attempting to query User B's wallet in reports summary returns 403 Forbidden
+        res = self.client_a.get(f'/api/reports/summary/?wallet_id={self.wallet_b.pk}')
+        self.assertEqual(res.status_code, 403)
+
+
+class InvoiceImportValidationTestCase(TestCase):
+    def setUp(self):
+        self.factory = TransactionFactory()
+        self.user = self.factory.create_user(email='importsec@example.com')
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
+    def test_import_without_files_returns_400(self):
+        res1 = self.client.post('/api/import/')
+        self.assertEqual(res1.status_code, 400)
+
+        res2 = self.client.post('/api/import/preview/')
+        self.assertEqual(res2.status_code, 400)
+
+    def test_import_unsupported_file_extension_returns_400(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        fake_exe = SimpleUploadedFile('exploit.exe', b'MZExecutableBinaryData', content_type='application/x-msdownload')
+
+        res_import = self.client.post('/api/import/', {'files[]': fake_exe}, format='multipart')
+        self.assertEqual(res_import.status_code, 400)
+
+        fake_sh = SimpleUploadedFile('script.sh', b'#!/bin/bash\necho 1', content_type='text/x-shellscript')
+        res_preview = self.client.post('/api/import/preview/', {'files[]': fake_sh}, format='multipart')
+        self.assertEqual(res_preview.status_code, 400)
+
+    def test_import_oversized_file_returns_400(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        # 11 MB simulated file
+        oversized = SimpleUploadedFile('big_invoice.pdf', b'a' * (11 * 1024 * 1024), content_type='application/pdf')
+        res = self.client.post('/api/import/', {'files[]': oversized}, format='multipart')
+        self.assertEqual(res.status_code, 400)
+
+    def test_import_corrupted_file_handles_gracefully(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        corrupted = SimpleUploadedFile('corrupt.pdf', b'NOT_A_VALID_PDF_HEADER', content_type='application/pdf')
+        res = self.client.post('/api/import/', {'files[]': corrupted}, format='multipart')
+        # Should return user-friendly error response, not unhandled 500
+        self.assertIn(res.status_code, [400, 422])
+
+
+class BoundaryAndValidationTestCase(TestCase):
+    def setUp(self):
+        self.factory = TransactionFactory()
+        self.user = self.factory.create_user(email='boundary@example.com')
+        self.wallet = self.user.get_wallet()
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
+    def test_transaction_negative_and_zero_amount(self):
+        # Value = 0
+        res0 = self.client.post('/api/transaction/', {
+            'title': 'Zero Test', 'value': 0, 'type': 'EXPENSE', 'date': '2026-10-15'
+        }, format='json')
+        self.assertEqual(res0.status_code, 400)
+
+        # Value < 0
+        res_neg = self.client.post('/api/transaction/', {
+            'title': 'Negative Test', 'value': -500, 'type': 'EXPENSE', 'date': '2026-10-15'
+        }, format='json')
+        self.assertEqual(res_neg.status_code, 400)
+
+        # Non-numeric
+        res_str = self.client.post('/api/transaction/', {
+            'title': 'String Test', 'value': 'abc', 'type': 'EXPENSE', 'date': '2026-10-15'
+        }, format='json')
+        self.assertEqual(res_str.status_code, 400)
+
+    def test_transaction_invalid_dates_and_types(self):
+        # Invalid date
+        res_date = self.client.post('/api/transaction/', {
+            'title': 'Bad Date', 'value': 100, 'type': 'EXPENSE', 'date': 'invalid-date'
+        }, format='json')
+        self.assertEqual(res_date.status_code, 400)
+
+        # Invalid type
+        res_type = self.client.post('/api/transaction/', {
+            'title': 'Bad Type', 'value': 100, 'type': 'TRANSFER', 'date': '2026-10-15'
+        }, format='json')
+        self.assertEqual(res_type.status_code, 400)
+
+    def test_wallet_balance_invalid_values(self):
+        res1 = self.client.put('/api/wallet/', 'not-a-number', format='json')
+        self.assertEqual(res1.status_code, 422)
+
+        res2 = self.client.put('/api/wallet/', True, format='json')
+        self.assertEqual(res2.status_code, 422)
+
+    def test_budget_boundary_month_and_year(self):
+        label = CustomLabel.objects.create(wallet=self.wallet, name='Food', color='#FF0000')
+
+        # Month < 1
+        res1 = self.client.post('/api/budgets/', {
+            'label_id': label.pk, 'amount': 100, 'month': 0, 'year': 2026
+        }, format='json')
+        self.assertEqual(res1.status_code, 400)
+
+        # Month > 12
+        res2 = self.client.post('/api/budgets/', {
+            'label_id': label.pk, 'amount': 100, 'month': 13, 'year': 2026
+        }, format='json')
+        self.assertEqual(res2.status_code, 400)
+
+        # Year < 2000
+        res3 = self.client.post('/api/budgets/', {
+            'label_id': label.pk, 'amount': 100, 'month': 5, 'year': 1999
+        }, format='json')
+        self.assertEqual(res3.status_code, 400)
+
+        # Year > 2100
+        res4 = self.client.post('/api/budgets/', {
+            'label_id': label.pk, 'amount': 100, 'month': 5, 'year': 2101
+        }, format='json')
+        self.assertEqual(res4.status_code, 400)
+
+        # Amount <= 0
+        res5 = self.client.post('/api/budgets/', {
+            'label_id': label.pk, 'amount': -50, 'month': 5, 'year': 2026
+        }, format='json')
+        self.assertEqual(res5.status_code, 400)
+
+    def test_saving_plan_boundary_amounts(self):
+        # Negative target amount
+        res1 = self.client.post('/api/savingplans/', {
+            'title': 'Test Plan', 'amount': -100
+        }, format='json')
+        self.assertEqual(res1.status_code, 400)
+
+        # Zero target amount
+        res2 = self.client.post('/api/savingplans/', {
+            'title': 'Test Plan', 'amount': 0
+        }, format='json')
+        self.assertEqual(res2.status_code, 400)
+
+        # Negative contribution amount
+        plan = SavingPlan.objects.create(wallet=self.wallet, title='Goal', amount=Decimal('1000.00'))
+        res3 = self.client.post(f'/api/savingplans/{plan.pk}/contributions/', {
+            'amount': -50
+        }, format='json')
+        self.assertEqual(res3.status_code, 400)
+
+    def test_nonexistent_resource_endpoints_return_404(self):
+        self.assertEqual(self.client.get('/api/budget/999999').status_code, 404)
+        self.assertEqual(self.client.delete('/api/transaction/999999').status_code, 404)
+        self.assertEqual(self.client.get('/api/savingplan/999999').status_code, 404)
+        self.assertEqual(self.client.delete('/api/labels/999999').status_code, 404)
+
+
+
+
 
 
 

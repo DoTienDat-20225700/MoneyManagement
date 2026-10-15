@@ -23,6 +23,7 @@ export const translations = {
     show_more: "Xem tất cả",
     unable_to_load_chart: "Không thể tải biểu đồ do chưa đủ dữ liệu.",
     unable_to_load_data: "Không thể tải dữ liệu.",
+    loading: "Đang xử lý...",
 
     // Ranges & Filters
     range: "Khoảng thời gian",
@@ -262,6 +263,7 @@ export const translations = {
     reports: "Báo cáo tài chính",
     reports_title: "Báo cáo & Phân tích tài chính",
     reports_subtitle: "Phân tích dòng tiền, cơ cấu chi tiêu và theo dõi xu hướng tài chính",
+    export_excel: "Xuất Excel",
     export_csv: "Xuất CSV",
     print_report: "In báo cáo (PDF)",
     filter_this_month: "Tháng này",
@@ -313,6 +315,7 @@ export const translations = {
     show_more: "Show more",
     unable_to_load_chart: "Unable to load chart due to insufficient data.",
     unable_to_load_data: "Unable to load data.",
+    loading: "Processing...",
 
     // Ranges & Filters
     range: "Range",
@@ -552,6 +555,7 @@ export const translations = {
     reports: "Financial Reports",
     reports_title: "Financial Reports & Analytics",
     reports_subtitle: "Analyze cash flow, expense breakdown, and track financial trends",
+    export_excel: "Export Excel",
     export_csv: "Export CSV",
     print_report: "Print Report (PDF)",
     filter_this_month: "This Month",

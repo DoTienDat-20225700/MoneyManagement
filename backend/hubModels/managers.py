@@ -20,21 +20,24 @@ class HubUserManager(BaseUserManager):
         if not email:
             raise ValueError('The given email must be set')
         email = self.normalize_email(email)
-        user = self.model(email=email, first_name=first_name,
-                          last_name=last_name, **extra_fields)
-        user.set_password(password)
-        user.save(using=self._db)
 
-        # Creation of a related wallet for the created user
-        wallet_model = apps.get_model('hubModels', 'Wallet')
+        from django.db import transaction as db_transaction
+        with db_transaction.atomic():
+            user = self.model(email=email, first_name=first_name,
+                              last_name=last_name, **extra_fields)
+            user.set_password(password)
+            user.save(using=self._db)
 
-        wallet = wallet_model.objects.create(
-            user_id=user.pk,
-            current_amount=0
-        )
-        wallet.save()
+            # Creation of a related wallet for the created user
+            wallet_model = apps.get_model('hubModels', 'Wallet')
 
-        return user
+            wallet = wallet_model.objects.create(
+                user_id=user.pk,
+                current_amount=0
+            )
+            wallet.save()
+
+            return user
 
     def create_user(self, first_name, last_name, email, password=None, **extra_fields):
         extra_fields.setdefault('is_superuser', False)

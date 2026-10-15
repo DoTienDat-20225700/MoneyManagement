@@ -1,6 +1,6 @@
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Box, Button, TextField, Typography } from "@mui/material";
+import { Box, Button, CircularProgress, TextField, Typography } from "@mui/material";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { useSnackbar } from "notistack";
@@ -21,7 +21,7 @@ function NewLabelForm() {
   const {
     handleSubmit,
     control,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<NewLabelFormData>({
     resolver: zodResolver(newLabelFormSchema),
     defaultValues: {
@@ -30,7 +30,7 @@ function NewLabelForm() {
     },
   });
 
-  const { mutateAsync } = useMutation({
+  const { mutateAsync, isPending } = useMutation({
     mutationFn: createLabel,
     onSuccess: () => {
       setSearchParams((state) => {
@@ -124,8 +124,13 @@ function NewLabelForm() {
         />
       </Box>
 
-      <Button type="submit" variant="contained">
-        {t("create")}
+      <Button
+        type="submit"
+        variant="contained"
+        disabled={isSubmitting || isPending}
+        startIcon={isSubmitting || isPending ? <CircularProgress size={16} color="inherit" /> : null}
+      >
+        {isSubmitting || isPending ? t("loading") : t("create")}
       </Button>
     </form>
   );
