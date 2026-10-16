@@ -39,10 +39,12 @@ import { CustomLabel } from "../models/CustomLabel";
 import { useLanguage } from "../context/LanguageContext";
 import { formatCurrency, formatValue } from "../utils/utils";
 import { darkTheme } from "../theme";
+import RebalanceSuggestionDialog from "../components/modals/RebalanceSuggestionDialog";
 
 export default function Budgets() {
   const { language, t } = useLanguage();
   const queryClient = useQueryClient();
+  const [rebalanceTarget, setRebalanceTarget] = useState<CategoryBudget | null>(null);
   const { enqueueSnackbar } = useSnackbar();
   const {
     getBudgets,
@@ -705,15 +707,40 @@ export default function Budgets() {
                             backgroundColor: "rgba(242, 86, 89, 0.1)",
                             display: "flex",
                             alignItems: "center",
+                            justifyContent: "space-between",
                             gap: 0.8,
                           }}
                         >
-                          <ArrowUpwardIcon sx={{ fontSize: 14, color: "#f25659" }} />
-                          <Typography variant="caption" sx={{ color: "#f25659", fontWeight: 600 }}>
-                            {language === "vi"
-                              ? `Vượt ${formatValue(spentNum - limitNum)}`
-                              : `Exceeded by ${formatValue(spentNum - limitNum)}`}
-                          </Typography>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
+                            <ArrowUpwardIcon sx={{ fontSize: 14, color: "#f25659" }} />
+                            <Typography variant="caption" sx={{ color: "#f25659", fontWeight: 600 }}>
+                              {language === "vi"
+                                ? `Vượt ${formatValue(spentNum - limitNum)}`
+                                : `Exceeded by ${formatValue(spentNum - limitNum)}`}
+                            </Typography>
+                          </Box>
+
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => setRebalanceTarget(budget)}
+                            sx={{
+                              py: 0.2,
+                              px: 1,
+                              fontSize: "11px",
+                              lineHeight: 1.4,
+                              textTransform: "none",
+                              fontWeight: 600,
+                              borderColor: "rgba(250, 173, 20, 0.5)",
+                              color: "#faad14",
+                              "&:hover": {
+                                borderColor: "#faad14",
+                                backgroundColor: "rgba(250, 173, 20, 0.12)",
+                              },
+                            }}
+                          >
+                            {t("rebalance_btn")}
+                          </Button>
                         </Box>
                       )}
                     </Box>
@@ -908,6 +935,25 @@ export default function Budgets() {
           </Button>
         </DialogContent>
       </Dialog>
+
+      {rebalanceTarget && (
+        <RebalanceSuggestionDialog
+          open={!!rebalanceTarget}
+          onClose={() => setRebalanceTarget(null)}
+          targetLabelId={rebalanceTarget.label.id}
+          targetLabelName={rebalanceTarget.label.name}
+          deficitAmount={Math.max(
+            0,
+            Number(rebalanceTarget.spent) - Number(rebalanceTarget.limit)
+          )}
+          month={selectedMonth}
+          year={selectedYear}
+          onSuccess={() => {
+            setRebalanceTarget(null);
+            refetchBudgets();
+          }}
+        />
+      )}
     </Box>
   );
 }

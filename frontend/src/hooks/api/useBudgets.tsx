@@ -1,7 +1,11 @@
 import {
+  BudgetImpactResponse,
   BudgetSummary,
   CategoryBudget,
+  CheckBudgetImpactPayload,
   CreateBudgetPayload,
+  RebalancePayload,
+  RebalanceSuggestion,
   UpdateBudgetPayload,
 } from "../../models/CategoryBudget";
 import useAxiosPrivate from "../useAxiosPrivate";
@@ -51,6 +55,29 @@ export function useBudgets() {
     return response.data;
   }
 
+  async function checkBudgetImpact(payload: CheckBudgetImpactPayload): Promise<BudgetImpactResponse> {
+    const response = await axiosPrivate.post("/budgets/check-impact/", payload);
+    return response.data as BudgetImpactResponse;
+  }
+
+  async function rebalanceBudget(payload: RebalancePayload): Promise<{
+    message: string;
+    from_budget: CategoryBudget;
+    to_budget: CategoryBudget;
+  }> {
+    const response = await axiosPrivate.post("/budgets/rebalance/", payload);
+    return response.data;
+  }
+
+  async function getRebalanceSuggestions(params: {
+    label_id?: number;
+    month?: number;
+    year?: number;
+  }): Promise<RebalanceSuggestion[]> {
+    const response = await axiosPrivate.get("/budgets/rebalance-suggestions/", { params });
+    return response.data as RebalanceSuggestion[];
+  }
+
   return {
     getBudgets,
     getBudget,
@@ -58,5 +85,8 @@ export function useBudgets() {
     createBudget,
     updateBudget,
     deleteBudget,
+    checkBudgetImpact,
+    rebalanceBudget,
+    getRebalanceSuggestions,
   };
 }

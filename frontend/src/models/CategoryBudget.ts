@@ -48,3 +48,41 @@ export interface UpdateBudgetPayload {
   year?: number;
   label?: number;
 }
+
+export interface BudgetImpactResponse {
+  has_budget: boolean;
+  budget_amount: string | number;
+  spent_before: string | number;
+  spent_after: string | number;
+  percent_before: number;
+  percent_after: number;
+  overspent_amount: string | number;
+  status: BudgetStatus;
+}
+
+export interface CheckBudgetImpactPayload {
+  label_id: number;
+  value: number | string;
+  date?: string;
+}
+
+export interface RebalancePayload {
+  from_label_id: number;
+  to_label_id: number;
+  amount: number | string;
+  month: number;
+  year: number;
+}
+
+export interface RebalanceSuggestion {
+  budget_id: number;
+  label_id: number;
+  label_name: string;
+  label_color: string;
+  amount: string | number;
+  spent: string | number;
+  available_rebalance: string | number;
+  spent_percentage: number;
+  is_non_essential: boolean;
+}
+

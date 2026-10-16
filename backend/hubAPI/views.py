@@ -1,6 +1,8 @@
 import os
 import re
 import datetime
+import calendar
+import unicodedata
 from decimal import Decimal, InvalidOperation
 from django.core.exceptions import ValidationError
 from django.http import JsonResponse
@@ -796,6 +798,296 @@ class BudgetSummaryAPIView(APIView):
                 'exceeded': exceeded_count,
             }
         })
+
+
+def remove_vietnamese_accents(text: str) -> str:
+    if not text:
+        return ""
+    text = unicodedata.normalize("NFD", text)
+    text = "".join(c for c in text if unicodedata.category(c) != "Mn")
+    text = text.replace("đ", "d").replace("Đ", "D")
+    return unicodedata.normalize("NFC", text)
+
+
+NON_ESSENTIAL_KEYWORDS = [
+    'giải trí', 'giai tri',
+    'cà phê', 'ca phe', 'cafe',
+    'mua sắm', 'mua sam',
+    'du lịch', 'du lich',
+    'tiêu dùng', 'tieu dung',
+    'shopping', 'entertainment', 'coffee', 'party', 'leisure',
+    'quà tặng', 'qua tang',
+    'game',
+    'ăn vặt', 'an vat',
+    'xem phim',
+]
+
+
+def is_category_non_essential(name: str) -> bool:
+    if not name:
+        return False
+    name_lower = name.lower()
+    name_unaccented = remove_vietnamese_accents(name_lower)
+    return any(kw in name_lower or kw in name_unaccented for kw in NON_ESSENTIAL_KEYWORDS)
+
+
+class BudgetCheckImpactAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        user: HubUser = request.user
+        wallet = user.get_wallet()
+        if not wallet:
+            return custom_user_error_response("Wallet was not found.", 404)
+
+        label_id = request.data.get('label_id') or request.data.get('label')
+        if isinstance(label_id, dict):
+            label_id = label_id.get('id')
+
+        if not label_id:
+            return Response({
+                'has_budget': False,
+                'budget_amount': '0.00',
+                'spent_before': '0.00',
+                'spent_after': '0.00',
+                'percent_before': 0.0,
+                'percent_after': 0.0,
+                'overspent_amount': '0.00',
+                'status': 'normal',
+            })
+
+        # Object-level authorization: ensure label belongs to this user's wallet
+        try:
+            label = CustomLabel.objects.get(pk=label_id, wallet=wallet)
+        except (CustomLabel.DoesNotExist, ValueError, TypeError):
+            return custom_user_error_response("Không tìm thấy danh mục.", 404)
+
+        # Parse date
+        date_raw = request.data.get('date')
+        target_date = date.today()
+        if date_raw:
+            try:
+                target_date = Transaction._parse_date(date_raw)
+            except Exception:
+                target_date = date.today()
+
+        month = target_date.month
+        year = target_date.year
+
+        budget = CategoryBudget.objects.filter(
+            wallet=wallet, label=label, month=month, year=year
+        ).first()
+
+        if not budget:
+            return Response({
+                'has_budget': False,
+                'budget_amount': '0.00',
+                'spent_before': '0.00',
+                'spent_after': '0.00',
+                'percent_before': 0.0,
+                'percent_after': 0.0,
+                'overspent_amount': '0.00',
+                'status': 'normal',
+            })
+
+        spent_before = budget.get_spent()
+
+        val_raw = request.data.get('value', 0)
+        try:
+            if isinstance(val_raw, str):
+                val_raw = val_raw.replace(',', '').replace(' ', '')
+            added_val = Decimal(str(val_raw))
+            if not added_val.is_finite() or added_val < 0:
+                added_val = Decimal('0.00')
+        except (InvalidOperation, TypeError, ValueError):
+            added_val = Decimal('0.00')
+
+        spent_after = spent_before + added_val
+        percent_before = round(float(spent_before / budget.amount) * 100, 2) if budget.amount > 0 else 0.0
+        percent_after = round(float(spent_after / budget.amount) * 100, 2) if budget.amount > 0 else 0.0
+        overspent_amount = max(Decimal('0.00'), spent_after - budget.amount)
+
+        if percent_after > 100:
+            status = 'exceeded'
+        elif percent_after >= 80:
+            status = 'approaching'
+        else:
+            status = 'normal'
+
+        return Response({
+            'has_budget': True,
+            'budget_amount': f"{budget.amount:.2f}",
+            'spent_before': f"{spent_before:.2f}",
+            'spent_after': f"{spent_after:.2f}",
+            'percent_before': percent_before,
+            'percent_after': percent_after,
+            'overspent_amount': f"{overspent_amount:.2f}",
+            'status': status,
+        })
+
+
+class BudgetRebalanceAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        user: HubUser = request.user
+        wallet = user.get_wallet()
+        if not wallet:
+            return custom_user_error_response("Wallet was not found.", 404)
+
+        data = request.data
+        from_label_id = data.get('from_label_id')
+        to_label_id = data.get('to_label_id')
+        amount_raw = data.get('amount')
+        month_raw = data.get('month', date.today().month)
+        year_raw = data.get('year', date.today().year)
+
+        if not from_label_id or not to_label_id:
+            return custom_user_error_response("Vui lòng cung cấp đầy đủ danh mục nguồn và đích.", 400)
+
+        if str(from_label_id) == str(to_label_id):
+            return custom_user_error_response("Danh mục nguồn và danh mục đích không được trùng nhau.", 400)
+
+        try:
+            month = int(month_raw)
+            year = int(year_raw)
+            if month < 1 or month > 12 or year < 2000 or year > 2100:
+                raise ValueError
+        except (TypeError, ValueError):
+            return custom_user_error_response("Tháng và năm không hợp lệ.", 400)
+
+        try:
+            if isinstance(amount_raw, str):
+                amount_raw = amount_raw.replace(',', '').replace(' ', '')
+            amount = Decimal(str(amount_raw))
+            if not amount.is_finite() or amount <= 0:
+                return custom_user_error_response("Số tiền tái cân bằng phải lớn hơn 0.", 400)
+            if len(amount.as_tuple().digits) > 15 or -amount.as_tuple().exponent > 2:
+                return custom_user_error_response("Số tiền không hợp lệ (tối đa 15 chữ số và 2 chữ số thập phân).", 400)
+        except (InvalidOperation, TypeError, ValueError):
+            return custom_user_error_response("Số tiền tái cân bằng không hợp lệ.", 400)
+
+        try:
+            with db_transaction.atomic():
+                budgets = list(
+                    CategoryBudget.objects.select_for_update()
+                    .filter(wallet=wallet, month=month, year=year, label_id__in=[from_label_id, to_label_id])
+                    .order_by('pk')
+                )
+                from_budget = next((b for b in budgets if str(b.label_id) == str(from_label_id)), None)
+                to_budget = next((b for b in budgets if str(b.label_id) == str(to_label_id)), None)
+
+                if not from_budget:
+                    return custom_user_error_response("Không tìm thấy ngân sách nguồn.", 404)
+
+                if not to_budget:
+                    return custom_user_error_response("Không tìm thấy ngân sách đích.", 404)
+
+                from_spent = from_budget.get_spent()
+                if from_budget.amount - amount < from_spent:
+                    return custom_user_error_response("Ngân sách nguồn sau khi giảm không được nhỏ hơn số tiền đã chi.", 400)
+
+                from_budget.amount -= amount
+                to_budget.amount += amount
+                from_budget.save(update_fields=['amount', 'updated_at'])
+                to_budget.save(update_fields=['amount', 'updated_at'])
+        except Exception:
+            return custom_server_error_response(
+                "Đã có lỗi xảy ra trong quá trình xử lý tái cân bằng. Giao dịch đã được hoàn tác.", 500
+            )
+
+        return Response({
+            'message': 'Tái cân bằng ngân sách thành công!',
+            'from_budget': CategoryBudgetSerializer(from_budget).data,
+            'to_budget': CategoryBudgetSerializer(to_budget).data,
+        })
+
+
+class BudgetRebalanceSuggestionsAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        user: HubUser = request.user
+        wallet = user.get_wallet()
+        if not wallet:
+            return custom_user_error_response("Wallet was not found.", 404)
+
+        label_id = request.query_params.get('label_id')
+        month_param = request.query_params.get('month')
+        year_param = request.query_params.get('year')
+
+        today = date.today()
+        try:
+            month = int(month_param) if month_param else today.month
+            year = int(year_param) if year_param else today.year
+        except (TypeError, ValueError):
+            return custom_user_error_response("Month and year must be valid integers.", 400)
+
+        if month < 1 or month > 12 or year < 2000 or year > 2100:
+            return custom_user_error_response("Month or year outside valid range.", 400)
+
+        deficit = Decimal('0.00')
+        if label_id:
+            try:
+                target_budget = CategoryBudget.objects.get(
+                    wallet=wallet, label_id=label_id, month=month, year=year
+                )
+                target_spent = target_budget.get_spent()
+                if target_spent > target_budget.amount:
+                    deficit = target_spent - target_budget.amount
+            except CategoryBudget.DoesNotExist:
+                if not CustomLabel.objects.filter(pk=label_id, wallet=wallet).exists():
+                    return custom_user_error_response("Không tìm thấy danh mục.", 404)
+                deficit = Decimal('0.00')
+
+        days_in_month = calendar.monthrange(year, month)[1]
+        if year > today.year or (year == today.year and month > today.month):
+            month_progress = 0.0
+        elif year < today.year or (year == today.year and month < today.month):
+            month_progress = 1.0
+        else:
+            month_progress = today.day / days_in_month
+
+        if month_progress <= 0.5:
+            return Response([])
+
+        source_budgets_qs = wallet.category_budgets.filter(
+            year=year, month=month
+        ).select_related('label')
+
+        if label_id:
+            source_budgets_qs = source_budgets_qs.exclude(label_id=label_id)
+
+        candidates = []
+        for b in source_budgets_qs:
+            spent = b.get_spent()
+            if b.amount <= 0:
+                continue
+            spent_ratio = spent / b.amount
+            if spent_ratio >= Decimal('0.60'):
+                continue
+
+            available_rebalance = max(Decimal('0.00'), b.amount - spent)
+            if deficit > 0 and available_rebalance < deficit:
+                continue
+            if available_rebalance <= 0:
+                continue
+
+            candidates.append({
+                'budget_id': b.id,
+                'label_id': b.label.id,
+                'label_name': b.label.name,
+                'label_color': b.label.color,
+                'amount': f"{b.amount:.2f}",
+                'spent': f"{spent:.2f}",
+                'available_rebalance': f"{available_rebalance:.2f}",
+                'spent_percentage': round(float(spent_ratio * 100), 2),
+                'is_non_essential': is_category_non_essential(b.label.name),
+            })
+
+        candidates.sort(key=lambda x: (0 if x['is_non_essential'] else 1, -Decimal(x['available_rebalance'])))
+
+        return Response(candidates)
 
 
 @api_view(['GET'])

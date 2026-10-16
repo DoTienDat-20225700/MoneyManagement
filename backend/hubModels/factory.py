@@ -61,7 +61,7 @@ class TransactionFactory:
         values = {
             'wallet': wallet,
             'title': get_and_pop(kwargs, 'title') or self.faker.text(max_nb_chars=10),
-            'value': get_and_pop(kwargs, 'value') or self.faker.random_number(digits=2),
+            'value': get_and_pop(kwargs, 'value') or (self.faker.random_number(digits=2) or 10),
             'type': get_and_pop(kwargs, 'type') or self.faker.transaction_type(),
             'date': get_and_pop(kwargs, 'date') or datetime.date.today(),
             **kwargs
@@ -72,7 +72,7 @@ class TransactionFactory:
     def create_recurrent_transaction(self, user_pk, **kwargs):
         data = {
             'title': self.faker.text(max_nb_chars=10),
-            'value': self.faker.random_number(digits=2),
+            'value': kwargs.get('value') or (self.faker.random_number(digits=2) or 10),
             'type': self.faker.transaction_type(),
             'date': datetime.date.today(),
             'recurrent': True,

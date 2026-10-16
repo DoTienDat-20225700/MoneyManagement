@@ -1,4 +1,5 @@
 import datetime
+from unittest import mock
 
 from _decimal import Decimal
 from dateutil.relativedelta import relativedelta
@@ -1707,6 +1708,380 @@ class BoundaryAndValidationTestCase(TestCase):
         self.assertEqual(self.client.delete('/api/transaction/999999').status_code, 404)
         self.assertEqual(self.client.get('/api/savingplan/999999').status_code, 404)
         self.assertEqual(self.client.delete('/api/labels/999999').status_code, 404)
+
+
+class BudgetWarningAndRebalanceTestCase(TestCase):
+    def setUp(self):
+        self.factory = TransactionFactory()
+        self.user = self.factory.create_user()
+        self.wallet = self.user.get_wallet()
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
+        # Other user for testing authorization
+        self.other_user = self.factory.create_user()
+        self.other_wallet = self.other_user.get_wallet()
+        self.other_client = APIClient()
+        self.other_client.force_authenticate(self.other_user)
+
+        self.label_a = CustomLabel.objects.create(wallet=self.wallet, name='Ăn uống', color='#EF4444')
+        self.label_b = CustomLabel.objects.create(wallet=self.wallet, name='Giải trí & Cà phê', color='#EC4899')
+        self.label_c = CustomLabel.objects.create(wallet=self.wallet, name='Tiền nhà', color='#3B82F6')
+        self.other_label = CustomLabel.objects.create(wallet=self.other_wallet, name='Other Label', color='#10B981')
+
+    def test_check_impact_overspent_exceeded(self):
+        """
+        Tiêu chí nghiệm thu:
+        Ngân sách 3.000.000đ, đã chi 2.800.000đ, kiểm tra thêm 500.000đ:
+        overspent_amount = 300.000, status = exceeded.
+        """
+        budget = CategoryBudget.objects.create(
+            wallet=self.wallet,
+            label=self.label_a,
+            amount=Decimal('3000000.00'),
+            month=5,
+            year=2026,
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.label_a, type='EXPENSE', value=2800000, date=datetime.date(2026, 5, 10)
+        )
+
+        res = self.client.post('/api/budgets/check-impact/', {
+            'label_id': self.label_a.pk,
+            'value': 500000,
+            'date': '2026-05-15',
+        }, format='json')
+
+        self.assertEqual(res.status_code, 200)
+        data = res.data
+        self.assertTrue(data['has_budget'])
+        self.assertEqual(data['budget_amount'], '3000000.00')
+        self.assertEqual(data['spent_before'], '2800000.00')
+        self.assertEqual(data['spent_after'], '3300000.00')
+        self.assertEqual(data['percent_before'], round(2800000.0 / 3000000.0 * 100, 2))
+        self.assertEqual(data['percent_after'], 110.0)
+        self.assertEqual(data['overspent_amount'], '300000.00')
+        self.assertEqual(data['status'], 'exceeded')
+
+    def test_check_impact_no_budget(self):
+        """
+        Tiêu chí nghiệm thu:
+        Danh mục không có ngân sách: không có cảnh báo, không lỗi.
+        """
+        res = self.client.post('/api/budgets/check-impact/', {
+            'label_id': self.label_a.pk,
+            'value': 500000,
+            'date': '2026-06-15',
+        }, format='json')
+
+        self.assertEqual(res.status_code, 200)
+        data = res.data
+        self.assertFalse(data['has_budget'])
+        self.assertEqual(data['overspent_amount'], '0.00')
+        self.assertEqual(data['status'], 'normal')
+
+    def test_check_impact_approaching(self):
+        """
+        Kiểm tra ngưỡng tiệm cận >= 80% (approaching).
+        """
+        budget = CategoryBudget.objects.create(
+            wallet=self.wallet,
+            label=self.label_a,
+            amount=Decimal('1000000.00'),
+            month=5,
+            year=2026,
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.label_a, type='EXPENSE', value=700000, date=datetime.date(2026, 5, 10)
+        )
+
+        res = self.client.post('/api/budgets/check-impact/', {
+            'label_id': self.label_a.pk,
+            'value': 150000,
+            'date': '2026-05-15',
+        }, format='json')
+
+        self.assertEqual(res.status_code, 200)
+        data = res.data
+        self.assertTrue(data['has_budget'])
+        self.assertEqual(data['percent_after'], 85.0)
+        self.assertEqual(data['overspent_amount'], '0.00')
+        self.assertEqual(data['status'], 'approaching')
+
+    def test_rebalance_success(self):
+        """
+        Tiêu chí nghiệm thu:
+        Rebalance 300.000đ từ B sang A: B giảm, A tăng đúng 300.000, tổng ngân sách không đổi.
+        """
+        budget_a = CategoryBudget.objects.create(
+            wallet=self.wallet, label=self.label_a, amount=Decimal('1000000.00'), month=5, year=2026
+        )
+        budget_b = CategoryBudget.objects.create(
+            wallet=self.wallet, label=self.label_b, amount=Decimal('2000000.00'), month=5, year=2026
+        )
+        # B đã chi 500.000đ, vẫn còn 1.500.000đ khả dụng
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.label_b, type='EXPENSE', value=500000, date=datetime.date(2026, 5, 2)
+        )
+
+        total_before = budget_a.amount + budget_b.amount
+
+        res = self.client.post('/api/budgets/rebalance/', {
+            'from_label_id': self.label_b.pk,
+            'to_label_id': self.label_a.pk,
+            'amount': 300000,
+            'month': 5,
+            'year': 2026,
+        }, format='json')
+
+        self.assertEqual(res.status_code, 200)
+
+        budget_a.refresh_from_db()
+        budget_b.refresh_from_db()
+
+        self.assertEqual(budget_b.amount, Decimal('1700000.00'))
+        self.assertEqual(budget_a.amount, Decimal('1300000.00'))
+        self.assertEqual(budget_a.amount + budget_b.amount, total_before)
+
+    def test_rebalance_atomic_rollback_on_failure(self):
+        """
+        Tiêu chí nghiệm thu:
+        Nếu một bước cập nhật lỗi thì cả hai ngân sách giữ nguyên (atomic).
+        Ngân sách nguồn sau khi giảm không được nhỏ hơn số đã chi.
+        """
+        budget_a = CategoryBudget.objects.create(
+            wallet=self.wallet, label=self.label_a, amount=Decimal('1000000.00'), month=5, year=2026
+        )
+        budget_b = CategoryBudget.objects.create(
+            wallet=self.wallet, label=self.label_b, amount=Decimal('1000000.00'), month=5, year=2026
+        )
+        # B đã chi 850.000đ, chỉ còn 150.000đ khả dụng
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.label_b, type='EXPENSE', value=850000, date=datetime.date(2026, 5, 2)
+        )
+
+        # Thử rebalance 300.000đ (vượt quá số dư khả dụng của B)
+        res = self.client.post('/api/budgets/rebalance/', {
+            'from_label_id': self.label_b.pk,
+            'to_label_id': self.label_a.pk,
+            'amount': 300000,
+            'month': 5,
+            'year': 2026,
+        }, format='json')
+
+        self.assertEqual(res.status_code, 400)
+
+        # Cả 2 ngân sách giữ nguyên
+        budget_a.refresh_from_db()
+        budget_b.refresh_from_db()
+        self.assertEqual(budget_a.amount, Decimal('1000000.00'))
+        self.assertEqual(budget_b.amount, Decimal('1000000.00'))
+
+    def test_rebalance_atomic_rollback_on_destination_save_failure(self):
+        """
+        Tiêu chí nghiệm thu A2:
+        Atomic rollback kiểm chứng thực sự: save() của ngân sách đích ném exception sau khi
+        ngân sách nguồn đã save() thành công.
+        Kiểm tra từ DB (refresh_from_db) rằng cả hai ngân sách vẫn giữ nguyên số tiền ban đầu.
+        """
+        budget_a = CategoryBudget.objects.create(
+            wallet=self.wallet, label=self.label_a, amount=Decimal('1000000.00'), month=5, year=2026
+        )
+        budget_b = CategoryBudget.objects.create(
+            wallet=self.wallet, label=self.label_b, amount=Decimal('2000000.00'), month=5, year=2026
+        )
+        # B đã chi 500.000đ, còn 1.500.000đ khả dụng (thỏa mãn điều kiện validate)
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.label_b, type='EXPENSE', value=500000, date=datetime.date(2026, 5, 2)
+        )
+
+        original_save = CategoryBudget.save
+
+        def faulty_save(instance, *args, **kwargs):
+            # Nếu là ngân sách đích (to_budget là budget_a), ném exception sau khi ngân sách nguồn (budget_b) đã save thành công
+            if instance.pk == budget_a.pk:
+                raise RuntimeError("Simulated failure when saving destination budget")
+            return original_save(instance, *args, **kwargs)
+
+        with mock.patch.object(CategoryBudget, 'save', autospec=True, side_effect=faulty_save):
+            res = self.client.post('/api/budgets/rebalance/', {
+                'from_label_id': self.label_b.pk,
+                'to_label_id': self.label_a.pk,
+                'amount': 300000,
+                'month': 5,
+                'year': 2026,
+            }, format='json')
+
+        self.assertEqual(res.status_code, 500)
+        self.assertIn('hoàn tác', res.json().get('message', ''))
+
+        # Cả hai ngân sách phải được rollback về số tiền ban đầu
+        budget_a.refresh_from_db()
+        budget_b.refresh_from_db()
+        self.assertEqual(budget_a.amount, Decimal('1000000.00'))
+        self.assertEqual(budget_b.amount, Decimal('2000000.00'))
+
+    def test_object_ownership_authorization(self):
+        """
+        Tiêu chí nghiệm thu:
+        Người dùng khác gọi với label/budget của người khác: trả 403 hoặc 404.
+        """
+        budget_a = CategoryBudget.objects.create(
+            wallet=self.wallet, label=self.label_a, amount=Decimal('1000000.00'), month=5, year=2026
+        )
+
+        # Other user calls check-impact with user's label
+        res1 = self.other_client.post('/api/budgets/check-impact/', {
+            'label_id': self.label_a.pk,
+            'value': 100000,
+            'date': '2026-05-15',
+        }, format='json')
+        self.assertEqual(res1.status_code, 404)
+
+        # Other user calls rebalance with user's label
+        res2 = self.other_client.post('/api/budgets/rebalance/', {
+            'from_label_id': self.label_a.pk,
+            'to_label_id': self.other_label.pk,
+            'amount': 100000,
+            'month': 5,
+            'year': 2026,
+        }, format='json')
+        self.assertEqual(res2.status_code, 404)
+
+        # Other user calls rebalance-suggestions with user's label
+        res3 = self.other_client.get(f'/api/budgets/rebalance-suggestions/?label_id={self.label_a.pk}&month=5&year=2026')
+        self.assertEqual(res3.status_code, 404)
+
+    def test_rebalance_suggestions_filtering_and_priority(self):
+        """
+        Tiêu chí nghiệm thu:
+        - Danh mục đã chi >= 60% hoặc mới đầu tháng (chưa qua 50% số ngày) không xuất hiện trong gợi ý.
+        - Đủ điều kiện: có ngân sách, đã chi < 60%, đã qua hơn 50% số ngày, số dư còn lại >= thâm hụt.
+        - Ưu tiên danh mục không thiết yếu trước.
+        """
+        # Test 1: Tháng trong tương lai (0% số ngày đã qua) -> trả về []
+        future_year = 2099
+        CategoryBudget.objects.create(
+            wallet=self.wallet, label=self.label_b, amount=Decimal('1000000.00'), month=5, year=future_year
+        )
+        res_future = self.client.get(f'/api/budgets/rebalance-suggestions/?month=5&year={future_year}')
+        self.assertEqual(res_future.status_code, 200)
+        self.assertEqual(res_future.data, [])
+
+        # Test 2: Tháng trong quá khứ (ví dụ 10/2020, 100% đã qua):
+        past_month, past_year = 10, 2020
+        # Target: Ăn uống (ngân sách 1.000.000đ, đã chi 1.300.000đ -> thâm hụt 300.000đ)
+        b_target = CategoryBudget.objects.create(
+            wallet=self.wallet, label=self.label_a, amount=Decimal('1000000.00'), month=past_month, year=past_year
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.label_a, type='EXPENSE', value=1300000, date=datetime.date(past_year, past_month, 5)
+        )
+
+        # Nguồn 1: Tiền nhà (thiết yếu, ngân sách 3.000.000đ, đã chi 600.000đ = 20% < 60%, còn lại 2.400.000đ >= 300.000đ) -> Đủ điều kiện
+        b_essential = CategoryBudget.objects.create(
+            wallet=self.wallet, label=self.label_c, amount=Decimal('3000000.00'), month=past_month, year=past_year
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.label_c, type='EXPENSE', value=600000, date=datetime.date(past_year, past_month, 5)
+        )
+
+        # Nguồn 2: Giải trí & Cà phê (không thiết yếu, ngân sách 1.000.000đ, đã chi 200.000đ = 20% < 60%, còn lại 800.000đ >= 300.000đ) -> Đủ điều kiện
+        b_non_essential = CategoryBudget.objects.create(
+            wallet=self.wallet, label=self.label_b, amount=Decimal('1000000.00'), month=past_month, year=past_year
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.label_b, type='EXPENSE', value=200000, date=datetime.date(past_year, past_month, 5)
+        )
+
+        # Nguồn 3: Danh mục khác (đã chi 700.000/1.000.000 = 70% >= 60%) -> Bị loại
+        label_d = CustomLabel.objects.create(wallet=self.wallet, name='Đi lại', color='#F59E0B')
+        CategoryBudget.objects.create(
+            wallet=self.wallet, label=label_d, amount=Decimal('1000000.00'), month=past_month, year=past_year
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, label=label_d, type='EXPENSE', value=700000, date=datetime.date(past_year, past_month, 5)
+        )
+
+        # Nguồn 4: Danh mục số dư còn lại < thâm hụt (còn lại 100.000đ < 300.000đ thâm hụt) -> Bị loại
+        label_e = CustomLabel.objects.create(wallet=self.wallet, name='Mua sắm nhỏ', color='#8B5CF6')
+        CategoryBudget.objects.create(
+            wallet=self.wallet, label=label_e, amount=Decimal('200000.00'), month=past_month, year=past_year
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, label=label_e, type='EXPENSE', value=100000, date=datetime.date(past_year, past_month, 5)
+        )
+
+        res_suggestions = self.client.get(
+            f'/api/budgets/rebalance-suggestions/?label_id={self.label_a.pk}&month={past_month}&year={past_year}'
+        )
+        self.assertEqual(res_suggestions.status_code, 200)
+        data = res_suggestions.data
+        # Chỉ có 2 danh mục đủ điều kiện
+        self.assertEqual(len(data), 2)
+
+        # Danh mục không thiết yếu ("Giải trí & Cà phê") được ưu tiên đứng đầu!
+        self.assertEqual(data[0]['label_name'], 'Giải trí & Cà phê')
+        self.assertTrue(data[0]['is_non_essential'])
+        self.assertEqual(data[0]['amount'], '1000000.00')
+        self.assertEqual(data[0]['spent'], '200000.00')
+        self.assertEqual(data[0]['available_rebalance'], '800000.00')
+
+        # Danh mục thiết yếu ("Tiền nhà") đứng sau
+        self.assertEqual(data[1]['label_name'], 'Tiền nhà')
+        self.assertFalse(data[1]['is_non_essential'])
+        self.assertEqual(data[1]['amount'], '3000000.00')
+        self.assertEqual(data[1]['spent'], '600000.00')
+        self.assertEqual(data[1]['available_rebalance'], '2400000.00')
+
+    def test_rebalance_suggestions_unaccented_non_essential_labels(self):
+        """
+        Tiêu chí B4:
+        Từ khóa không thiết yếu nhận diện được cả nhãn không dấu:
+        'giai tri', 'mua sam', 'ca phe' -> is_non_essential = True.
+        Kiểu dữ liệu tiền tệ trả về chuỗi Decimal theo convention (Tiêu chí B5).
+        """
+        past_month, past_year = 11, 2020
+        # Target: Ăn uống (thâm hụt 100.000đ)
+        CategoryBudget.objects.create(
+            wallet=self.wallet, label=self.label_a, amount=Decimal('500000.00'), month=past_month, year=past_year
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, label=self.label_a, type='EXPENSE', value=600000, date=datetime.date(past_year, past_month, 5)
+        )
+
+        # Nguồn không dấu: "giai tri cuoi tuan", "mua sam online", "ca phe sang" và thiết yếu "tien dien nuoc"
+        lbl_giai_tri = CustomLabel.objects.create(wallet=self.wallet, name='giai tri cuoi tuan', color='#111111')
+        lbl_mua_sam = CustomLabel.objects.create(wallet=self.wallet, name='mua sam online', color='#222222')
+        lbl_ca_phe = CustomLabel.objects.create(wallet=self.wallet, name='ca phe sang', color='#333333')
+        lbl_dien_nuoc = CustomLabel.objects.create(wallet=self.wallet, name='tien dien nuoc', color='#444444')
+
+        for lbl in [lbl_giai_tri, lbl_mua_sam, lbl_ca_phe, lbl_dien_nuoc]:
+            CategoryBudget.objects.create(
+                wallet=self.wallet, label=lbl, amount=Decimal('1000000.00'), month=past_month, year=past_year
+            )
+
+        res = self.client.get(
+            f'/api/budgets/rebalance-suggestions/?label_id={self.label_a.pk}&month={past_month}&year={past_year}'
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.data
+
+        # Tìm các item theo tên
+        item_giai_tri = next(i for i in data if i['label_name'] == 'giai tri cuoi tuan')
+        item_mua_sam = next(i for i in data if i['label_name'] == 'mua sam online')
+        item_ca_phe = next(i for i in data if i['label_name'] == 'ca phe sang')
+        item_dien_nuoc = next(i for i in data if i['label_name'] == 'tien dien nuoc')
+
+        self.assertTrue(item_giai_tri['is_non_essential'])
+        self.assertTrue(item_mua_sam['is_non_essential'])
+        self.assertTrue(item_ca_phe['is_non_essential'])
+        self.assertFalse(item_dien_nuoc['is_non_essential'])
+
+        # Kiểm tra kiểu dữ liệu chuỗi Decimal (tiêu chí B5)
+        self.assertEqual(item_giai_tri['amount'], '1000000.00')
+        self.assertEqual(item_giai_tri['available_rebalance'], '1000000.00')
+
 
 
 

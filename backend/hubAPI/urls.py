@@ -6,7 +6,8 @@ from rest_framework_simplejwt.views import (
 from .reports_views import ReportSummaryAPIView, ReportTransactionsAPIView, ReportExportCSVAPIView, ReportExportExcelAPIView
 from .views import (MyTokenObtainPairView, MyTokenRefreshView, TransactionAPIView, get_saving_plans, get_transactions,
                     get_routes, create_user, WalletAPIView, LabelAPIView, ImportInvoicesAPIView, ImportPreviewAPIView, SavingPlanAPIView,
-                    SavingPlanContributionAPIView, BudgetAPIView, BudgetSummaryAPIView)
+                    SavingPlanContributionAPIView, BudgetAPIView, BudgetSummaryAPIView,
+                    BudgetCheckImpactAPIView, BudgetRebalanceAPIView, BudgetRebalanceSuggestionsAPIView)
 
 urlpatterns = [
     path('', get_routes),
@@ -32,6 +33,9 @@ urlpatterns = [
     path('budget/', BudgetAPIView.as_view(), name='budget'),
     path('budgets/summary/', BudgetSummaryAPIView.as_view(), name='budgets_summary'),
     path('budget/summary/', BudgetSummaryAPIView.as_view(), name='budget_summary_singular'),
+    path('budgets/check-impact/', BudgetCheckImpactAPIView.as_view(), name='budget_check_impact'),
+    path('budgets/rebalance/', BudgetRebalanceAPIView.as_view(), name='budget_rebalance'),
+    path('budgets/rebalance-suggestions/', BudgetRebalanceSuggestionsAPIView.as_view(), name='budget_rebalance_suggestions'),
     path('budgets/<int:budget_pk>', BudgetAPIView.as_view(), name='budget_detail'),
     path('budget/<int:budget_pk>', BudgetAPIView.as_view(), name='budget_detail_singular'),
     path('reports/summary/', ReportSummaryAPIView.as_view(), name='reports_summary'),
