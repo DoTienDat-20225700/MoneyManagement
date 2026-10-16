@@ -14,7 +14,9 @@ import PersistLogin from "./components/auth/PersistLogin";
 import "./main.css";
 import AuthRoot from "./routes/AuthRoot";
 import Settings from "./routes/Settings";
+import Debts from "./routes/Debts";
 export const router = createBrowserRouter([
+
   {
     path: "/",
     element: <PersistLogin />,
@@ -44,10 +46,15 @@ export const router = createBrowserRouter([
             element: <SavingPlans />,
           },
           {
+            path: "debts",
+            element: <Debts />,
+          },
+          {
             path: "settings",
             element: <Settings />,
           },
         ],
+
       },
     ],
   },

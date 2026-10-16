@@ -1,4 +1,4 @@
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, ROUND_FLOOR
 import re
 from django.core.exceptions import ValidationError
 from django.db import models, transaction as db_transaction
@@ -83,6 +83,10 @@ class HubUser(AbstractBaseUser, PermissionsMixin):
         Return all SavingPlans related to that user
         """
         return self.get_wallet().get_saving_plans()
+
+    def get_debts(self) -> QuerySet:
+        return self.get_wallet().get_debts()
+
 
     def get_full_name(self):
         """
@@ -197,6 +201,10 @@ class Wallet(models.Model):
         if month is not None:
             qs = qs.filter(month=month)
         return qs
+
+    def get_debts(self):
+        return self.debts.all()
+
 
 
 class WalletBasedModel(models.Model):
@@ -1079,4 +1087,488 @@ class CategoryBudget(WalletBasedModel):
 
     def is_over_budget(self) -> bool:
         return self.get_spent() > self.amount
+
+
+class DebtLoan(WalletBasedModel):
+    DEBT_TYPES = (
+        ('DEBT_BORROWED', 'Debt Borrowed'),
+        ('LOAN_GIVEN', 'Loan Given'),
+        ('INSTALLMENT', 'Installment'),
+    )
+
+    STATUS_CHOICES = (
+        ('ACTIVE', 'Active'),
+        ('PARTIALLY_PAID', 'Partially Paid'),
+        ('FULLY_PAID', 'Fully Paid'),
+        ('OVERDUE', 'Overdue'),
+        ('CLOSED', 'Closed'),
+    )
+
+    wallet = models.ForeignKey(
+        Wallet, on_delete=models.CASCADE, related_name='debts'
+    )
+    person_name = models.CharField(max_length=100)
+    contact_info = models.CharField(max_length=150, blank=True, default='')
+    type = models.CharField(max_length=20, choices=DEBT_TYPES)
+    principal_amount = models.DecimalField(decimal_places=2, max_digits=15)
+    start_date = models.DateField(default=timezone.now)
+    due_date = models.DateField(blank=True, null=True)
+    installment_months = models.IntegerField(blank=True, null=True)
+    status = models.CharField(max_length=20, default='ACTIVE', choices=STATUS_CHOICES)
+    description = models.TextField(blank=True, default='')
+    wallet_applied = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.person_name} ({self.type}): {self.principal_amount}"
+
+    def get_total_paid(self) -> Decimal:
+        if not self.pk:
+            return Decimal('0.00')
+        total = self.payments.aggregate(t=Sum('amount'))['t']
+        return total or Decimal('0.00')
+
+    def get_remaining_amount(self) -> Decimal:
+        paid = self.get_total_paid()
+        remaining = self.principal_amount - paid
+        return max(Decimal('0.00'), remaining)
+
+    def get_computed_status(self) -> str:
+        paid = self.get_total_paid()
+        remaining = self.principal_amount - paid
+        if remaining <= Decimal('0.00'):
+            return 'FULLY_PAID'
+        today = date.today()
+        if self.due_date and today > self.due_date and remaining > Decimal('0.00'):
+            return 'OVERDUE'
+        if paid > Decimal('0.00'):
+            return 'PARTIALLY_PAID'
+        if self.status == 'CLOSED':
+            return 'CLOSED'
+        return 'ACTIVE'
+
+    def get_overdue_days(self) -> int:
+        today = date.today()
+        remaining = self.get_remaining_amount()
+        if self.due_date and today > self.due_date and remaining > Decimal('0.00'):
+            return (today - self.due_date).days
+        return 0
+
+    def get_installment_schedule(self) -> list:
+        if self.type != 'INSTALLMENT' or not self.installment_months or self.installment_months <= 0:
+            return []
+
+        # 1. Determine exact installment amounts so the sum equals principal_amount exactly
+        amounts = []
+        if self.installment_months == 1:
+            amounts.append(self.principal_amount)
+        else:
+            base_amount = (self.principal_amount / Decimal(self.installment_months)).quantize(Decimal('1'), rounding=ROUND_FLOOR).quantize(Decimal('0.01'))
+            sum_first = Decimal('0.00')
+            for _ in range(1, self.installment_months):
+                amounts.append(base_amount)
+                sum_first += base_amount
+            last_amount = self.principal_amount - sum_first
+            amounts.append(last_amount)
+
+        # 2. Sequentially allocate paid_amount to each installment period
+        remaining_paid = self.get_total_paid()
+        schedule = []
+        for i, amount in enumerate(amounts, start=1):
+            due = self.start_date + relativedelta(months=i)
+            paid_this_period = min(amount, max(Decimal('0.00'), remaining_paid))
+            remaining_paid = max(Decimal('0.00'), remaining_paid - paid_this_period)
+            is_paid = paid_this_period >= amount
+            schedule.append({
+                'installment_no': i,
+                'due_date': due.isoformat(),
+                'amount': f"{amount:.2f}",
+                'paid_amount': f"{paid_this_period:.2f}",
+                'is_paid': is_paid,
+            })
+        return schedule
+
+    @staticmethod
+    def _parse_amount(value, field_name='principal_amount'):
+        if isinstance(value, bool):
+            raise ValidationError({field_name: 'Số tiền phải là số dương hợp lệ.'})
+        try:
+            val = Decimal(str(value))
+        except (InvalidOperation, TypeError, ValueError):
+            raise ValidationError({field_name: 'Số tiền phải là số hợp lệ.'})
+        if not val.is_finite() or val <= 0:
+            raise ValidationError({field_name: 'Số tiền phải lớn hơn 0.'})
+        if len(val.as_tuple().digits) > 15 or -val.as_tuple().exponent > 2:
+            raise ValidationError({field_name: 'Số tiền hỗ trợ tối đa 15 chữ số và 2 chữ số thập phân.'})
+        return val
+
+    @staticmethod
+    def _parse_date(value, field_name='date'):
+        if value in (None, ''):
+            return None
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, date):
+            return value
+        if not isinstance(value, str) or not value.strip():
+            return None
+        try:
+            return datetime.fromisoformat(value.replace('Z', '+00:00')).date()
+        except ValueError:
+            try:
+                return datetime.strptime(value.strip(), '%Y-%m-%d').date()
+            except ValueError:
+                raise ValidationError({field_name: 'Định dạng ngày không hợp lệ (sử dụng YYYY-MM-DD).'})
+
+    @staticmethod
+    def _parse_boolean(value, field_name='update_wallet'):
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            if value.lower() in ('true', '1', 'yes'):
+                return True
+            if value.lower() in ('false', '0', 'no'):
+                return False
+        raise ValidationError({field_name: 'Giá trị phải là boolean.'})
+
+    @classmethod
+    def create_from_json(cls, data: dict, user_pk: int) -> 'DebtLoan':
+        if not isinstance(data, dict):
+            raise ValidationError('Dữ liệu yêu cầu phải là object.')
+
+        with db_transaction.atomic():
+            try:
+                user = HubUser.objects.get(pk=user_pk)
+                user_wallet = Wallet.objects.select_for_update().get(user=user)
+            except (HubUser.DoesNotExist, Wallet.DoesNotExist):
+                raise PermissionError('Không tìm thấy ví của người dùng.')
+
+            person_name = data.get('person_name', data.get('personName'))
+            if not person_name or not str(person_name).strip():
+                raise ValidationError({'person_name': 'Tên người liên quan là bắt buộc.'})
+            person_name = str(person_name).strip()
+            if len(person_name) > 100:
+                raise ValidationError({'person_name': 'Tên không được vượt quá 100 ký tự.'})
+
+            debt_type = data.get('type')
+            valid_types = {t[0] for t in cls.DEBT_TYPES}
+            if debt_type not in valid_types:
+                raise ValidationError({'type': f"Loại hợp đồng phải là một trong các giá trị: {', '.join(valid_types)}."})
+
+            raw_principal = data.get('principal_amount', data.get('principalAmount'))
+            principal_amount = cls._parse_amount(raw_principal, 'principal_amount')
+
+            start_date = cls._parse_date(data.get('start_date', data.get('startDate')), 'start_date') or date.today()
+            due_date = cls._parse_date(data.get('due_date', data.get('dueDate')), 'due_date')
+
+            installment_months = data.get('installment_months', data.get('installmentMonths'))
+            if debt_type == 'INSTALLMENT':
+                if not installment_months:
+                    raise ValidationError({'installment_months': 'Mua trả góp bắt buộc phải có số tháng trả góp.'})
+                try:
+                    installment_months = int(installment_months)
+                    if installment_months <= 0 or installment_months > 120:
+                        raise ValueError()
+                except (ValueError, TypeError):
+                    raise ValidationError({'installment_months': 'Số tháng trả góp phải từ 1 đến 120 tháng.'})
+                if not due_date:
+                    due_date = start_date + relativedelta(months=installment_months)
+            else:
+                if installment_months is not None:
+                    try:
+                        installment_months = int(installment_months)
+                    except (ValueError, TypeError):
+                        installment_months = None
+
+            if due_date and start_date and due_date < start_date:
+                raise ValidationError({'due_date': 'Ngày đến hạn không thể trước ngày bắt đầu.'})
+
+            contact_info = data.get('contact_info', data.get('contactInfo', ''))
+            description = data.get('description', '')
+
+            raw_update_wallet = data.get('update_wallet', data.get('updateWallet', False))
+            update_wallet = cls._parse_boolean(raw_update_wallet, 'update_wallet')
+
+            # Wallet adjustments when creating contract
+            wallet_applied = False
+            if update_wallet:
+                if debt_type == 'LOAN_GIVEN':
+                    # Cho vay: tiền rời khỏi ví -> trừ ví
+                    user_wallet.update_balance(-principal_amount)
+                    wallet_applied = True
+                elif debt_type == 'DEBT_BORROWED':
+                    # Đi vay: nhận được tiền -> cộng vào ví
+                    user_wallet.update_balance(principal_amount)
+                    wallet_applied = True
+                # INSTALLMENT: Không tác động ví lúc tạo (wallet_applied luôn False)
+
+            debt = cls(
+                wallet=user_wallet,
+                person_name=person_name,
+                contact_info=str(contact_info).strip() if contact_info else '',
+                type=debt_type,
+                principal_amount=principal_amount,
+                start_date=start_date,
+                due_date=due_date,
+                installment_months=installment_months,
+                status='ACTIVE',
+                description=str(description).strip() if description else '',
+                wallet_applied=wallet_applied,
+            )
+            debt.save()
+            computed_status = debt.get_computed_status()
+            if computed_status != 'ACTIVE':
+                debt.status = computed_status
+                debt.save(update_fields=['status'])
+            return debt
+
+    @classmethod
+    def update_from_json(cls, debt_pk: int, user: HubUser, data: dict) -> 'DebtLoan':
+        if not isinstance(data, dict):
+            raise ValidationError('Dữ liệu yêu cầu phải là object.')
+
+        with db_transaction.atomic():
+            try:
+                wallet = Wallet.objects.select_for_update().get(user=user)
+                debt = cls.objects.select_for_update().get(pk=debt_pk, wallet=wallet)
+            except cls.DoesNotExist:
+                raise cls.DoesNotExist('Không tìm thấy hợp đồng nợ.')
+            except Wallet.DoesNotExist:
+                raise PermissionError('Không tìm thấy ví của người dùng.')
+
+            # Check immutability of type and wallet
+            cannot_change = debt.payments.exists() or debt.wallet_applied
+            if 'type' in data and data['type'] != debt.type:
+                if cannot_change:
+                    raise ValidationError({'type': 'Không thể thay đổi loại hợp đồng khi đã có thanh toán hoặc đã cập nhật vào ví.'})
+                valid_types = {t[0] for t in cls.DEBT_TYPES}
+                if data['type'] not in valid_types:
+                    raise ValidationError({'type': f"Loại hợp đồng phải là một trong các giá trị: {', '.join(valid_types)}."})
+                debt.type = data['type']
+
+            if 'wallet' in data or 'wallet_id' in data:
+                new_wallet_id = data.get('wallet_id', data.get('wallet'))
+                if str(new_wallet_id) != str(debt.wallet_id):
+                    raise ValidationError({'wallet': 'Không thể thay đổi ví của hợp đồng.'})
+
+            if 'person_name' in data or 'personName' in data:
+                pname = data.get('person_name', data.get('personName'))
+                if not pname or not str(pname).strip():
+                    raise ValidationError({'person_name': 'Tên người liên quan không được để trống.'})
+                debt.person_name = str(pname).strip()
+
+            if 'contact_info' in data or 'contactInfo' in data:
+                debt.contact_info = str(data.get('contact_info', data.get('contactInfo', ''))).strip()
+
+            if 'description' in data:
+                debt.description = str(data.get('description', '')).strip()
+
+            if 'due_date' in data or 'dueDate' in data:
+                new_due = cls._parse_date(data.get('due_date', data.get('dueDate')), 'due_date')
+                if new_due and debt.start_date and new_due < debt.start_date:
+                    raise ValidationError({'due_date': 'Ngày đến hạn không thể trước ngày bắt đầu.'})
+                debt.due_date = new_due
+
+            if 'principal_amount' in data or 'principalAmount' in data:
+                new_principal = cls._parse_amount(data.get('principal_amount', data.get('principalAmount')), 'principal_amount')
+                total_paid = debt.get_total_paid()
+                if new_principal < total_paid:
+                    raise ValidationError({'principal_amount': f'Số tiền gốc ({new_principal}) không được nhỏ hơn tổng tiền đã thanh toán ({total_paid}).'})
+
+                # If wallet_applied was True, adjust the wallet for the principal delta
+                if debt.wallet_applied:
+                    diff = new_principal - debt.principal_amount
+                    if diff != Decimal('0.00'):
+                        if debt.type == 'LOAN_GIVEN':
+                            wallet.update_balance(-diff)
+                        elif debt.type == 'DEBT_BORROWED':
+                            wallet.update_balance(diff)
+                debt.principal_amount = new_principal
+
+            debt.status = debt.get_computed_status()
+            debt.save()
+            return debt
+
+    def delete(self, **kwargs):
+        with db_transaction.atomic():
+            try:
+                wallet = Wallet.objects.select_for_update().get(pk=self.wallet_id)
+            except Wallet.DoesNotExist:
+                return super().delete(**kwargs)
+
+            # 1. Reverse all payments made with update_wallet
+            for payment in self.payments.filter(update_wallet=True):
+                if self.type == 'LOAN_GIVEN':
+                    wallet.update_balance(-payment.amount)
+                elif self.type in ('DEBT_BORROWED', 'INSTALLMENT'):
+                    wallet.update_balance(payment.amount)
+
+            # 2. Reverse initial contract effect ONLY IF wallet_applied = True
+            if self.wallet_applied:
+                if self.type == 'LOAN_GIVEN':
+                    wallet.update_balance(self.principal_amount)
+                elif self.type == 'DEBT_BORROWED':
+                    wallet.update_balance(-self.principal_amount)
+
+            return super().delete(**kwargs)
+
+
+class DebtPayment(models.Model):
+    debt = models.ForeignKey(
+        DebtLoan, on_delete=models.CASCADE, related_name='payments'
+    )
+    amount = models.DecimalField(decimal_places=2, max_digits=15)
+    date = models.DateField(default=timezone.now)
+    update_wallet = models.BooleanField(default=False)
+    note = models.CharField(max_length=255, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-date', '-created_at']
+
+    def __str__(self):
+        return f"Payment for {self.debt.person_name}: {self.amount} on {self.date}"
+
+    @classmethod
+    def create_from_json(cls, debt_pk: int, user: HubUser, data: dict) -> 'DebtPayment':
+        if not isinstance(data, dict):
+            raise ValidationError('Dữ liệu yêu cầu phải là object.')
+
+        with db_transaction.atomic():
+            try:
+                wallet = Wallet.objects.select_for_update().get(user=user)
+                debt = DebtLoan.objects.select_for_update().get(pk=debt_pk, wallet=wallet)
+            except DebtLoan.DoesNotExist:
+                raise DebtLoan.DoesNotExist('Không tìm thấy hợp đồng nợ.')
+            except Wallet.DoesNotExist:
+                raise PermissionError('Không tìm thấy ví của người dùng.')
+
+            raw_amount = data.get('amount')
+            amount = DebtLoan._parse_amount(raw_amount, 'amount')
+
+            # Calculate remaining amount AFTER locking debt
+            remaining = debt.get_remaining_amount()
+            if amount > remaining:
+                raise ValidationError({'amount': f'Số tiền thanh toán ({amount}) vượt quá dư nợ còn lại ({remaining}).'})
+
+            pay_date = DebtLoan._parse_date(data.get('date'), 'date') or date.today()
+            raw_update_wallet = data.get('update_wallet', data.get('updateWallet', False))
+            update_wallet = DebtLoan._parse_boolean(raw_update_wallet, 'update_wallet')
+            note = str(data.get('note', '')).strip()
+
+            # Wallet effect for payment:
+            # LOAN_GIVEN: Thu hồi tiền cho vay -> ví tăng (+)
+            # DEBT_BORROWED / INSTALLMENT: Trả nợ / trả góp -> ví giảm (-)
+            if update_wallet:
+                if debt.type == 'LOAN_GIVEN':
+                    wallet.update_balance(amount)
+                elif debt.type in ('DEBT_BORROWED', 'INSTALLMENT'):
+                    wallet.update_balance(-amount)
+
+            payment = cls.objects.create(
+                debt=debt,
+                amount=amount,
+                date=pay_date,
+                update_wallet=update_wallet,
+                note=note,
+            )
+
+            debt.status = debt.get_computed_status()
+            debt.save(update_fields=['status'])
+            return payment
+
+    @classmethod
+    def update_from_json(cls, payment_pk: int, user: HubUser, data: dict) -> 'DebtPayment':
+        if not isinstance(data, dict):
+            raise ValidationError('Dữ liệu yêu cầu phải là object.')
+
+        with db_transaction.atomic():
+            try:
+                wallet = Wallet.objects.select_for_update().get(user=user)
+                debt = DebtLoan.objects.select_for_update().get(payments__id=payment_pk, wallet=wallet)
+                payment = cls.objects.select_for_update().get(pk=payment_pk, debt=debt)
+            except (cls.DoesNotExist, DebtLoan.DoesNotExist):
+                raise cls.DoesNotExist('Không tìm thấy khoản thanh toán.')
+            except Wallet.DoesNotExist:
+                raise PermissionError('Không tìm thấy ví của người dùng.')
+
+            other_sum = debt.payments.exclude(pk=payment.pk).aggregate(t=Sum('amount'))['t'] or Decimal('0.00')
+            max_allowed = debt.principal_amount - other_sum
+
+            if 'amount' in data:
+                new_amount = DebtLoan._parse_amount(data['amount'], 'amount')
+                if new_amount > max_allowed:
+                    raise ValidationError({'amount': f'Số tiền thanh toán ({new_amount}) vượt quá dư nợ tối đa có thể trả ({max_allowed}).'})
+            else:
+                new_amount = payment.amount
+
+            if 'update_wallet' in data or 'updateWallet' in data:
+                new_update_wallet = DebtLoan._parse_boolean(
+                    data.get('update_wallet', data.get('updateWallet')), 'update_wallet'
+                )
+            else:
+                new_update_wallet = payment.update_wallet
+
+            # Balance recalculation:
+            # 1. Reverse old effect
+            old_delta = Decimal('0.00')
+            if payment.update_wallet:
+                if debt.type == 'LOAN_GIVEN':
+                    old_delta = payment.amount
+                elif debt.type in ('DEBT_BORROWED', 'INSTALLMENT'):
+                    old_delta = -payment.amount
+
+            # 2. Compute new effect
+            new_delta = Decimal('0.00')
+            if new_update_wallet:
+                if debt.type == 'LOAN_GIVEN':
+                    new_delta = new_amount
+                elif debt.type in ('DEBT_BORROWED', 'INSTALLMENT'):
+                    new_delta = -new_amount
+
+            wallet_diff = new_delta - old_delta
+            if wallet_diff != Decimal('0.00'):
+                wallet.update_balance(wallet_diff)
+
+            payment.amount = new_amount
+            payment.update_wallet = new_update_wallet
+
+            if 'date' in data:
+                payment.date = DebtLoan._parse_date(data['date'], 'date') or payment.date
+
+            if 'note' in data:
+                payment.note = str(data.get('note', '')).strip()
+
+            payment.save()
+            debt.status = debt.get_computed_status()
+            debt.save(update_fields=['status'])
+            return payment
+
+    @classmethod
+    def delete_payment(cls, payment_pk: int, user: HubUser) -> None:
+        with db_transaction.atomic():
+            try:
+                wallet = Wallet.objects.select_for_update().get(user=user)
+                debt = DebtLoan.objects.select_for_update().get(payments__id=payment_pk, wallet=wallet)
+                payment = cls.objects.select_for_update().get(pk=payment_pk, debt=debt)
+            except (cls.DoesNotExist, DebtLoan.DoesNotExist):
+                raise cls.DoesNotExist('Không tìm thấy khoản thanh toán.')
+            except Wallet.DoesNotExist:
+                raise PermissionError('Không tìm thấy ví của người dùng.')
+
+            if payment.update_wallet:
+                if debt.type == 'LOAN_GIVEN':
+                    wallet.update_balance(-payment.amount)
+                elif debt.type in ('DEBT_BORROWED', 'INSTALLMENT'):
+                    wallet.update_balance(payment.amount)
+
+            payment.delete()
+            debt.status = debt.get_computed_status()
+            debt.save(update_fields=['status'])
+
 

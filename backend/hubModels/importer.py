@@ -132,7 +132,7 @@ def extract_with_gemini(image_path: str, institution: Optional[str] = None) -> O
         pass
     if not api_key:
         api_key = os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY') or ''
-    if not api_key or not HAS_GEMINI:
+    if not api_key or not HAS_GEMINI or not api_key.startswith('AIza'):
         return None
 
     try:

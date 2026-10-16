@@ -4,6 +4,7 @@ import ReceiptIcon from "@mui/icons-material/Receipt";
 import SavingsIcon from "@mui/icons-material/Savings";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import AssessmentIcon from "@mui/icons-material/Assessment";
+import HandshakeIcon from "@mui/icons-material/Handshake";
 
 interface NavigationItem {
   label: string;
@@ -37,4 +38,10 @@ export const navigation: NavigationItem[] = [
     path: "/saving-plans",
     icon: <SavingsIcon />,
   },
+  {
+    label: "Debts",
+    path: "/debts",
+    icon: <HandshakeIcon />,
+  },
 ];
+

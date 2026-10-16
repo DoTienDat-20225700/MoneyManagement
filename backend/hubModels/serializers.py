@@ -1,7 +1,8 @@
 from datetime import date, datetime
 from decimal import Decimal
 from rest_framework import serializers
-from .models import Transaction, SavingPlan, Wallet, CustomLabel, CategoryBudget, SavingPlanContribution
+from .models import (Transaction, SavingPlan, Wallet, CustomLabel, CategoryBudget,
+                     SavingPlanContribution, DebtLoan, DebtPayment)
 
 from django.utils import timezone
 
@@ -203,4 +204,68 @@ class CategoryBudgetSerializer(serializers.ModelSerializer):
     def get_is_over_budget(self, obj):
         spent = self._get_spent(obj)
         return spent > obj.amount
+
+
+class DebtPaymentSerializer(serializers.ModelSerializer):
+    amount = serializers.DecimalField(decimal_places=2, max_digits=15)
+    date = serializers.DateField(format="%Y-%m-%d", input_formats=['%Y-%m-%d', '%m-%d-%Y'])
+
+    class Meta:
+        model = DebtPayment
+        fields = (
+            'id', 'debt', 'amount', 'date', 'update_wallet', 'note', 'created_at', 'updated_at'
+        )
+        read_only_fields = ('id', 'debt', 'created_at', 'updated_at')
+
+
+class DebtLoanSerializer(serializers.ModelSerializer):
+    principal_amount = serializers.DecimalField(decimal_places=2, max_digits=15)
+    start_date = serializers.DateField(format="%Y-%m-%d", input_formats=['%Y-%m-%d', '%m-%d-%Y'])
+    due_date = serializers.DateField(format="%Y-%m-%d", input_formats=['%Y-%m-%d', '%m-%d-%Y'], required=False, allow_null=True)
+    total_paid = serializers.SerializerMethodField()
+    remaining_amount = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+    overdue_days = serializers.SerializerMethodField()
+    payments = DebtPaymentSerializer(many=True, read_only=True)
+    installment_schedule = serializers.SerializerMethodField()
+    progress_percentage = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DebtLoan
+        fields = (
+            'id', 'person_name', 'contact_info', 'type', 'principal_amount',
+            'start_date', 'due_date', 'installment_months', 'status', 'description',
+            'wallet_applied', 'created_at', 'updated_at',
+            'total_paid', 'remaining_amount', 'overdue_days', 'progress_percentage',
+            'payments', 'installment_schedule'
+        )
+        read_only_fields = ('id', 'status', 'wallet_applied', 'created_at', 'updated_at')
+
+    @staticmethod
+    def get_total_paid(obj):
+        return f"{obj.get_total_paid():.2f}"
+
+    @staticmethod
+    def get_remaining_amount(obj):
+        return f"{obj.get_remaining_amount():.2f}"
+
+    @staticmethod
+    def get_status(obj):
+        return obj.get_computed_status()
+
+    @staticmethod
+    def get_overdue_days(obj):
+        return obj.get_overdue_days()
+
+    @staticmethod
+    def get_progress_percentage(obj):
+        if obj.principal_amount <= 0:
+            return 100.0
+        pct = (obj.get_total_paid() / obj.principal_amount) * 100
+        return round(float(min(Decimal('100.00'), pct)), 2)
+
+    @staticmethod
+    def get_installment_schedule(obj):
+        return obj.get_installment_schedule()
+
 

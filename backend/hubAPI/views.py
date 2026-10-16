@@ -9,14 +9,18 @@ from django.http import JsonResponse
 from django.db.models import QuerySet, Sum, Q
 from .utils import custom_server_error_response, custom_success_response, custom_user_error_response
 from hubModels.serializers import MyTokenObtainPairSerializer, MyTokenRefreshSerializer
-from hubModels.models import HubUser, Transaction, CustomLabel, SavingPlan, CategoryBudget, SavingPlanContribution
+from hubModels.models import (HubUser, Transaction, CustomLabel, SavingPlan, CategoryBudget,
+                              SavingPlanContribution, DebtLoan, DebtPayment)
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 import uuid
 from rest_framework.parsers import FileUploadParser
-from hubModels.serializers import SavingPlanSerializer, WalletSerializer, TransactionSerializer, CategoryBudgetSerializer, SavingPlanContributionSerializer
+from hubModels.serializers import (SavingPlanSerializer, WalletSerializer, TransactionSerializer,
+                                  CategoryBudgetSerializer, SavingPlanContributionSerializer,
+                                  DebtLoanSerializer, DebtPaymentSerializer)
+
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from datetime import date
@@ -1174,3 +1178,169 @@ def get_transactions(request):
         return custom_user_error_response('chart_type must be 0, 1, or 2.', 400)
 
     return Response(grouped_transactions_list)
+
+
+class DebtAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = DebtLoanSerializer
+
+    def get(self, request, debt_pk=None):
+        user: HubUser = request.user
+        if debt_pk:
+            try:
+                debt = DebtLoan.objects.get(pk=debt_pk, wallet__user=user)
+                return Response(self.serializer_class(debt).data)
+            except DebtLoan.DoesNotExist:
+                return custom_user_error_response("Không tìm thấy hợp đồng nợ.", 404)
+
+        debts = user.get_debts()
+        type_filter = request.query_params.get('type')
+        if type_filter:
+            debts = debts.filter(type=type_filter)
+
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            debts = [d for d in debts if d.get_computed_status() == status_filter]
+
+        return Response(self.serializer_class(debts, many=True).data)
+
+    def post(self, request):
+        user: HubUser = request.user
+        try:
+            debt = DebtLoan.create_from_json(request.data, user_pk=user.pk)
+            return Response(self.serializer_class(debt).data, status=201)
+        except ValidationError as error:
+            msg = error.message_dict if hasattr(error, 'message_dict') else (error.message if hasattr(error, 'message') else str(error))
+            return custom_user_error_response(msg, 400)
+        except PermissionError as error:
+            return custom_user_error_response(str(error), 404)
+
+    def put(self, request, debt_pk=None):
+        user: HubUser = request.user
+        pk = debt_pk or request.data.get('id')
+        if not pk:
+            return custom_user_error_response("Mã hợp đồng nợ là bắt buộc.", 400)
+
+        try:
+            debt = DebtLoan.update_from_json(pk, user, request.data)
+            return Response(self.serializer_class(debt).data, status=200)
+        except DebtLoan.DoesNotExist:
+            return custom_user_error_response("Không tìm thấy hợp đồng nợ.", 404)
+        except ValidationError as error:
+            msg = error.message_dict if hasattr(error, 'message_dict') else (error.message if hasattr(error, 'message') else str(error))
+            return custom_user_error_response(msg, 400)
+
+    def delete(self, request, debt_pk=None):
+        user: HubUser = request.user
+        if not debt_pk:
+            return custom_user_error_response("Mã hợp đồng nợ là bắt buộc.", 400)
+
+        try:
+            debt = DebtLoan.objects.get(pk=debt_pk, wallet__user=user)
+        except DebtLoan.DoesNotExist:
+            return custom_user_error_response("Không tìm thấy hợp đồng nợ.", 404)
+
+        debt.delete()
+        return custom_success_response("Hợp đồng nợ đã được xoá thành công!")
+
+
+class DebtPaymentAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = DebtPaymentSerializer
+
+    def get(self, request, debt_pk=None, payment_pk=None):
+        user: HubUser = request.user
+        try:
+            debt = DebtLoan.objects.get(pk=debt_pk, wallet__user=user)
+        except DebtLoan.DoesNotExist:
+            return custom_user_error_response("Không tìm thấy hợp đồng nợ.", 404)
+
+        if payment_pk:
+            try:
+                payment = debt.payments.get(pk=payment_pk)
+                return Response(self.serializer_class(payment).data)
+            except DebtPayment.DoesNotExist:
+                return custom_user_error_response("Không tìm thấy khoản thanh toán.", 404)
+
+        return Response(self.serializer_class(debt.payments.all(), many=True).data)
+
+    def post(self, request, debt_pk=None):
+        user: HubUser = request.user
+        try:
+            payment = DebtPayment.create_from_json(debt_pk, user, request.data)
+            return Response(self.serializer_class(payment).data, status=201)
+        except DebtLoan.DoesNotExist:
+            return custom_user_error_response("Không tìm thấy hợp đồng nợ.", 404)
+        except ValidationError as error:
+            msg = error.message_dict if hasattr(error, 'message_dict') else (error.message if hasattr(error, 'message') else str(error))
+            return custom_user_error_response(msg, 400)
+        except PermissionError as error:
+            return custom_user_error_response(str(error), 404)
+
+    def put(self, request, debt_pk=None, payment_pk=None):
+        user: HubUser = request.user
+        pid = payment_pk or request.data.get('id')
+        if not pid:
+            return custom_user_error_response("Mã thanh toán là bắt buộc.", 400)
+
+        try:
+            payment = DebtPayment.update_from_json(pid, user, request.data)
+            return Response(self.serializer_class(payment).data, status=200)
+        except DebtPayment.DoesNotExist:
+            return custom_user_error_response("Không tìm thấy khoản thanh toán.", 404)
+        except ValidationError as error:
+            msg = error.message_dict if hasattr(error, 'message_dict') else (error.message if hasattr(error, 'message') else str(error))
+            return custom_user_error_response(msg, 400)
+        except PermissionError as error:
+            return custom_user_error_response(str(error), 404)
+
+    def delete(self, request, debt_pk=None, payment_pk=None):
+        user: HubUser = request.user
+        if not payment_pk:
+            return custom_user_error_response("Mã thanh toán là bắt buộc.", 400)
+
+        try:
+            DebtPayment.delete_payment(payment_pk, user)
+            return custom_success_response("Khoản thanh toán đã được xoá thành công!")
+        except DebtPayment.DoesNotExist:
+            return custom_user_error_response("Không tìm thấy khoản thanh toán.", 404)
+        except PermissionError as error:
+            return custom_user_error_response(str(error), 404)
+
+
+class DebtSummaryAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        user: HubUser = request.user
+        debts = user.get_debts()
+        today = date.today()
+        in_7_days = today + timedelta(days=7)
+
+        total_loan_given_remaining = Decimal('0.00')
+        total_debt_borrowed_remaining = Decimal('0.00')
+        due_in_7_days_count = 0
+        overdue_count = 0
+
+        for debt in debts:
+            remaining = debt.get_remaining_amount()
+            if remaining > Decimal('0.00'):
+                if debt.type == 'LOAN_GIVEN':
+                    total_loan_given_remaining += remaining
+                elif debt.type in ('DEBT_BORROWED', 'INSTALLMENT'):
+                    total_debt_borrowed_remaining += remaining
+
+                if debt.due_date:
+                    if debt.due_date < today:
+                        overdue_count += 1
+                    elif today <= debt.due_date <= in_7_days:
+                        due_in_7_days_count += 1
+
+        return Response({
+            'total_loan_given_remaining': f"{total_loan_given_remaining:.2f}",
+            'total_debt_borrowed_remaining': f"{total_debt_borrowed_remaining:.2f}",
+            'due_in_7_days_count': due_in_7_days_count,
+            'overdue_count': overdue_count,
+            'total_debts_count': debts.count(),
+        })
+

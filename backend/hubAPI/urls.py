@@ -7,7 +7,8 @@ from .reports_views import ReportSummaryAPIView, ReportTransactionsAPIView, Repo
 from .views import (MyTokenObtainPairView, MyTokenRefreshView, TransactionAPIView, get_saving_plans, get_transactions,
                     get_routes, create_user, WalletAPIView, LabelAPIView, ImportInvoicesAPIView, ImportPreviewAPIView, SavingPlanAPIView,
                     SavingPlanContributionAPIView, BudgetAPIView, BudgetSummaryAPIView,
-                    BudgetCheckImpactAPIView, BudgetRebalanceAPIView, BudgetRebalanceSuggestionsAPIView)
+                    BudgetCheckImpactAPIView, BudgetRebalanceAPIView, BudgetRebalanceSuggestionsAPIView,
+                    DebtAPIView, DebtPaymentAPIView, DebtSummaryAPIView)
 
 urlpatterns = [
     path('', get_routes),
@@ -38,6 +39,18 @@ urlpatterns = [
     path('budgets/rebalance-suggestions/', BudgetRebalanceSuggestionsAPIView.as_view(), name='budget_rebalance_suggestions'),
     path('budgets/<int:budget_pk>', BudgetAPIView.as_view(), name='budget_detail'),
     path('budget/<int:budget_pk>', BudgetAPIView.as_view(), name='budget_detail_singular'),
+    path('debts/', DebtAPIView.as_view(), name='debts'),
+    path('debt/', DebtAPIView.as_view(), name='debt'),
+    path('debts/summary/', DebtSummaryAPIView.as_view(), name='debts_summary'),
+    path('debt/summary/', DebtSummaryAPIView.as_view(), name='debt_summary_singular'),
+    path('debts/<int:debt_pk>', DebtAPIView.as_view(), name='debt_detail'),
+    path('debts/<int:debt_pk>/', DebtAPIView.as_view(), name='debt_detail_slash'),
+    path('debt/<int:debt_pk>', DebtAPIView.as_view(), name='debt_detail_singular'),
+    path('debt/<int:debt_pk>/', DebtAPIView.as_view(), name='debt_detail_singular_slash'),
+    path('debts/<int:debt_pk>/payments/', DebtPaymentAPIView.as_view(), name='debt_payments'),
+    path('debts/<int:debt_pk>/payments', DebtPaymentAPIView.as_view(), name='debt_payments_no_slash'),
+    path('debts/<int:debt_pk>/payments/<int:payment_pk>', DebtPaymentAPIView.as_view(), name='debt_payment_detail'),
+    path('debts/<int:debt_pk>/payments/<int:payment_pk>/', DebtPaymentAPIView.as_view(), name='debt_payment_detail_slash'),
     path('reports/summary/', ReportSummaryAPIView.as_view(), name='reports_summary'),
     path('reports/transactions/', ReportTransactionsAPIView.as_view(), name='reports_transactions'),
     path('reports/export/csv/', ReportExportCSVAPIView.as_view(), name='reports_export_csv'),
@@ -48,5 +61,6 @@ urlpatterns = [
     path('import/', ImportInvoicesAPIView.as_view(), name='import'),
     path('import/preview/', ImportPreviewAPIView.as_view(), name='import_preview'),
 ]
+
 
 
