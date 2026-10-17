@@ -18,6 +18,8 @@ import {
   MenuItem,
   Select,
   Skeleton,
+  Tab,
+  Tabs,
   TextField,
   Typography,
 } from "@mui/material";
@@ -39,6 +41,7 @@ import { formatValue } from "../utils/utils";
 import { darkTheme } from "../theme";
 import { CustomLabel } from "../models/CustomLabel";
 import LatestTransactions from "../components/LatestTransactions";
+import CashFlowForecast from "../components/reports/CashFlowForecast";
 
 type PresetRange =
   | "this_month"
@@ -113,6 +116,7 @@ export default function Reports() {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [isExporting, setIsExporting] = useState(false);
+  const [activeTab, setActiveTab] = useState<"history" | "forecast">("history");
 
   // Debounce search term for transactions list
   useEffect(() => {
@@ -503,37 +507,65 @@ export default function Reports() {
         <Typography component="h1" variant="h4" fontWeight={600}>
           {t("reports_title")}
         </Typography>
-        <Box sx={{ marginTop: { xs: 2, md: 0 }, display: "flex", flexWrap: "wrap", gap: 1.5 }}>
-          <Button
-            variant="contained"
-            size="medium"
-            startIcon={
-              isExporting ? <CircularProgress size={16} color="inherit" /> : <FileUploadIcon />
-            }
-            onClick={handleExportExcel}
-            disabled={isExporting || isDateInvalid}
-            sx={{
-              backgroundColor: "#00863A",
-              "&:hover": { backgroundColor: "#006d2f" },
-            }}
-          >
-            {t("export_excel")}
-          </Button>
+        {activeTab === "history" && (
+          <Box sx={{ marginTop: { xs: 2, md: 0 }, display: "flex", flexWrap: "wrap", gap: 1.5 }}>
+            <Button
+              variant="contained"
+              size="medium"
+              startIcon={
+                isExporting ? <CircularProgress size={16} color="inherit" /> : <FileUploadIcon />
+              }
+              onClick={handleExportExcel}
+              disabled={isExporting || isDateInvalid}
+              sx={{
+                backgroundColor: "#00863A",
+                "&:hover": { backgroundColor: "#006d2f" },
+              }}
+            >
+              {t("export_excel")}
+            </Button>
 
-          <Button
-            variant="contained"
-            size="medium"
-            startIcon={<PrintOutlinedIcon />}
-            onClick={handlePrint}
-            disabled={isDateInvalid}
-          >
-            {t("print_report")}
-          </Button>
-        </Box>
+            <Button
+              variant="contained"
+              size="medium"
+              startIcon={<PrintOutlinedIcon />}
+              onClick={handlePrint}
+              disabled={isDateInvalid}
+            >
+              {t("print_report")}
+            </Button>
+          </Box>
+        )}
       </Box>
 
+      {/* Tabs navigation */}
+      <Box className="no-print" sx={{ mt: 2, mb: 1, borderBottom: 1, borderColor: "divider" }}>
+        <Tabs
+          value={activeTab}
+          onChange={(_, val) => setActiveTab(val)}
+          textColor="primary"
+          indicatorColor="primary"
+        >
+          <Tab
+            value="history"
+            label={language === "vi" ? "Báo cáo lịch sử" : "Historical Report"}
+            sx={{ textTransform: "none", fontWeight: 600, fontSize: "0.95rem" }}
+          />
+          <Tab
+            value="forecast"
+            label={language === "vi" ? "Dự báo dòng tiền (F03)" : "Cash Flow Forecast (F03)"}
+            sx={{ textTransform: "none", fontWeight: 600, fontSize: "0.95rem" }}
+          />
+        </Tabs>
+      </Box>
 
-      {/* Filter Row: clean, unboxed, natural spacing */}
+      {activeTab === "forecast" ? (
+        <Box className="no-print" sx={{ mt: 2 }}>
+          <CashFlowForecast />
+        </Box>
+      ) : (
+        <>
+          {/* Filter Row: clean, unboxed, natural spacing */}
       <Box
         className="no-print"
         sx={{
@@ -1079,6 +1111,8 @@ export default function Reports() {
           </Box>
         </Grid>
       </Grid>
+        </>
+      )}
     </>
   );
 }

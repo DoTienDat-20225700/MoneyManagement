@@ -1,0 +1,13 @@
+scenario,scenario_label,arm,arm_label,n_seeds,MAE_daily_mean,MAE_daily_std,RMSE_daily_mean,RMSE_daily_std,MAE_end_mean,MAE_end_std,Bias_end_mean,Bias_end_std
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),arm_A,A: Mean (Raw) - Baseline,30,908051.94,9889.31,4071698.75,16097.49,952725.8,18946.5,412988.55,23008.4
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),arm_B,B: Mean (Winsorized),30,908060.35,9894.48,4071719.49,16091.2,952699.8,18988.6,413225.0,22899.05
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),arm_C,C: EWMA (Raw),30,946042.96,15715.55,4074314.56,22591.64,1038278.12,27772.36,408605.34,23479.02
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),arm_D,D: EWMA (Winsorized) - Proposed,30,946025.87,15720.89,4074312.65,22593.48,1038232.43,27797.69,408740.25,23491.96
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),arm_A,A: Mean (Raw) - Baseline,30,1059983.06,8752.03,4110986.82,12946.22,1337415.61,17888.95,1005171.66,18406.73
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),arm_B,B: Mean (Winsorized),30,1060067.22,8717.86,4111002.56,12941.75,1337585.29,17825.29,1005365.58,18373.32
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),arm_C,C: EWMA (Raw),30,947183.09,12212.37,4085260.59,18088.74,1078523.81,24434.03,666322.53,18783.21
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),arm_D,D: EWMA (Winsorized) - Proposed,30,947196.59,12215.14,4085259.48,18088.08,1078673.9,24536.44,666967.83,18758.18
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),arm_A,A: Mean (Raw) - Baseline,30,2506322.61,32754.77,4591697.66,34830.17,4062371.4,70051.01,-69082.91,32178.69
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),arm_B,B: Mean (Winsorized),30,1972890.58,32522.95,4521807.65,32851.06,3115440.52,69476.52,1207819.5,33263.21
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),arm_C,C: EWMA (Raw),30,2440816.42,29040.12,5252326.11,43119.99,4098526.15,61008.77,-491553.05,32876.08
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),arm_D,D: EWMA (Winsorized) - Proposed,30,2000534.08,27413.47,4333867.76,36144.14,3217092.21,56851.77,1034734.69,33238.97

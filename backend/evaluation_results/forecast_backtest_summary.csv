@@ -1,0 +1,7 @@
+scenario_name,method,daily_mae,daily_rmse,end_mae,end_rmse,daily_mae_reduction_pct,end_mae_reduction_pct
+1. Chi tiêu ổn định có nhiễu (Stable),Proposed (Winsorized EWMA),203148.79,366081.53,271095.42,387448.38,-35.25%,-70.48%
+1. Chi tiêu ổn định có nhiễu (Stable),Baseline (Simple 60-day Mean),150204.98,349041.32,159021.82,342154.66,-,-
+2. Chi tiêu có xu hướng tăng (Upward Trend),Proposed (Winsorized EWMA),290182.34,400642.12,553905.79,605259.13,46.46%,50.01%
+2. Chi tiêu có xu hướng tăng (Upward Trend),Baseline (Simple 60-day Mean),542040.83,654387.42,1108131.24,1149820.23,-,-
+3. Chi tiêu thất thường có outlier (Volatile/Outlier),Proposed (Winsorized EWMA),1569123.43,3030302.62,3169416.38,4874326.40,9.72%,-7.73%
+3. Chi tiêu thất thường có outlier (Volatile/Outlier),Baseline (Simple 60-day Mean),1737967.09,2206188.56,2941886.92,3064106.66,-,-

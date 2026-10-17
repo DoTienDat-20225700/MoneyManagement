@@ -1089,6 +1089,46 @@ class CategoryBudget(WalletBasedModel):
         return self.get_spent() > self.amount
 
 
+def calculate_installment_schedule_data(
+    principal_amount: Decimal,
+    installment_months: int,
+    start_date: date,
+    total_paid: Decimal,
+) -> list:
+    if not installment_months or installment_months <= 0:
+        return []
+
+    # 1. Determine exact installment amounts so the sum equals principal_amount exactly
+    amounts = []
+    if installment_months == 1:
+        amounts.append(principal_amount)
+    else:
+        base_amount = (principal_amount / Decimal(installment_months)).quantize(Decimal('1'), rounding=ROUND_FLOOR).quantize(Decimal('0.01'))
+        sum_first = Decimal('0.00')
+        for _ in range(1, installment_months):
+            amounts.append(base_amount)
+            sum_first += base_amount
+        last_amount = principal_amount - sum_first
+        amounts.append(last_amount)
+
+    # 2. Sequentially allocate paid_amount to each installment period
+    remaining_paid = total_paid
+    schedule = []
+    for i, amount in enumerate(amounts, start=1):
+        due = start_date + relativedelta(months=i)
+        paid_this_period = min(amount, max(Decimal('0.00'), remaining_paid))
+        remaining_paid = max(Decimal('0.00'), remaining_paid - paid_this_period)
+        is_paid = paid_this_period >= amount
+        schedule.append({
+            'installment_no': i,
+            'due_date': due.isoformat(),
+            'amount': f"{amount:.2f}",
+            'paid_amount': f"{paid_this_period:.2f}",
+            'is_paid': is_paid,
+        })
+    return schedule
+
+
 class DebtLoan(WalletBasedModel):
     DEBT_TYPES = (
         ('DEBT_BORROWED', 'Debt Borrowed'),
@@ -1161,36 +1201,12 @@ class DebtLoan(WalletBasedModel):
     def get_installment_schedule(self) -> list:
         if self.type != 'INSTALLMENT' or not self.installment_months or self.installment_months <= 0:
             return []
-
-        # 1. Determine exact installment amounts so the sum equals principal_amount exactly
-        amounts = []
-        if self.installment_months == 1:
-            amounts.append(self.principal_amount)
-        else:
-            base_amount = (self.principal_amount / Decimal(self.installment_months)).quantize(Decimal('1'), rounding=ROUND_FLOOR).quantize(Decimal('0.01'))
-            sum_first = Decimal('0.00')
-            for _ in range(1, self.installment_months):
-                amounts.append(base_amount)
-                sum_first += base_amount
-            last_amount = self.principal_amount - sum_first
-            amounts.append(last_amount)
-
-        # 2. Sequentially allocate paid_amount to each installment period
-        remaining_paid = self.get_total_paid()
-        schedule = []
-        for i, amount in enumerate(amounts, start=1):
-            due = self.start_date + relativedelta(months=i)
-            paid_this_period = min(amount, max(Decimal('0.00'), remaining_paid))
-            remaining_paid = max(Decimal('0.00'), remaining_paid - paid_this_period)
-            is_paid = paid_this_period >= amount
-            schedule.append({
-                'installment_no': i,
-                'due_date': due.isoformat(),
-                'amount': f"{amount:.2f}",
-                'paid_amount': f"{paid_this_period:.2f}",
-                'is_paid': is_paid,
-            })
-        return schedule
+        return calculate_installment_schedule_data(
+            self.principal_amount,
+            self.installment_months,
+            self.start_date,
+            self.get_total_paid(),
+        )
 
     @staticmethod
     def _parse_amount(value, field_name='principal_amount'):

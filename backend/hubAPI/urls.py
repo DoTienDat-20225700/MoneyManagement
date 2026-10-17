@@ -8,7 +8,7 @@ from .views import (MyTokenObtainPairView, MyTokenRefreshView, TransactionAPIVie
                     get_routes, create_user, WalletAPIView, LabelAPIView, ImportInvoicesAPIView, ImportPreviewAPIView, SavingPlanAPIView,
                     SavingPlanContributionAPIView, BudgetAPIView, BudgetSummaryAPIView,
                     BudgetCheckImpactAPIView, BudgetRebalanceAPIView, BudgetRebalanceSuggestionsAPIView,
-                    DebtAPIView, DebtPaymentAPIView, DebtSummaryAPIView)
+                    DebtAPIView, DebtPaymentAPIView, DebtSummaryAPIView, CashFlowForecastAPIView)
 
 urlpatterns = [
     path('', get_routes),
@@ -60,6 +60,8 @@ urlpatterns = [
     path('transaction/<int:transaction_pk>', TransactionAPIView.as_view(), name='transaction'),
     path('import/', ImportInvoicesAPIView.as_view(), name='import'),
     path('import/preview/', ImportPreviewAPIView.as_view(), name='import_preview'),
+    path('forecast/cashflow/', CashFlowForecastAPIView.as_view(), name='forecast_cashflow'),
+    path('forecast/cashflow', CashFlowForecastAPIView.as_view(), name='forecast_cashflow_no_slash'),
 ]
 
 

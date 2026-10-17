@@ -1344,3 +1344,50 @@ class DebtSummaryAPIView(APIView):
             'total_debts_count': debts.count(),
         })
 
+
+class CashFlowForecastAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        user: HubUser = request.user
+        wallet = user.get_wallet()
+        if not wallet:
+            return custom_user_error_response("Không tìm thấy ví của người dùng.", 404)
+
+        days_param = request.query_params.get('days')
+        safety_buffer_param = request.query_params.get('safety_buffer')
+
+        # Validate days (30, 60, 90; default 30)
+        if days_param in (None, ''):
+            days = 30
+        else:
+            try:
+                days = int(days_param)
+            except (ValueError, TypeError):
+                return custom_user_error_response("Khoảng thời gian dự báo phải là số nguyên (30, 60 hoặc 90 ngày).", 400)
+
+            if days not in (30, 60, 90):
+                return custom_user_error_response("Khoảng thời gian dự báo phải là 30, 60 hoặc 90 ngày.", 400)
+
+        # Validate safety_buffer (Decimal >= 0; default 0)
+        if safety_buffer_param in (None, ''):
+            safety_buffer = Decimal('0.00')
+        else:
+            try:
+                safety_buffer = Decimal(str(safety_buffer_param))
+            except (InvalidOperation, ValueError, TypeError):
+                return custom_user_error_response("Ngưỡng an toàn phải là số không âm hợp lệ.", 400)
+
+            if not safety_buffer.is_finite() or safety_buffer < Decimal('0.00'):
+                return custom_user_error_response("Ngưỡng an toàn phải là số không âm hợp lệ.", 400)
+
+        from hubModels.services import CashFlowForecastService
+        result = CashFlowForecastService.forecast(
+            wallet=wallet,
+            days=days,
+            safety_buffer=safety_buffer,
+        )
+
+        return Response(result.to_dict())
+
+

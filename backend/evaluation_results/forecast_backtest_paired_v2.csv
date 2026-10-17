@@ -1,0 +1,37 @@
+scenario,scenario_label,comparison,metric,mean_diff,ci_95_lower,ci_95_upper,win_rate_pct,n_seeds
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs A (Proposed vs Baseline),MAE_daily,37973.93,33083.93,42696.03,0.0,30
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs A (Proposed vs Baseline),MAE_end,85506.62,75404.62,95533.68,3.3,30
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs A (Proposed vs Baseline),RMSE_daily,2613.9,-2950.94,8467.17,46.7,30
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs A (Proposed vs Baseline),Bias_end,-4248.29,-11645.24,3555.89,63.3,30
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs B (Effect of EWMA with Winsorize),MAE_daily,37965.52,33086.71,42684.73,0.0,30
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs B (Effect of EWMA with Winsorize),MAE_end,85532.63,75473.56,95525.29,3.3,30
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs B (Effect of EWMA with Winsorize),RMSE_daily,2593.16,-2956.89,8438.85,46.7,30
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs B (Effect of EWMA with Winsorize),Bias_end,-4484.75,-11872.09,3245.42,63.3,30
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs C (Effect of Winsorize with EWMA),MAE_daily,-17.09,-57.58,18.26,20.0,30
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs C (Effect of Winsorize with EWMA),MAE_end,-45.69,-136.4,34.83,23.3,30
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs C (Effect of Winsorize with EWMA),RMSE_daily,-1.91,-4.95,0.63,26.7,30
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs C (Effect of Winsorize with EWMA),Bias_end,134.91,51.11,227.12,0.0,30
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs A (Proposed vs Baseline),MAE_daily,-112786.48,-116538.15,-108914.71,100.0,30
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs A (Proposed vs Baseline),MAE_end,-258741.71,-266970.61,-249932.16,100.0,30
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs A (Proposed vs Baseline),RMSE_daily,-25727.34,-30222.56,-21045.78,96.7,30
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs A (Proposed vs Baseline),Bias_end,-338203.83,-344132.61,-331969.76,100.0,30
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs B (Effect of EWMA with Winsorize),MAE_daily,-112870.64,-116615.58,-109002.41,100.0,30
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs B (Effect of EWMA with Winsorize),MAE_end,-258911.39,-267094.7,-250096.51,100.0,30
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs B (Effect of EWMA with Winsorize),RMSE_daily,-25743.07,-30248.56,-21060.29,96.7,30
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs B (Effect of EWMA with Winsorize),Bias_end,-338397.75,-344322.64,-332202.9,100.0,30
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs C (Effect of Winsorize with EWMA),MAE_daily,13.5,-91.05,118.34,33.3,30
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs C (Effect of Winsorize with EWMA),MAE_end,150.09,-125.11,428.72,30.0,30
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs C (Effect of Winsorize with EWMA),RMSE_daily,-1.11,-8.92,5.88,33.3,30
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs C (Effect of Winsorize with EWMA),Bias_end,645.29,413.33,907.61,0.0,30
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs A (Proposed vs Baseline),MAE_daily,-505788.53,-516147.29,-495827.22,100.0,30
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs A (Proposed vs Baseline),MAE_end,-845279.19,-862782.16,-827507.06,100.0,30
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs A (Proposed vs Baseline),RMSE_daily,-257829.91,-267823.88,-247759.33,100.0,30
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs A (Proposed vs Baseline),Bias_end,1103817.61,1093762.6,1114164.56,0.0,30
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs B (Effect of EWMA with Winsorize),MAE_daily,27643.5,17338.78,37569.78,10.0,30
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs B (Effect of EWMA with Winsorize),MAE_end,101651.69,84309.61,119362.87,3.3,30
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs B (Effect of EWMA with Winsorize),RMSE_daily,-187939.89,-196765.13,-179007.99,100.0,30
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs B (Effect of EWMA with Winsorize),Bias_end,-173084.81,-183484.3,-162290.05,100.0,30
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs C (Effect of Winsorize with EWMA),MAE_daily,-440282.34,-441881.22,-438714.0,100.0,30
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs C (Effect of Winsorize with EWMA),MAE_end,-881433.94,-884579.63,-878067.53,100.0,30
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs C (Effect of Winsorize with EWMA),RMSE_daily,-918458.36,-924784.13,-912163.37,100.0,30
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs C (Effect of Winsorize with EWMA),Bias_end,1526287.75,1524715.37,1527883.04,0.0,30
