@@ -21,10 +21,12 @@ import { Transaction } from "../../models/Transaction";
 import { darkTheme } from "../../theme";
 import { barRangeOptionMask, getStartDate, formatValue } from "../../utils/utils";
 import { useLanguage } from "../../context/LanguageContext";
+import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion";
 import dayjs from "dayjs";
 
 function CurrentMonthChart() {
   const { language, dateFormat, t } = useLanguage();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const { getTransactions } = useTransactions();
   const [range, setRange] = useState<BarChartRangeType>(
     BarChartRangeOptions.LastWeek
@@ -51,6 +53,7 @@ function CurrentMonthChart() {
         chart: {
           toolbar: { show: false },
           id: "bar",
+          animations: { enabled: !prefersReducedMotion },
         },
         plotOptions: {
           bar: {
@@ -65,7 +68,7 @@ function CurrentMonthChart() {
           type: "numeric",
           labels: {
             style: {
-              colors: grey[700],
+              colors: darkTheme.palette.text.secondary,
             },
             show: true,
             formatter: function (value: string) {
@@ -78,7 +81,7 @@ function CurrentMonthChart() {
           labels: {
             show: true,
             style: {
-              colors: grey[700],
+              colors: darkTheme.palette.text.secondary,
             },
             formatter: function (val) {
               return formatValue(val);
@@ -116,7 +119,7 @@ function CurrentMonthChart() {
       options: ApexOptions;
       series: ApexOptions["series"];
     };
-  }, [lineChartData, language, dateFormat]);
+  }, [lineChartData, language, dateFormat, prefersReducedMotion]);
 
   useEffect(() => {
     const dataSet = transactions
@@ -185,13 +188,48 @@ function CurrentMonthChart() {
           {t("unable_to_load_chart")}
         </Typography>
       ) : (
-        <Chart
-          options={state.options}
-          series={state.series}
-          type="bar"
-          width="100%"
-          height="300px"
-        />
+        <>
+          <Box
+            sx={{
+              position: "absolute",
+              width: "1px",
+              height: "1px",
+              padding: 0,
+              margin: "-1px",
+              overflow: "hidden",
+              clip: "rect(0, 0, 0, 0)",
+              whiteSpace: "nowrap",
+              border: 0,
+            }}
+            component="section"
+            aria-label={t("daily_expenses")}
+          >
+            <table>
+              <caption>{t("daily_expenses")} - {t("chart_summary")}</caption>
+              <thead>
+                <tr>
+                  <th>{t("col_date")}</th>
+                  <th>{t("col_value")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lineChartData.map((d, i) => (
+                  <tr key={i}>
+                    <td>{dayjs(d.x).format("DD/MM/YYYY")}</td>
+                    <td>{formatValue(d.y)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Box>
+          <Chart
+            options={state.options}
+            series={state.series}
+            type="bar"
+            width="100%"
+            height="300px"
+          />
+        </>
       )}
     </Box>
   );

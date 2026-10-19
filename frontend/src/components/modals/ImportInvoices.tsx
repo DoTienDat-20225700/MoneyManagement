@@ -37,7 +37,7 @@ export default function ImportInvoice() {
     >
       <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span>{t("import_invoices")}</span>
-        <IconButton size="small" onClick={closeModal} sx={{ color: "text.secondary" }}>
+        <IconButton size="small" onClick={closeModal} aria-label={t("close")} sx={{ color: "text.secondary" }}>
           <CloseIcon fontSize="small" />
         </IconButton>
       </DialogTitle>

@@ -224,6 +224,7 @@ function NewInvoiceForm() {
               inputProps={{
                 multiple: true,
                 accept: ".pdf,.png,.jpg,.jpeg,.webp,image/*",
+                "aria-label": t("upload_invoice"),
               }}
             />
           </FormControl>

@@ -78,6 +78,9 @@ function Settings() {
 
   return (
     <>
+      <Typography component="h1" variant="h4" fontWeight={600} mb={4}>
+        {t("settings")}
+      </Typography>
       <Box
         sx={{
           display: "flex",
@@ -183,7 +186,7 @@ function Settings() {
             <Stack spacing={5}>
               {/* Profile Section */}
               <Box>
-                <Typography component="h1" variant="h6" mb={2} fontWeight={600}>
+                <Typography component="h2" variant="h6" mb={2} fontWeight={600}>
                   {t("profile")}
                 </Typography>
                 <Divider sx={{ borderColor: "rgba(255, 255, 255, 0.08)" }} />
@@ -296,7 +299,7 @@ function Settings() {
                 }}
               >
                 <Box>
-                  <Typography component="h1" variant="h6" fontWeight={600}>
+                  <Typography component="h2" variant="h6" fontWeight={600}>
                     {t("labels_management")}
                   </Typography>
                   <Typography variant="body2" color={grey[500]}>
@@ -411,6 +414,7 @@ function Settings() {
                           size="small"
                           onClick={() => deleteLabelMutate(item.id)}
                           disabled={isDeleting}
+                          aria-label={`${t("delete_label")}: ${item.name}`}
                           sx={{
                             color: grey[500],
                             "&:hover": {

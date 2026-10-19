@@ -35,6 +35,7 @@ export default function UserDropdown() {
             onClick={handleClick}
             size="small"
             sx={{ ml: 1 }}
+            aria-label={t("account_settings")}
             aria-controls={open ? "account-menu" : undefined}
             aria-haspopup="true"
             aria-expanded={open ? "true" : undefined}

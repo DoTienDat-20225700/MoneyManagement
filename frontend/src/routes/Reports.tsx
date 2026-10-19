@@ -40,6 +40,7 @@ import { useLabels } from "../hooks/api/useLabels";
 import { formatValue } from "../utils/utils";
 import { darkTheme } from "../theme";
 import { CustomLabel } from "../models/CustomLabel";
+import { usePrefersReducedMotion } from "../hooks/usePrefersReducedMotion";
 import LatestTransactions from "../components/LatestTransactions";
 import CashFlowForecast from "../components/reports/CashFlowForecast";
 
@@ -102,6 +103,7 @@ function getPresetDates(preset: PresetRange): { start: string; end: string } {
 export default function Reports() {
   const { user } = useContext(AuthContext);
   const { language, dateFormat, t } = useLanguage();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const { enqueueSnackbar } = useSnackbar();
   const { getReportSummary, getReportTransactions, downloadReportExcel } = useReports();
   const { getLabels } = useLabels();
@@ -246,8 +248,9 @@ export default function Reports() {
           id: "monthly-trends-bar",
           type: "bar",
           toolbar: { show: false },
+          animations: { enabled: !prefersReducedMotion },
         },
-        colors: [darkTheme.palette.primary.main, "#f25659"],
+        colors: [darkTheme.palette.primary.main, "#ff8285"],
         plotOptions: {
           bar: {
             horizontal: false,
@@ -260,13 +263,13 @@ export default function Reports() {
         xaxis: {
           categories,
           labels: {
-            style: { colors: grey[700], fontSize: "12px", fontFamily: "Inter" },
+            style: { colors: darkTheme.palette.text.secondary, fontSize: "12px", fontFamily: "Inter" },
           },
         },
         yaxis: {
           tickAmount: 5,
           labels: {
-            style: { colors: grey[700], fontFamily: "Inter" },
+            style: { colors: darkTheme.palette.text.secondary, fontFamily: "Inter" },
             formatter: (val: number) => formatValue(val),
           },
         },
@@ -284,12 +287,12 @@ export default function Reports() {
           show: true,
           position: "top",
           horizontalAlign: "right",
-          labels: { colors: grey[600] },
+          labels: { colors: darkTheme.palette.text.secondary },
           fontFamily: "Inter",
         },
       },
     };
-  }, [reportSummary?.monthly_trends, language]);
+  }, [reportSummary?.monthly_trends, language, prefersReducedMotion]);
 
   // Chart 2: Category Breakdown (Pie chart matching ProfileChart style)
   const categoryBreakdownChart = useMemo<{ series: number[]; options: ApexOptions }>(() => {
@@ -300,7 +303,7 @@ export default function Reports() {
     );
     const colorsList = breakdown.map((item, idx) => {
       if (item.label_color && item.label_color.startsWith("#")) return item.label_color;
-      const palette = ["#00863A", "#f25659", "#faad14", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6"];
+      const palette = ["#00863A", "#ff8285", "#faad14", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6"];
       return palette[idx % palette.length];
     });
 
@@ -313,6 +316,7 @@ export default function Reports() {
           id: "category-breakdown-pie",
           type: "pie",
           toolbar: { show: false },
+          animations: { enabled: !prefersReducedMotion },
         },
         dataLabels: {
           enabled: false,
@@ -321,7 +325,7 @@ export default function Reports() {
           show: true,
           position: "left",
           labels: {
-            colors: grey[600],
+            colors: darkTheme.palette.text.secondary,
           },
           fontFamily: "Inter",
         },
@@ -341,7 +345,7 @@ export default function Reports() {
         },
       },
     };
-  }, [reportSummary?.category_breakdown, t]);
+  }, [reportSummary?.category_breakdown, t, prefersReducedMotion]);
 
   const userName = user
     ? `${user.first_name || ""} ${user.last_name || ""}`.trim() || user.email
@@ -723,7 +727,7 @@ export default function Reports() {
                 <Typography
                   component="p"
                   variant="caption"
-                  color={incomeChangePct >= 0 ? "#48cc90" : "#f25659"}
+                  color={incomeChangePct >= 0 ? "#48cc90" : "#ff8285"}
                   sx={{ mt: 1 }}
                 >
                   {incomeChangePct >= 0 ? `+${incomeChangePct}%` : `${incomeChangePct}%`}{" "}
@@ -750,7 +754,7 @@ export default function Reports() {
                     component="span"
                     variant="h5"
                     fontWeight={600}
-                    sx={{ color: "#f25659" }}
+                    sx={{ color: "#ff8285" }}
                   >
                     -{formatValue(totalExpense)}
                   </Typography>
@@ -758,7 +762,7 @@ export default function Reports() {
                 <Typography
                   component="p"
                   variant="caption"
-                  color={expenseChangePct > 0 ? "#f25659" : "#48cc90"}
+                  color={expenseChangePct > 0 ? "#ff8285" : "#48cc90"}
                   sx={{ mt: 1 }}
                 >
                   {expenseChangePct > 0 ? `+${expenseChangePct}%` : `${expenseChangePct}%`}{" "}
@@ -785,7 +789,7 @@ export default function Reports() {
                     component="span"
                     variant="h5"
                     fontWeight={600}
-                    sx={{ color: netCashFlow >= 0 ? "#48cc90" : "#f25659" }}
+                    sx={{ color: netCashFlow >= 0 ? "#48cc90" : "#ff8285" }}
                   >
                     {netCashFlow >= 0 ? `+${formatValue(netCashFlow)}` : formatValue(netCashFlow)}
                   </Typography>
@@ -793,7 +797,7 @@ export default function Reports() {
                 <Typography
                   component="p"
                   variant="caption"
-                  color={netCashFlowChangePct > 0 ? "#48cc90" : "#f25659"}
+                  color={netCashFlowChangePct > 0 ? "#48cc90" : "#ff8285"}
                   sx={{ mt: 1 }}
                 >
                   {netCashFlowChangePct > 0 ? `+${netCashFlowChangePct}%` : `${netCashFlowChangePct}%`}{" "}
@@ -972,7 +976,7 @@ export default function Reports() {
                         />
                         <Typography
                           variant="caption"
-                          sx={{ color: "#f25659", fontWeight: 600 }}
+                          sx={{ color: "#ff8285", fontWeight: 600 }}
                         >
                           +{item.increase_percentage}%
                         </Typography>
@@ -981,7 +985,7 @@ export default function Reports() {
                         <Typography variant="caption" color="text.secondary">
                           {t("previous_period")}: {formatValue(Number(item.previous_spent))}
                         </Typography>
-                        <Typography variant="body2" fontWeight={600} sx={{ color: "#f25659" }}>
+                        <Typography variant="body2" fontWeight={600} sx={{ color: "#ff8285" }}>
                           +{formatValue(Number(item.increase_amount))}
                         </Typography>
                       </Box>
@@ -1015,6 +1019,7 @@ export default function Reports() {
                 variant="outlined"
                 size="medium"
                 placeholder={t("find_transaction")}
+                inputProps={{ "aria-label": t("find_transaction") }}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
@@ -1033,6 +1038,7 @@ export default function Reports() {
                             size="small"
                             onClick={() => setSearchTerm("")}
                             edge="end"
+                            aria-label={t("clear_search")}
                           >
                             <ClearIcon fontSize="small" />
                           </IconButton>

@@ -249,17 +249,24 @@ function LatestTransactions(props: Props) {
             headerName: t("col_actions"),
             width: 100,
             cellClassName: "actions",
-            getActions: ({ id }: { id: GridRowId }) => {
+            getActions: ({ id, row }: { id: GridRowId; row?: any }) => {
+              const itemTitle = row?.title || props.data?.find((t) => t.id === Number(id))?.title || "";
+              const deleteLabel = itemTitle
+                ? `${t("delete_transaction")}: ${itemTitle}`
+                : t("delete_transaction");
+              const editLabel = itemTitle
+                ? `${t("edit_transaction")}: ${itemTitle}`
+                : t("edit_transaction");
               return [
                 <GridActionsCellItem
                   icon={<EditOutlined sx={{ fontSize: 19 }} />}
-                  label={t("edit_transaction")}
+                  label={editLabel}
                   onClick={() => handleOpenEdit(id)}
                   color="inherit"
                 />,
                 <GridActionsCellItem
                   icon={<GridDeleteIcon sx={{ fontSize: 19 }} />}
-                  label={t("delete")}
+                  label={deleteLabel}
                   onClick={() => deleteMutation.mutate({ transactionId: Number(id) })}
                   color="inherit"
                 />,
@@ -365,7 +372,7 @@ function LatestTransactions(props: Props) {
       >
         <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span>{t("edit_transaction")}</span>
-          <IconButton size="small" onClick={() => setEditDialogOpen(false)} sx={{ color: "text.secondary" }}>
+          <IconButton size="small" onClick={() => setEditDialogOpen(false)} aria-label={t("close")} sx={{ color: "text.secondary" }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </DialogTitle>

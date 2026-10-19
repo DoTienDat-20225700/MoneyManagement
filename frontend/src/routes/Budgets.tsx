@@ -256,8 +256,8 @@ export default function Budgets() {
             size="small"
             label={t("status_exceeded")}
             sx={{
-              backgroundColor: "rgba(242, 86, 89, 0.15)",
-              color: "#f25659",
+              backgroundColor: "rgba(255, 130, 133, 0.15)",
+              color: "#ff8285",
               fontWeight: 600,
               fontSize: "12px",
             }}
@@ -294,7 +294,7 @@ export default function Budgets() {
 
   // Helper for progress bar color matching app theme
   const getProgressColor = (status: "normal" | "approaching" | "exceeded") => {
-    if (status === "exceeded") return "#f25659";
+    if (status === "exceeded") return "#ff8285";
     if (status === "approaching") return "#faad14";
     return "#48cc90";
   };
@@ -343,12 +343,13 @@ export default function Budgets() {
         }}
       >
         <Box display="flex" alignItems="center" gap={1}>
-          <IconButton onClick={handlePrevMonth} size="small" sx={{ color: "text.primary" }}>
+          <IconButton onClick={handlePrevMonth} size="small" aria-label={t("previous_month")} sx={{ color: "text.primary" }}>
             <ChevronLeftIcon />
           </IconButton>
           <FormControl size="small" sx={{ minWidth: 120 }}>
             <Select
               value={selectedMonth}
+              inputProps={{ "aria-label": t("select_month") }}
               onChange={(e) => setSelectedMonth(Number(e.target.value))}
             >
               {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
@@ -362,6 +363,7 @@ export default function Budgets() {
           <FormControl size="small" sx={{ minWidth: 100 }}>
             <Select
               value={selectedYear}
+              inputProps={{ "aria-label": t("year") }}
               onChange={(e) => setSelectedYear(Number(e.target.value))}
             >
               {[2024, 2025, 2026, 2027, 2028].map((y) => (
@@ -372,7 +374,7 @@ export default function Budgets() {
             </Select>
           </FormControl>
 
-          <IconButton onClick={handleNextMonth} size="small" sx={{ color: "text.primary" }}>
+          <IconButton onClick={handleNextMonth} size="small" aria-label={t("next_month")} sx={{ color: "text.primary" }}>
             <ChevronRightIcon />
           </IconButton>
         </Box>
@@ -431,7 +433,7 @@ export default function Budgets() {
                 component="span"
                 variant="h5"
                 fontWeight={600}
-                sx={{ color: "#f25659" }}
+                sx={{ color: "#ff8285" }}
               >
                 -{formatValue(summary?.total_spent ?? 0)}
               </Typography>
@@ -460,7 +462,7 @@ export default function Budgets() {
                 variant="h5"
                 fontWeight={600}
                 sx={{
-                  color: Number(summary?.total_remaining || 0) >= 0 ? "#48cc90" : "#f25659",
+                  color: Number(summary?.total_remaining || 0) >= 0 ? "#48cc90" : "#ff8285",
                 }}
               >
                 {formatValue(summary?.total_remaining ?? 0)}
@@ -509,8 +511,8 @@ export default function Budgets() {
                 size="small"
                 label={`${t("status_exceeded")}: ${summary?.status_counts?.exceeded ?? 0}`}
                 sx={{
-                  backgroundColor: "rgba(242, 86, 89, 0.12)",
-                  color: "#f25659",
+                  backgroundColor: "rgba(255, 130, 133, 0.12)",
+                  color: "#ff8285",
                   fontWeight: 600,
                   fontSize: "12px",
                 }}
@@ -604,6 +606,7 @@ export default function Budgets() {
                             <IconButton
                               size="small"
                               onClick={() => handleOpenEdit(budget)}
+                              aria-label={`${t("edit_budget")}: ${budget.label.name}`}
                               sx={{ color: grey[500], "&:hover": { color: "#fff" } }}
                             >
                               <EditOutlinedIcon fontSize="small" />
@@ -613,7 +616,8 @@ export default function Budgets() {
                             <IconButton
                               size="small"
                               onClick={() => setDeleteTarget(budget)}
-                              sx={{ color: grey[500], "&:hover": { color: "#f25659" } }}
+                              aria-label={`${t("delete_budget")}: ${budget.label.name}`}
+                              sx={{ color: grey[500], "&:hover": { color: "#ff8285" } }}
                             >
                               <DeleteOutlineIcon fontSize="small" />
                             </IconButton>
@@ -638,10 +642,12 @@ export default function Budgets() {
                         <LinearProgress
                           variant="determinate"
                           value={Math.min(100, Math.max(0, pct))}
+                          aria-label={`${t("budget_progress")}: ${budget.label.name}`}
+                          aria-valuenow={Math.round(pct)}
                           sx={{
                             height: 8,
                             borderRadius: 4,
-                            backgroundColor: "rgba(255, 255, 255, 0.08)",
+                            backgroundColor: "rgba(255, 255, 255, 0.36)",
                             "& .MuiLinearProgress-bar": {
                               backgroundColor: progressColor,
                               borderRadius: 4,
@@ -674,7 +680,7 @@ export default function Budgets() {
                           <Typography
                             variant="body2"
                             fontWeight={600}
-                            sx={{ color: budget.status === "exceeded" ? "#f25659" : "text.primary" }}
+                            sx={{ color: budget.status === "exceeded" ? "#ff8285" : "text.primary" }}
                           >
                             {formatValue(spentNum)}
                           </Typography>
@@ -688,7 +694,7 @@ export default function Budgets() {
                             variant="body2"
                             fontWeight={600}
                             sx={{
-                              color: remainingNum >= 0 ? "#48cc90" : "#f25659",
+                              color: remainingNum >= 0 ? "#48cc90" : "#ff8285",
                             }}
                           >
                             {formatValue(remainingNum)}
@@ -704,7 +710,7 @@ export default function Budgets() {
                             p: 0.8,
                             px: 1.2,
                             borderRadius: 1,
-                            backgroundColor: "rgba(242, 86, 89, 0.1)",
+                            backgroundColor: "rgba(255, 130, 133, 0.1)",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "space-between",
@@ -712,8 +718,8 @@ export default function Budgets() {
                           }}
                         >
                           <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
-                            <ArrowUpwardIcon sx={{ fontSize: 14, color: "#f25659" }} />
-                            <Typography variant="caption" sx={{ color: "#f25659", fontWeight: 600 }}>
+                            <ArrowUpwardIcon sx={{ fontSize: 14, color: "#ff8285" }} />
+                            <Typography variant="caption" sx={{ color: "#ff8285", fontWeight: 600 }}>
                               {language === "vi"
                                 ? `Vượt ${formatValue(spentNum - limitNum)}`
                                 : `Exceeded by ${formatValue(spentNum - limitNum)}`}
@@ -763,7 +769,7 @@ export default function Budgets() {
             <AccountBalanceWalletOutlinedIcon
               sx={{ fontSize: 48, color: "text.secondary", opacity: 0.5, mb: 1.5 }}
             />
-            <Typography variant="h6" fontWeight={600} mb={1}>
+            <Typography component="h3" variant="h6" fontWeight={600} mb={1}>
               {t("no_budgets_found")}
             </Typography>
             <Typography variant="body2" color="text.secondary" maxWidth={480} mx="auto" mb={2}>
@@ -790,7 +796,7 @@ export default function Budgets() {
       >
         <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span>{editingBudget ? t("edit_budget") : t("add_budget")}</span>
-          <IconButton size="small" onClick={handleCloseModal} sx={{ color: "text.secondary" }}>
+          <IconButton size="small" onClick={handleCloseModal} aria-label={t("close")} sx={{ color: "text.secondary" }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </DialogTitle>
@@ -906,7 +912,7 @@ export default function Budgets() {
       >
         <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span>{t("delete_budget")}</span>
-          <IconButton size="small" onClick={() => setDeleteTarget(null)} sx={{ color: "text.secondary" }}>
+          <IconButton size="small" onClick={() => setDeleteTarget(null)} aria-label={t("close")} sx={{ color: "text.secondary" }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </DialogTitle>
@@ -930,7 +936,7 @@ export default function Budgets() {
             {deleteMutation.isPending ? (
               <CircularProgress size={20} color="inherit" />
             ) : (
-              t("delete")
+              t("delete_budget_action")
             )}
           </Button>
         </DialogContent>

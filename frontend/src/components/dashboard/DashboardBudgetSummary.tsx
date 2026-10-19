@@ -102,7 +102,7 @@ export default function DashboardBudgetSummary() {
           }}
         >
           <Stack direction="row" alignItems="center" spacing={1.2}>
-            <Typography variant="h6" fontWeight={700}>
+            <Typography component="h2" variant="h6" fontWeight={700}>
               {t("budget_summary_widget_title")}
             </Typography>
             <Chip
@@ -197,11 +197,13 @@ export default function DashboardBudgetSummary() {
                   <LinearProgress
                     variant="determinate"
                     value={Math.min(100, Math.max(0, overallPercentage))}
+                    aria-label={t("budget_progress")}
+                    aria-valuenow={Math.round(overallPercentage)}
                     sx={{
                       height: 8,
                       borderRadius: 4,
                       mb: 2,
-                      backgroundColor: "rgba(255, 255, 255, 0.08)",
+                      backgroundColor: "rgba(255, 255, 255, 0.36)",
                       "& .MuiLinearProgress-bar": {
                         backgroundColor:
                           overallPercentage > 100
@@ -376,11 +378,13 @@ export default function DashboardBudgetSummary() {
                           <LinearProgress
                             variant="determinate"
                             value={Math.min(100, Math.max(0, pct))}
+                            aria-label={`${t("budget_progress")}: ${budget.label.name}`}
+                            aria-valuenow={Math.round(pct)}
                             sx={{
                               height: 6,
                               borderRadius: 3,
                               mb: 0.8,
-                              backgroundColor: "rgba(255, 255, 255, 0.08)",
+                              backgroundColor: "rgba(255, 255, 255, 0.36)",
                               "& .MuiLinearProgress-bar": {
                                 backgroundColor: progressColor,
                                 borderRadius: 3,

@@ -337,8 +337,8 @@ export default function Debts() {
               : t("status_overdue")
           }
           sx={{
-            backgroundColor: "rgba(242, 86, 89, 0.15)",
-            color: "#f25659",
+            backgroundColor: "rgba(255, 130, 133, 0.15)",
+            color: "#ff8285",
             fontWeight: 600,
             fontSize: "12px",
           }}
@@ -403,7 +403,7 @@ export default function Debts() {
 
   // Progress Bar Color Helper
   const getProgressColor = (status: string, overdueDays: number) => {
-    if (status === "OVERDUE" || overdueDays > 0) return "#f25659";
+    if (status === "OVERDUE" || overdueDays > 0) return "#ff8285";
     return "#48cc90";
   };
 
@@ -553,7 +553,7 @@ export default function Debts() {
                   component="span"
                   variant="h5"
                   fontWeight={600}
-                  sx={{ color: (summary?.overdue_count ?? 0) > 0 ? "#f25659" : "text.primary" }}
+                  sx={{ color: (summary?.overdue_count ?? 0) > 0 ? "#ff8285" : "text.primary" }}
                 >
                   {summary?.overdue_count ?? 0}
                 </Typography>
@@ -633,14 +633,14 @@ export default function Debts() {
                 <Grid item xs={12} sm={6} lg={4} key={debt.id}>
                   <Box
                     border="1px solid"
-                    borderColor={isOverdue ? "#f25659" : darkTheme.palette.background.paper}
+                    borderColor={isOverdue ? "#ff8285" : darkTheme.palette.background.paper}
                     borderRadius={2}
                     padding={3}
                     height="100%"
                     display="flex"
                     flexDirection="column"
                     justifyContent="space-between"
-                    sx={isOverdue ? { backgroundColor: "rgba(242, 86, 89, 0.03)" } : undefined}
+                    sx={isOverdue ? { backgroundColor: "rgba(255, 130, 133, 0.03)" } : undefined}
                   >
                     <Box>
                       {/* Header: Person Name + Status Chip + Delete Action */}
@@ -671,7 +671,8 @@ export default function Debts() {
                             <IconButton
                               size="small"
                               onClick={() => setDeleteTargetDebt(debt)}
-                              sx={{ color: grey[500], "&:hover": { color: "#f25659" } }}
+                              aria-label={`${t("delete")}: ${debt.person_name}`}
+                              sx={{ color: grey[500], "&:hover": { color: "#ff8285" } }}
                             >
                               <DeleteOutlineIcon fontSize="small" />
                             </IconButton>
@@ -696,10 +697,12 @@ export default function Debts() {
                         <LinearProgress
                           variant="determinate"
                           value={Math.min(100, Math.max(0, debt.progress_percentage))}
+                          aria-label={`${t("debt_progress")}: ${debt.person_name}`}
+                          aria-valuenow={Math.round(debt.progress_percentage)}
                           sx={{
                             height: 8,
                             borderRadius: 4,
-                            backgroundColor: "rgba(255, 255, 255, 0.08)",
+                            backgroundColor: "rgba(255, 255, 255, 0.36)",
                             "& .MuiLinearProgress-bar": {
                               backgroundColor: progressColor,
                               borderRadius: 4,
@@ -735,7 +738,7 @@ export default function Debts() {
                             fontWeight={600}
                             sx={{
                               color: isOverdue
-                                ? "#f25659"
+                                ? "#ff8285"
                                 : isFullyPaid
                                 ? "#48cc90"
                                 : "text.primary",
@@ -755,7 +758,7 @@ export default function Debts() {
                         <Typography
                           variant="caption"
                           sx={{
-                            color: isOverdue ? "#f25659" : "text.secondary",
+                            color: isOverdue ? "#ff8285" : "text.secondary",
                             fontWeight: isOverdue ? 700 : 400,
                           }}
                         >
@@ -793,14 +796,14 @@ export default function Debts() {
                             p: 0.8,
                             px: 1.2,
                             borderRadius: 1,
-                            backgroundColor: "rgba(242, 86, 89, 0.1)",
+                            backgroundColor: "rgba(255, 130, 133, 0.1)",
                             display: "flex",
                             alignItems: "center",
                             gap: 0.8,
                           }}
                         >
-                          <WarningAmberIcon sx={{ fontSize: 14, color: "#f25659" }} />
-                          <Typography variant="caption" sx={{ color: "#f25659", fontWeight: 600 }}>
+                          <WarningAmberIcon sx={{ fontSize: 14, color: "#ff8285" }} />
+                          <Typography variant="caption" sx={{ color: "#ff8285", fontWeight: 600 }}>
                             {t("overdue_days_badge").replace("{days}", String(debt.overdue_days))}
                           </Typography>
                         </Box>
@@ -881,7 +884,7 @@ export default function Debts() {
             <HandshakeIcon
               sx={{ fontSize: 48, color: "text.secondary", opacity: 0.5, mb: 1.5 }}
             />
-            <Typography variant="h6" fontWeight={600} mb={1}>
+            <Typography component="h2" variant="h6" fontWeight={600} mb={1}>
               {t("no_debts_in_tab")}
             </Typography>
             <Typography variant="body2" color="text.secondary" maxWidth={480} mx="auto" mb={2}>
@@ -908,7 +911,7 @@ export default function Debts() {
       >
         <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span>{t("new_debt_contract")}</span>
-          <IconButton size="small" onClick={() => setCreateModalOpen(false)} sx={{ color: "text.secondary" }}>
+          <IconButton size="small" onClick={() => setCreateModalOpen(false)} aria-label={t("close")} sx={{ color: "text.secondary" }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </DialogTitle>
@@ -1100,7 +1103,7 @@ export default function Debts() {
       >
         <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span>{t("record_payment")}</span>
-          <IconButton size="small" onClick={() => setPaymentModalDebt(null)} sx={{ color: "text.secondary" }}>
+          <IconButton size="small" onClick={() => setPaymentModalDebt(null)} aria-label={t("close")} sx={{ color: "text.secondary" }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </DialogTitle>
@@ -1244,14 +1247,14 @@ export default function Debts() {
             {/* Header */}
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2 }}>
               <Box>
-                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                <Typography component="h2" variant="h6" sx={{ fontWeight: 700 }}>
                   {detailDrawerDebt.person_name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {detailDrawerDebt.contact_info || t("contract_details")}
                 </Typography>
               </Box>
-              <IconButton onClick={() => setDetailDrawerDebt(null)} size="small" sx={{ color: "text.secondary" }}>
+              <IconButton onClick={() => setDetailDrawerDebt(null)} size="small" aria-label={t("close")} sx={{ color: "text.secondary" }}>
                 <CloseIcon fontSize="small" />
               </IconButton>
             </Box>
@@ -1304,7 +1307,7 @@ export default function Debts() {
                     fontWeight: 700,
                     color:
                       detailDrawerDebt.status === "OVERDUE"
-                        ? "#f25659"
+                        ? "#ff8285"
                         : detailDrawerDebt.status === "FULLY_PAID"
                         ? "#48cc90"
                         : "text.primary",
@@ -1408,7 +1411,8 @@ export default function Debts() {
                                   paymentId: p.id,
                                 })
                               }
-                              sx={{ color: grey[500], "&:hover": { color: "#f25659" } }}
+                              aria-label={`${t("delete")}: ${formatValue(Number(p.amount))}`}
+                              sx={{ color: grey[500], "&:hover": { color: "#ff8285" } }}
                             >
                               <DeleteOutlineIcon fontSize="small" />
                             </IconButton>
@@ -1515,7 +1519,7 @@ export default function Debts() {
       >
         <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span>{t("confirm_delete_debt_title")}</span>
-          <IconButton size="small" onClick={() => setDeleteTargetDebt(null)} sx={{ color: "text.secondary" }}>
+          <IconButton size="small" onClick={() => setDeleteTargetDebt(null)} aria-label={t("close")} sx={{ color: "text.secondary" }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </DialogTitle>
@@ -1536,7 +1540,7 @@ export default function Debts() {
             {deleteDebtMutation.isPending ? (
               <CircularProgress size={20} color="inherit" />
             ) : (
-              t("delete")
+              t("delete_debt_action")
             )}
           </Button>
         </DialogContent>
@@ -1551,7 +1555,7 @@ export default function Debts() {
       >
         <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span>{t("confirm_delete_payment_title")}</span>
-          <IconButton size="small" onClick={() => setDeleteTargetPayment(null)} sx={{ color: "text.secondary" }}>
+          <IconButton size="small" onClick={() => setDeleteTargetPayment(null)} aria-label={t("close")} sx={{ color: "text.secondary" }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </DialogTitle>
@@ -1573,7 +1577,7 @@ export default function Debts() {
             {deletePaymentMutation.isPending ? (
               <CircularProgress size={20} color="inherit" />
             ) : (
-              t("delete")
+              t("delete_payment_action")
             )}
           </Button>
         </DialogContent>

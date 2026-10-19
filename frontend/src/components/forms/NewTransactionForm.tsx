@@ -398,15 +398,17 @@ function NewTransactionForm({ isEdit = false }: NewTransactionFormProps = {}) {
                 <LinearProgress
                   variant="determinate"
                   value={Math.min(100, budgetImpact.percent_after)}
+                  aria-label={t("budget_progress")}
+                  aria-valuenow={Math.round(budgetImpact.percent_after)}
                   sx={{
                     height: 6,
                     borderRadius: 3,
                     mt: 1,
-                    backgroundColor: "rgba(255, 255, 255, 0.08)",
+                    backgroundColor: "rgba(255, 255, 255, 0.36)",
                     "& .MuiLinearProgress-bar": {
                       backgroundColor:
                         budgetImpact.status === "exceeded"
-                          ? "#EF4444"
+                          ? "#ff8285"
                           : "#F59E0B",
                       borderRadius: 3,
                     },

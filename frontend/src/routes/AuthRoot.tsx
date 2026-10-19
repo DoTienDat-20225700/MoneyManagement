@@ -64,7 +64,7 @@ function AuthRoot() {
           />
           <Typography
             variant="h6"
-            component="h1"
+            component="div"
             fontWeight={700}
             sx={{
               color: "#ffffff",

@@ -54,6 +54,7 @@ function Transactions() {
             variant="outlined"
             size="medium"
             placeholder={t("find_transaction")}
+            inputProps={{ "aria-label": t("find_transaction") }}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             InputProps={{
@@ -72,6 +73,7 @@ function Transactions() {
                         size="small"
                         onClick={() => setSearchTerm("")}
                         edge="end"
+                        aria-label={t("clear_search")}
                       >
                         <ClearIcon fontSize="small" />
                       </IconButton>

@@ -33,6 +33,7 @@ import dayjs from "dayjs";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { useForecast } from "../../hooks/api/useForecast";
+import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion";
 import { useLanguage } from "../../context/LanguageContext";
 import { formatValue } from "../../utils/utils";
 import { darkTheme } from "../../theme";
@@ -54,6 +55,7 @@ interface FlattenedFixedEvent {
 export default function CashFlowForecast() {
   const { language, dateFormat, t } = useLanguage();
   const { getCashFlowForecast } = useForecast();
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   // Control state
   const [days, setDays] = useState<30 | 60 | 90>(30);
@@ -123,13 +125,13 @@ export default function CashFlowForecast() {
     const yaxisAnnotations = [
       {
         y: 0,
-        borderColor: "#f25659",
+        borderColor: "#ff8285",
         strokeDashArray: 2,
         label: {
-          borderColor: "#f25659",
+          borderColor: "#ff8285",
           style: {
             color: "#ffffff",
-            background: "#f25659",
+            background: "#ff8285",
             fontSize: "11px",
             fontFamily: "Inter",
             fontWeight: 600,
@@ -170,17 +172,17 @@ export default function CashFlowForecast() {
           y: Number(pt.balance),
           marker: {
             size: 6,
-            fillColor: isNegative ? "#f25659" : darkTheme.palette.primary.main,
+            fillColor: isNegative ? "#ff8285" : darkTheme.palette.primary.main,
             strokeColor: "#ffffff",
             strokeWidth: 2,
             radius: 3,
           },
           label: {
-            borderColor: isNegative ? "#f25659" : darkTheme.palette.primary.main,
+            borderColor: isNegative ? "#ff8285" : darkTheme.palette.primary.main,
             offsetY: isNegative ? 24 : -12,
             style: {
               color: "#ffffff",
-              background: isNegative ? "#f25659" : darkTheme.palette.primary.main,
+              background: isNegative ? "#ff8285" : darkTheme.palette.primary.main,
               fontSize: "10px",
               fontFamily: "Inter",
               fontWeight: 600,
@@ -196,7 +198,7 @@ export default function CashFlowForecast() {
         id: "cashflow-forecast-line",
         type: "area",
         toolbar: { show: false },
-        animations: { enabled: true, speed: 600 },
+        animations: { enabled: !prefersReducedMotion, speed: 600 },
         background: "transparent",
       },
       colors: [darkTheme.palette.primary.main],
@@ -221,7 +223,7 @@ export default function CashFlowForecast() {
       xaxis: {
         categories,
         labels: {
-          style: { colors: grey[600], fontSize: "11px", fontFamily: "Inter" },
+          style: { colors: darkTheme.palette.text.secondary, fontSize: "11px", fontFamily: "Inter" },
           rotate: -45,
           rotateAlways: timeline.length > 45,
         },
@@ -231,7 +233,7 @@ export default function CashFlowForecast() {
       yaxis: {
         tickAmount: 6,
         labels: {
-          style: { colors: grey[600], fontFamily: "Inter" },
+          style: { colors: darkTheme.palette.text.secondary, fontFamily: "Inter" },
           formatter: (val: number) => formatValue(val),
         },
       },
@@ -255,7 +257,7 @@ export default function CashFlowForecast() {
                 ${pt.fixed_events
                   .map((e) => {
                     const amt = Number(e.amount);
-                    const color = amt >= 0 ? "#48cc90" : "#f25659";
+                    const color = amt >= 0 ? "#48cc90" : "#ff8285";
                     const sign = amt >= 0 ? "+" : "";
                     return `<div style="font-size: 11px; display: flex; justify-content: space-between; gap: 12px;">
                       <span>${e.title}</span>
@@ -270,7 +272,7 @@ export default function CashFlowForecast() {
           return `
             <div style="padding: 10px 14px; background: #161616; border: 1px solid #333; border-radius: 6px; font-family: Inter, sans-serif;">
               <div style="font-size: 11px; color: #888;">${dateStr}</div>
-              <div style="font-size: 14px; font-weight: 600; color: ${bal >= 0 ? "#fff" : "#f25659"}; margin-top: 2px;">
+              <div style="font-size: 14px; font-weight: 600; color: ${bal >= 0 ? "#fff" : "#ff8285"}; margin-top: 2px;">
                 ${t("balance")}: ${formatValue(bal)}
               </div>
               ${eventsHtml}
@@ -293,7 +295,7 @@ export default function CashFlowForecast() {
       ],
       options,
     };
-  }, [forecast?.daily_timeline, safetyBuffer, language, dateFormat, t]);
+  }, [forecast?.daily_timeline, safetyBuffer, language, dateFormat, t, prefersReducedMotion]);
 
   // Translate Recommendation item
   const renderRecommendationText = (rec: RecommendationItem): string => {
@@ -358,7 +360,7 @@ export default function CashFlowForecast() {
         <Grid container spacing={3} alignItems="center">
           <Grid item xs={12} md={7}>
             <Box display="flex" alignItems="center" gap={1.5} mb={0.5}>
-              <Typography variant="h5" fontWeight={600} color="#fff">
+              <Typography component="h2" variant="h5" fontWeight={600} color="#fff">
                 {t("forecast_title")}
               </Typography>
               {isFetching && <CircularProgress size={16} sx={{ color: darkTheme.palette.primary.main }} />}
@@ -431,10 +433,11 @@ export default function CashFlowForecast() {
                   onChange={(e) => handleBufferChange(e.target.value)}
                   error={Boolean(bufferError)}
                   helperText={bufferError}
+                  inputProps={{ "aria-label": t("safety_buffer") }}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <ShieldOutlinedIcon fontSize="small" sx={{ color: grey[600] }} />
+                        <ShieldOutlinedIcon fontSize="small" sx={{ color: "text.secondary" }} />
                       </InputAdornment>
                     ),
                     endAdornment: (
@@ -475,10 +478,10 @@ export default function CashFlowForecast() {
               severity="error"
               icon={<ErrorOutlineIcon fontSize="medium" />}
               sx={{
-                backgroundColor: "rgba(242, 86, 89, 0.12)",
+                backgroundColor: "rgba(255, 130, 133, 0.12)",
                 color: "#ff8285",
-                border: "1px solid rgba(242, 86, 89, 0.4)",
-                "& .MuiAlert-icon": { color: "#f25659" },
+                border: "1px solid rgba(255, 130, 133, 0.4)",
+                "& .MuiAlert-icon": { color: "#ff8285" },
               }}
             >
               <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
@@ -609,10 +612,10 @@ export default function CashFlowForecast() {
                 height="100%"
                 sx={{ backgroundColor: "rgba(255, 255, 255, 0.01)" }}
               >
-                <Typography variant="body2" color="text.secondary" mb={1}>
+                <Typography component="h3" variant="body2" color="text.secondary" mb={1}>
                   {t("kpi_current_balance")}
                 </Typography>
-                <Typography variant="h5" fontWeight={700} color="#fff">
+                <Typography component="span" variant="h5" fontWeight={700} color="#fff">
                   {formatValue(Number(forecast.current_balance))}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
@@ -631,13 +634,14 @@ export default function CashFlowForecast() {
                 height="100%"
                 sx={{ backgroundColor: "rgba(255, 255, 255, 0.01)" }}
               >
-                <Typography variant="body2" color="text.secondary" mb={1}>
+                <Typography component="h3" variant="body2" color="text.secondary" mb={1}>
                   {t("kpi_projected_end")} (+{days}d)
                 </Typography>
                 <Typography
+                  component="span"
                   variant="h5"
                   fontWeight={700}
-                  color={Number(forecast.projected_end_balance) >= 0 ? "#48cc90" : "#f25659"}
+                  color={Number(forecast.projected_end_balance) >= 0 ? "#48cc90" : "#ff8285"}
                 >
                   {formatValue(Number(forecast.projected_end_balance))}
                 </Typography>
@@ -657,15 +661,16 @@ export default function CashFlowForecast() {
                 height="100%"
                 sx={{ backgroundColor: "rgba(255, 255, 255, 0.01)" }}
               >
-                <Typography variant="body2" color="text.secondary" mb={1}>
+                <Typography component="h3" variant="body2" color="text.secondary" mb={1}>
                   {t("kpi_lowest_balance")}
                 </Typography>
                 <Typography
+                  component="span"
                   variant="h5"
                   fontWeight={700}
                   color={
                     Number(forecast.lowest_balance) < 0
-                      ? "#f25659"
+                      ? "#ff8285"
                       : Number(forecast.lowest_balance) < safetyBuffer
                       ? "#faad14"
                       : "#48cc90"
@@ -689,10 +694,10 @@ export default function CashFlowForecast() {
                 height="100%"
                 sx={{ backgroundColor: "rgba(255, 255, 255, 0.01)" }}
               >
-                <Typography variant="body2" color="text.secondary" mb={1}>
+                <Typography component="h3" variant="body2" color="text.secondary" mb={1}>
                   {t("kpi_daily_burn_rate")}
                 </Typography>
-                <Typography variant="h5" fontWeight={700} color="#f25659">
+                <Typography component="span" variant="h5" fontWeight={700} color="#ff8285">
                   ~{formatValue(Number(forecast.daily_burn_rate))}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
@@ -717,7 +722,7 @@ export default function CashFlowForecast() {
       >
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
           <Box>
-            <Typography variant="h6" fontWeight={600} color="#fff">
+            <Typography component="h3" variant="h6" fontWeight={600} color="#fff">
               {t("chart_cashflow_title")}
             </Typography>
             <Typography variant="caption" color="text.secondary">
@@ -731,8 +736,31 @@ export default function CashFlowForecast() {
         {isLoading ? (
           <Skeleton variant="rectangular" width="100%" height={360} sx={{ borderRadius: 2 }} />
         ) : chartConfig.series.length > 0 ? (
-          <Box sx={{ minHeight: 360, width: "100%" }}>
+          <Box sx={{ minHeight: 360, width: "100%", position: "relative" }}>
             <Chart options={chartConfig.options} series={chartConfig.series} type="area" height={360} />
+            <Box
+              component="div"
+              sx={{
+                position: "absolute",
+                width: 1,
+                height: 1,
+                padding: 0,
+                margin: -1,
+                overflow: "hidden",
+                clip: "rect(0, 0, 0, 0)",
+                whiteSpace: "nowrap",
+                border: 0,
+              }}
+            >
+              <Typography variant="subtitle2" component="h3">
+                {t("chart_cashflow_title")} - {t("chart_summary")}
+              </Typography>
+              <p>
+                {t("kpi_current_balance")}: {formatValue(Number(forecast?.current_balance || 0))},{" "}
+                {t("kpi_projected_end")}: {formatValue(Number(forecast?.projected_end_balance || 0))},{" "}
+                {t("kpi_lowest_balance")}: {formatValue(Number(forecast?.lowest_balance || 0))}
+              </p>
+            </Box>
           </Box>
         ) : (
           <Box py={8} textAlign="center">
@@ -757,7 +785,7 @@ export default function CashFlowForecast() {
           >
             <Box display="flex" alignItems="center" gap={1.5} mb={2}>
               <TipsAndUpdatesOutlinedIcon sx={{ color: darkTheme.palette.primary.main }} />
-              <Typography variant="h6" fontWeight={600} color="#fff">
+              <Typography component="h3" variant="h6" fontWeight={600} color="#fff">
                 {t("recommendations_title")}
               </Typography>
             </Box>
@@ -769,9 +797,9 @@ export default function CashFlowForecast() {
                 {forecast.recommendations.map((rec: RecommendationItem, idx: number) => {
                   const isWarning = rec.code === "SHORTFALL_RISK" || rec.code === "REDUCE_DAILY_SPENDING";
                   const isBuffer = rec.code === "BELOW_BUFFER" || rec.code === "LOW_CONFIDENCE";
-                  const borderColor = isWarning ? "#f25659" : isBuffer ? "#faad14" : "#00863A";
+                  const borderColor = isWarning ? "#ff8285" : isBuffer ? "#faad14" : "#00863A";
                   const bgColor = isWarning
-                    ? "rgba(242, 86, 89, 0.08)"
+                    ? "rgba(255, 130, 133, 0.08)"
                     : isBuffer
                     ? "rgba(250, 173, 20, 0.08)"
                     : "rgba(0, 134, 58, 0.08)";
@@ -813,7 +841,7 @@ export default function CashFlowForecast() {
           >
             <Box display="flex" alignItems="center" gap={1.5} mb={2}>
               <EventNoteOutlinedIcon sx={{ color: darkTheme.palette.primary.main }} />
-              <Typography variant="h6" fontWeight={600} color="#fff">
+              <Typography component="h3" variant="h6" fontWeight={600} color="#fff">
                 {t("upcoming_events_title")}
               </Typography>
             </Box>
@@ -825,17 +853,17 @@ export default function CashFlowForecast() {
                 <Table size="small" stickyHeader>
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ backgroundColor: "#181818", color: grey[500] }}>{t("col_date")}</TableCell>
-                      <TableCell sx={{ backgroundColor: "#181818", color: grey[500] }}>
+                      <TableCell sx={{ backgroundColor: "#181818", color: darkTheme.palette.text.secondary }}>{t("col_date")}</TableCell>
+                      <TableCell sx={{ backgroundColor: "#181818", color: darkTheme.palette.text.secondary }}>
                         {t("col_event_title")}
                       </TableCell>
-                      <TableCell sx={{ backgroundColor: "#181818", color: grey[500] }}>
+                      <TableCell sx={{ backgroundColor: "#181818", color: darkTheme.palette.text.secondary }}>
                         {t("col_event_source")}
                       </TableCell>
-                      <TableCell align="right" sx={{ backgroundColor: "#181818", color: grey[500] }}>
+                      <TableCell align="right" sx={{ backgroundColor: "#181818", color: darkTheme.palette.text.secondary }}>
                         {t("col_value")}
                       </TableCell>
-                      <TableCell align="right" sx={{ backgroundColor: "#181818", color: grey[500] }}>
+                      <TableCell align="right" sx={{ backgroundColor: "#181818", color: darkTheme.palette.text.secondary }}>
                         {t("col_event_balance_after")}
                       </TableCell>
                     </TableRow>
@@ -865,7 +893,7 @@ export default function CashFlowForecast() {
                           <TableCell
                             align="right"
                             sx={{
-                              color: isIncome ? "#48cc90" : "#f25659",
+                              color: isIncome ? "#48cc90" : "#ff8285",
                               fontWeight: 600,
                               fontSize: "13px",
                               whiteSpace: "nowrap",
@@ -876,7 +904,7 @@ export default function CashFlowForecast() {
                           <TableCell
                             align="right"
                             sx={{
-                              color: ev.balanceAfter >= 0 ? "#fff" : "#f25659",
+                              color: ev.balanceAfter >= 0 ? "#fff" : "#ff8285",
                               fontSize: "13px",
                               whiteSpace: "nowrap",
                             }}

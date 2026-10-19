@@ -34,8 +34,8 @@ export function typeOptionColor(type: TypeOption) {
   let bgColor = "";
   switch (type) {
     case TypeOption.EXPENSE:
-      color = "#f25659";
-      bgColor = "#f2565936";
+      color = "#ff8285";
+      bgColor = "rgba(255, 130, 133, 0.15)";
       break;
     case TypeOption.EARNING:
       color = "#48cc90";

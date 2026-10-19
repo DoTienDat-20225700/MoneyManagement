@@ -166,7 +166,7 @@ export default function DrawerAppBar(props: Props) {
           >
             <IconButton
               color="inherit"
-              aria-label="open drawer"
+              aria-label={t("open_drawer")}
               edge="start"
               onClick={handleDrawerToggle}
               sx={{ mr: 2, display: { sm: "none" } }}

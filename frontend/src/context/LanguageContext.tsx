@@ -38,6 +38,9 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     dayjs.locale(language);
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = language;
+    }
   }, [language]);
 
   const t = (key: TranslationKey): string => {

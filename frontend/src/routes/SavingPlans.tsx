@@ -542,7 +542,7 @@ export default function SavingPlans() {
             mt={2}
           >
             <SavingsOutlinedIcon sx={{ fontSize: 60, color: "text.secondary", mb: 2 }} />
-            <Typography variant="h6" fontWeight={600} gutterBottom>
+            <Typography component="h2" variant="h6" fontWeight={600} gutterBottom>
               {t("no_saving_plans")}
             </Typography>
             <Button
@@ -691,10 +691,12 @@ export default function SavingPlans() {
                       <LinearProgress
                         variant="determinate"
                         value={Math.min(100, Math.max(0, pct))}
+                        aria-label={`${t("saving_plan_progress")}: ${plan.title}`}
+                        aria-valuenow={Math.round(pct)}
                         sx={{
                           height: 8,
                           borderRadius: 4,
-                          backgroundColor: "rgba(255, 255, 255, 0.08)",
+                          backgroundColor: "rgba(255, 255, 255, 0.36)",
                           "& .MuiLinearProgress-bar": {
                             backgroundColor: isCompleted ? "#48cc90" : "#00863A",
                             borderRadius: 4,
@@ -838,6 +840,7 @@ export default function SavingPlans() {
                       <Tooltip title={plan.active ? t("close_plan") : t("activate_plan")}>
                         <IconButton
                           size="small"
+                          aria-label={plan.active ? `${t("pause")}: ${plan.title}` : `${t("resume")}: ${plan.title}`}
                           sx={{ color: grey[500], "&:hover": { color: "#fff" } }}
                           onClick={() =>
                             toggleMutation.mutate({ id: plan.id, active: !plan.active })
@@ -855,6 +858,7 @@ export default function SavingPlans() {
                       <Tooltip title={t("edit_saving_plan")}>
                         <IconButton
                           size="small"
+                          aria-label={`${t("edit")}: ${plan.title}`}
                           sx={{ color: grey[500], "&:hover": { color: "#fff" } }}
                           onClick={() => handleOpenEdit(plan)}
                         >
@@ -866,7 +870,8 @@ export default function SavingPlans() {
                       <Tooltip title={t("delete")}>
                         <IconButton
                           size="small"
-                          sx={{ color: grey[500], "&:hover": { color: "#f25659" } }}
+                          aria-label={`${t("delete")}: ${plan.title}`}
+                          sx={{ color: grey[500], "&:hover": { color: "#ff8285" } }}
                           onClick={() => setDeleteTargetPlan(plan)}
                         >
                           <DeleteOutlineIcon fontSize="small" />
@@ -884,7 +889,7 @@ export default function SavingPlans() {
         <Dialog open={modalOpen} onClose={handleCloseModal} fullWidth maxWidth="xs">
           <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span>{editingPlan ? t("edit_saving_plan") : t("add_saving_plan")}</span>
-            <IconButton size="small" onClick={handleCloseModal} sx={{ color: "text.secondary" }}>
+            <IconButton size="small" onClick={handleCloseModal} aria-label={t("close")} sx={{ color: "text.secondary" }}>
               <CloseIcon fontSize="small" />
             </IconButton>
           </DialogTitle>
@@ -954,7 +959,7 @@ export default function SavingPlans() {
         >
           <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span>{t("add_contribution")}</span>
-            <IconButton size="small" onClick={handleCloseContribModal} sx={{ color: "text.secondary" }}>
+            <IconButton size="small" onClick={handleCloseContribModal} aria-label={t("close")} sx={{ color: "text.secondary" }}>
               <CloseIcon fontSize="small" />
             </IconButton>
           </DialogTitle>
@@ -1154,6 +1159,7 @@ export default function SavingPlans() {
                             <Tooltip title={t("edit")}>
                               <IconButton
                                 size="small"
+                                aria-label={t("edit_contribution")}
                                 sx={{ color: grey[500], "&:hover": { color: "#fff" } }}
                                 onClick={() => handleStartEditContrib(contrib)}
                               >
@@ -1163,7 +1169,8 @@ export default function SavingPlans() {
                             <Tooltip title={t("delete")}>
                               <IconButton
                                 size="small"
-                                sx={{ color: grey[500], "&:hover": { color: "#f25659" } }}
+                                aria-label={t("delete_contribution")}
+                                sx={{ color: grey[500], "&:hover": { color: "#ff8285" } }}
                                 onClick={() => setDeleteTargetContrib(contrib)}
                               >
                                 <DeleteOutlineIcon fontSize="small" />
@@ -1200,7 +1207,7 @@ export default function SavingPlans() {
         >
           <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span>{t("delete")} {t("saving_plans")}</span>
-            <IconButton size="small" onClick={() => setDeleteTargetPlan(null)} sx={{ color: "text.secondary" }}>
+            <IconButton size="small" onClick={() => setDeleteTargetPlan(null)} aria-label={t("close")} sx={{ color: "text.secondary" }}>
               <CloseIcon fontSize="small" />
             </IconButton>
           </DialogTitle>
@@ -1216,7 +1223,7 @@ export default function SavingPlans() {
               disabled={deletePlanMutation.isPending}
               sx={{ height: 42, borderRadius: 2, fontWeight: 600 }}
             >
-              {deletePlanMutation.isPending ? <CircularProgress size={20} color="inherit" /> : t("delete")}
+              {deletePlanMutation.isPending ? <CircularProgress size={20} color="inherit" /> : t("delete_plan_action")}
             </Button>
           </DialogContent>
         </Dialog>
@@ -1230,7 +1237,7 @@ export default function SavingPlans() {
         >
           <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span>{t("delete")} {t("add_contribution")}</span>
-            <IconButton size="small" onClick={() => setDeleteTargetContrib(null)} sx={{ color: "text.secondary" }}>
+            <IconButton size="small" onClick={() => setDeleteTargetContrib(null)} aria-label={t("close")} sx={{ color: "text.secondary" }}>
               <CloseIcon fontSize="small" />
             </IconButton>
           </DialogTitle>
@@ -1254,7 +1261,7 @@ export default function SavingPlans() {
               disabled={deleteContribMutation.isPending}
               sx={{ height: 42, borderRadius: 2, fontWeight: 600 }}
             >
-              {deleteContribMutation.isPending ? <CircularProgress size={20} color="inherit" /> : t("delete")}
+              {deleteContribMutation.isPending ? <CircularProgress size={20} color="inherit" /> : t("delete_contribution")}
             </Button>
           </DialogContent>
         </Dialog>

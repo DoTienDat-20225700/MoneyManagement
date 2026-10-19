@@ -6,7 +6,6 @@ import {
   Select,
   Typography,
 } from "@mui/material";
-import { grey } from "@mui/material/colors";
 import { useQuery } from "@tanstack/react-query";
 import { ApexOptions } from "apexcharts";
 import { useMemo, useState } from "react";
@@ -21,9 +20,11 @@ import { AggregatedExpense } from "../../models/Transaction";
 import { darkTheme } from "../../theme";
 import { getStartDate, pieRangeOptionMask, formatValue } from "../../utils/utils";
 import { useLanguage } from "../../context/LanguageContext";
+import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion";
 
 function ProfileChart() {
   const { language, t } = useLanguage();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const { getTransactions } = useTransactions();
 
   const [range, setRange] = useState<PieChartRangeType>(
@@ -66,6 +67,7 @@ function ProfileChart() {
         chart: {
           id: "pie",
           toolbar: { show: false },
+          animations: { enabled: !prefersReducedMotion },
         },
         dataLabels: {
           enabled: false,
@@ -74,7 +76,7 @@ function ProfileChart() {
           show: true,
           position: "left",
           labels: {
-            colors: grey[600],
+            colors: darkTheme.palette.text.secondary,
           },
         } as ApexLegend,
         yaxis: {
@@ -97,7 +99,7 @@ function ProfileChart() {
         },
       },
     };
-  }, [transactions]);
+  }, [transactions, prefersReducedMotion]);
 
   return (
     <Box
@@ -139,13 +141,48 @@ function ProfileChart() {
         </FormControl>
       </Box>
       {transactions ? (
-        <Chart
-          options={state.options}
-          series={state.series}
-          type="pie"
-          width="90%"
-          height="300px"
-        />
+        <>
+          <Box
+            sx={{
+              position: "absolute",
+              width: "1px",
+              height: "1px",
+              padding: 0,
+              margin: "-1px",
+              overflow: "hidden",
+              clip: "rect(0, 0, 0, 0)",
+              whiteSpace: "nowrap",
+              border: 0,
+            }}
+            component="section"
+            aria-label={t("expenses_distribution")}
+          >
+            <table>
+              <caption>{t("expenses_distribution")} - {t("chart_summary")}</caption>
+              <thead>
+                <tr>
+                  <th>{t("label")}</th>
+                  <th>{t("amount")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions?.map((item, i) => (
+                  <tr key={i}>
+                    <td>{item.label_name}</td>
+                    <td>{formatValue(item.value)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Box>
+          <Chart
+            options={state.options}
+            series={state.series}
+            type="pie"
+            width="90%"
+            height="300px"
+          />
+        </>
       ) : (
         <Typography
           component="p"

@@ -2,11 +2,24 @@ import "@fontsource/inter";
 import { Components, createTheme, PaletteOptions } from "@mui/material";
 import { TypographyOptions } from "@mui/material/styles/createTypography";
 
+export const semanticColors = {
+  income: "#48cc90",
+  expense: "#ff8285",
+  warning: "#faad14",
+  info: "#3b82f6",
+};
+
 export const darkTheme = createTheme({
   palette: {
     mode: "dark",
     primary: {
       main: "#00863A",
+    },
+    error: {
+      main: "#ff8285",
+    },
+    warning: {
+      main: "#faad14",
     },
     background: {
       default: "#080808", //background
@@ -14,7 +27,7 @@ export const darkTheme = createTheme({
     },
     text: {
       primary: "#fff",
-      secondary: "#8a8a8a",
+      secondary: "#9e9e9e",
     },
   } as PaletteOptions,
   typography: {
@@ -31,12 +44,34 @@ export const darkTheme = createTheme({
           textTransform: "none",
           borderRadius: 8,
           fontWeight: 600,
+          "&.Mui-focusVisible": {
+            outline: "2px solid #00863A",
+            outlineOffset: 2,
+          },
         },
         containedPrimary: {
           backgroundColor: "#00863A",
           "&:hover": {
             backgroundColor: "#007030",
           },
+        },
+      },
+    },
+    MuiIconButton: {
+      styleOverrides: {
+        root: {
+          "&.Mui-focusVisible": {
+            outline: "2px solid #00863A",
+            outlineOffset: 2,
+          },
+        },
+      },
+    },
+    MuiLinearProgress: {
+      styleOverrides: {
+        root: {
+          backgroundColor: "rgba(255, 255, 255, 0.36)",
+          borderRadius: 4,
         },
       },
     },
@@ -74,10 +109,10 @@ export const darkTheme = createTheme({
           borderRadius: 8,
           backgroundColor: "rgba(255, 255, 255, 0.02)",
           "& .MuiOutlinedInput-notchedOutline": {
-            borderColor: "#2b2b2b",
+            borderColor: "#5e5e5e",
           },
           "&:hover .MuiOutlinedInput-notchedOutline": {
-            borderColor: "#444444",
+            borderColor: "#777777",
           },
           "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
             borderColor: "#00863A",
@@ -88,7 +123,7 @@ export const darkTheme = createTheme({
     MuiRadio: {
       styleOverrides: {
         root: {
-          color: "#8a8a8a",
+          color: "#9e9e9e",
           "&.Mui-checked": {
             color: "#00863A",
           },
@@ -98,7 +133,7 @@ export const darkTheme = createTheme({
     MuiCheckbox: {
       styleOverrides: {
         root: {
-          color: "#8a8a8a",
+          color: "#9e9e9e",
           "&.Mui-checked": {
             color: "#00863A",
           },

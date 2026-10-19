@@ -68,38 +68,24 @@ function WalletGridRow(props: Props) {
                     }}
                     size="small"
                     type="submit"
+                    aria-label={t("save")}
                   >
                     <DoneIcon />
                   </IconButton>
                 )}
 
-                <Box onClick={() => setIsEditingBalance(!isEditingBalance)}>
-                  {isEditingBalance ? (
-                    <IconButton
-                      sx={{
-                        borderRadius: 2,
-                        color: grey[500],
-                        "&:hover": { backgroundColor: grey[900] },
-                      }}
-                      size="small"
-                      aria-label="cancel"
-                    >
-                      <CloseIcon />
-                    </IconButton>
-                  ) : (
-                    <IconButton
-                      sx={{
-                        borderRadius: 2,
-                        color: grey[500],
-                        "&:hover": { backgroundColor: grey[900] },
-                      }}
-                      size="small"
-                      aria-label="edit"
-                    >
-                      <ModeEditIcon />
-                    </IconButton>
-                  )}
-                </Box>
+                <IconButton
+                  onClick={() => setIsEditingBalance(!isEditingBalance)}
+                  sx={{
+                    borderRadius: 2,
+                    color: grey[500],
+                    "&:hover": { backgroundColor: grey[900] },
+                  }}
+                  size="small"
+                  aria-label={isEditingBalance ? t("cancel") : t("edit_balance")}
+                >
+                  {isEditingBalance ? <CloseIcon /> : <ModeEditIcon />}
+                </IconButton>
               </Box>
             </Box>
           )}
@@ -168,7 +154,7 @@ function WalletGridRow(props: Props) {
             </Typography>
           ) : (
             <Box display="flex" alignItems="center" gap={2}>
-              <Typography component="span" variant="h5" fontWeight={600} sx={{ color: "#f25659" }}>
+              <Typography component="span" variant="h5" fontWeight={600} sx={{ color: "error.main" }}>
                 -{formatValue(Math.abs(Number(props.wallet?.monthly_expenses || 0)))}
               </Typography>
             </Box>

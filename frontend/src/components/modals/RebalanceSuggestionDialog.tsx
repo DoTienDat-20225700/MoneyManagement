@@ -181,6 +181,7 @@ export default function RebalanceSuggestionDialog({
         <IconButton
           size="small"
           onClick={onClose}
+          aria-label={t("close")}
           sx={{ color: "text.secondary" }}
         >
           <CloseIcon fontSize="small" />
