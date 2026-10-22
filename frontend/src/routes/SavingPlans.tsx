@@ -42,7 +42,7 @@ import { useSavingPlans } from "../hooks/api/useSavingPlans";
 import { SavingPlan, SavingPlanContribution } from "../models/SavingPlan";
 import { useLanguage } from "../context/LanguageContext";
 import { formatCurrency, formatValue } from "../utils/utils";
-import { darkTheme } from "../theme";
+import { paletteTokens } from "../theme";
 
 export default function SavingPlans() {
   const { language, dateFormat, t } = useLanguage();
@@ -381,7 +381,7 @@ export default function SavingPlans() {
           <Grid item xs={12} sm={6} lg={3}>
             <Box
               border="1px solid"
-              borderColor={darkTheme.palette.background.paper}
+              borderColor={paletteTokens.divider}
               borderRadius={2}
               padding={3}
               height="100%"
@@ -404,7 +404,7 @@ export default function SavingPlans() {
           <Grid item xs={12} sm={6} lg={3}>
             <Box
               border="1px solid"
-              borderColor={darkTheme.palette.background.paper}
+              borderColor={paletteTokens.divider}
               borderRadius={2}
               padding={3}
               height="100%"
@@ -427,7 +427,7 @@ export default function SavingPlans() {
           <Grid item xs={12} sm={6} lg={3}>
             <Box
               border="1px solid"
-              borderColor={darkTheme.palette.background.paper}
+              borderColor={paletteTokens.divider}
               borderRadius={2}
               padding={3}
               height="100%"
@@ -440,7 +440,7 @@ export default function SavingPlans() {
                   component="span"
                   variant="h5"
                   fontWeight={600}
-                  sx={{ color: "#48cc90" }}
+                  sx={{ color: paletteTokens.primary }}
                 >
                   {formatValue(totalSavedAmount)}
                 </Typography>
@@ -455,7 +455,7 @@ export default function SavingPlans() {
           <Grid item xs={12} sm={6} lg={3}>
             <Box
               border="1px solid"
-              borderColor={darkTheme.palette.background.paper}
+              borderColor={paletteTokens.divider}
               borderRadius={2}
               padding={3}
               height="100%"
@@ -464,8 +464,8 @@ export default function SavingPlans() {
                 {t("completed_plans")}
               </Typography>
               <Box display="flex" alignItems="center" gap={1.5}>
-                <CheckCircleOutlineIcon sx={{ color: "#48cc90", fontSize: 24 }} />
-                <Typography component="span" variant="h5" fontWeight={600} sx={{ color: "#48cc90" }}>
+                <CheckCircleOutlineIcon sx={{ color: paletteTokens.primary, fontSize: 24 }} />
+                <Typography component="span" variant="h5" fontWeight={600} sx={{ color: paletteTokens.primary }}>
                   {completedPlans.length}
                 </Typography>
               </Box>
@@ -534,7 +534,7 @@ export default function SavingPlans() {
         {!isLoading && allPlans.length === 0 && (
           <Box
             border="1px dashed"
-            borderColor={darkTheme.palette.background.paper}
+            borderColor={paletteTokens.divider}
             borderRadius={2}
             textAlign="center"
             py={8}
@@ -560,7 +560,7 @@ export default function SavingPlans() {
         {!isLoading && allPlans.length > 0 && filteredPlans.length === 0 && (
           <Box
             border="1px dashed"
-            borderColor={darkTheme.palette.background.paper}
+            borderColor={paletteTokens.divider}
             borderRadius={2}
             textAlign="center"
             py={6}
@@ -588,11 +588,7 @@ export default function SavingPlans() {
               <Grid item xs={12} sm={6} lg={4} key={plan.id}>
                 <Box
                   border="1px solid"
-                  borderColor={
-                    isCompleted
-                      ? "rgba(72, 204, 144, 0.4)"
-                      : darkTheme.palette.background.paper
-                  }
+                  borderColor={paletteTokens.divider}
                   borderRadius={2}
                   padding={3}
                   height="100%"
@@ -600,9 +596,7 @@ export default function SavingPlans() {
                   flexDirection="column"
                   justifyContent="space-between"
                   sx={{
-                    backgroundColor: isCompleted
-                      ? "rgba(72, 204, 144, 0.02)"
-                      : "transparent",
+                    backgroundColor: paletteTokens.bgPaper,
                   }}
                 >
                   <Box>
@@ -642,10 +636,11 @@ export default function SavingPlans() {
                             size="small"
                             label={t("plan_completed")}
                             sx={{
-                              backgroundColor: "rgba(72, 204, 144, 0.15)",
-                              color: "#48cc90",
+                              backgroundColor: paletteTokens.tint.primary12,
+                              color: paletteTokens.primary,
                               fontWeight: 600,
                               fontSize: "12px",
+                              border: "none",
                             }}
                           />
                         ) : isClosed ? (
@@ -653,8 +648,9 @@ export default function SavingPlans() {
                             size="small"
                             label={t("plan_closed")}
                             sx={{
-                              backgroundColor: "rgba(255, 255, 255, 0.08)",
-                              color: "text.secondary",
+                              backgroundColor: paletteTokens.elevated,
+                              color: paletteTokens.textSecondary,
+                              border: `1px solid ${paletteTokens.divider}`,
                               fontWeight: 600,
                               fontSize: "12px",
                             }}
@@ -664,8 +660,9 @@ export default function SavingPlans() {
                             size="small"
                             label={t("plan_active")}
                             sx={{
-                              backgroundColor: "rgba(0, 134, 58, 0.2)",
-                              color: "#48cc90",
+                              backgroundColor: paletteTokens.elevated,
+                              color: paletteTokens.textSecondary,
+                              border: `1px solid ${paletteTokens.divider}`,
                               fontWeight: 600,
                               fontSize: "12px",
                             }}
@@ -696,9 +693,9 @@ export default function SavingPlans() {
                         sx={{
                           height: 8,
                           borderRadius: 4,
-                          backgroundColor: "rgba(255, 255, 255, 0.36)",
+                          backgroundColor: paletteTokens.divider,
                           "& .MuiLinearProgress-bar": {
-                            backgroundColor: isCompleted ? "#48cc90" : "#00863A",
+                            backgroundColor: paletteTokens.primary,
                             borderRadius: 4,
                           },
                         }}
@@ -712,7 +709,7 @@ export default function SavingPlans() {
                       sx={{
                         pt: 1.5,
                         pb: 1.5,
-                        borderTop: `1px solid ${darkTheme.palette.background.paper}`,
+                        borderTop: `1px solid ${paletteTokens.divider}`,
                       }}
                     >
                       <Grid item xs={4}>
@@ -731,7 +728,7 @@ export default function SavingPlans() {
                         <Typography
                           variant="body2"
                           fontWeight={600}
-                          sx={{ color: "#48cc90" }}
+                          sx={{ color: paletteTokens.primary }}
                         >
                           {formatValue(saved)}
                         </Typography>
@@ -755,7 +752,7 @@ export default function SavingPlans() {
                     <Box
                       sx={{
                         pt: 1.5,
-                        borderTop: `1px solid ${darkTheme.palette.background.paper}`,
+                        borderTop: `1px solid ${paletteTokens.divider}`,
                         display: "flex",
                         flexDirection: "column",
                         gap: 0.8,
@@ -777,13 +774,13 @@ export default function SavingPlans() {
                           {t("estimated_completion_date")}:
                         </Typography>
                         {isCompleted ? (
-                          <Typography variant="caption" sx={{ color: "#48cc90", fontWeight: 600 }}>
+                          <Typography variant="caption" sx={{ color: paletteTokens.primary, fontWeight: 600 }}>
                             {language === "vi" ? "Đã đạt mục tiêu!" : "Goal Achieved!"}
                           </Typography>
                         ) : estimate?.estimated_date ? (
                           <Tooltip title={t("guaranteed_vs_estimate_note")}>
                             <Box display="inline-flex" alignItems="center" gap={0.5} sx={{ cursor: "pointer" }}>
-                              <Typography variant="caption" sx={{ color: "#faad14", fontWeight: 600 }}>
+                              <Typography variant="caption" sx={{ color: paletteTokens.warning, fontWeight: 600 }}>
                                 {dayjs(estimate.estimated_date).format(dateFormat)}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
@@ -808,7 +805,7 @@ export default function SavingPlans() {
                       alignItems: "center",
                       pt: 2,
                       mt: 2,
-                      borderTop: `1px solid ${darkTheme.palette.background.paper}`,
+                      borderTop: `1px solid ${paletteTokens.divider}`,
                       flexWrap: "wrap",
                       gap: 1,
                     }}
@@ -817,9 +814,17 @@ export default function SavingPlans() {
                       {/* Add Contribution button */}
                       <Button
                         size="small"
-                        variant="contained"
+                        variant="outlined"
                         onClick={() => handleOpenAddContrib(plan)}
                         disabled={isClosed}
+                        sx={{
+                          borderColor: paletteTokens.controlBorder,
+                          color: paletteTokens.textPrimary,
+                          "&:hover": {
+                            borderColor: paletteTokens.textSecondary,
+                            backgroundColor: "rgba(255, 255, 255, 0.04)",
+                          },
+                        }}
                       >
                         {t("add_contribution")}
                       </Button>
@@ -827,8 +832,13 @@ export default function SavingPlans() {
                       {/* View Contribution History button */}
                       <Button
                         size="small"
-                        variant="outlined"
+                        variant="text"
                         onClick={() => handleOpenHistory(plan)}
+                        sx={{
+                          color: paletteTokens.primary,
+                          fontWeight: 600,
+                          "&:hover": { backgroundColor: paletteTokens.tint.primary12 },
+                        }}
                       >
                         {t("contribution_history")} ({plan.contribution_count || 0})
                       </Button>
@@ -971,7 +981,7 @@ export default function SavingPlans() {
                   p: 1.5,
                   borderRadius: 2,
                   backgroundColor: grey[900],
-                  border: `1px solid ${darkTheme.palette.background.paper}`,
+                  border: `1px solid ${paletteTokens.divider}`,
                 }}
               >
                 <Typography variant="body2" fontWeight={600} noWrap>
@@ -1056,7 +1066,7 @@ export default function SavingPlans() {
             <Chip
               size="small"
               label={`${formatValue(Number(historyModalPlan?.amount_saved || 0))} / ${formatValue(Number(historyModalPlan?.amount || 0))}`}
-              sx={{ color: "#48cc90", backgroundColor: "rgba(72, 204, 144, 0.12)", fontWeight: 600 }}
+              sx={{ color: paletteTokens.primary, backgroundColor: paletteTokens.tint.primary12, fontWeight: 600 }}
             />
           </DialogTitle>
 
@@ -1080,7 +1090,7 @@ export default function SavingPlans() {
                 <CircularProgress size={24} />
               </Box>
             ) : planContributions && planContributions.length > 0 ? (
-              <TableContainer sx={{ border: `1px solid ${darkTheme.palette.background.paper}`, borderRadius: 1.5 }}>
+              <TableContainer sx={{ border: `1px solid ${paletteTokens.divider}`, borderRadius: 1.5 }}>
                 <Table size="small">
                   <TableHead>
                     <TableRow>
@@ -1149,7 +1159,7 @@ export default function SavingPlans() {
                           <TableCell sx={{ fontSize: "13px" }}>
                             {dayjs(contrib.date).format(dateFormat)}
                           </TableCell>
-                          <TableCell sx={{ fontSize: "13px", fontWeight: 600, color: "#48cc90" }}>
+                          <TableCell sx={{ fontSize: "13px", fontWeight: 600, color: paletteTokens.primary }}>
                             +{formatValue(Number(contrib.amount))}
                           </TableCell>
                           <TableCell sx={{ fontSize: "13px", color: "text.secondary" }}>

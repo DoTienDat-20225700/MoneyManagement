@@ -84,6 +84,12 @@ export const translations = {
     delete_debt_action: "Xoá khoản nợ",
     delete_payment_action: "Xoá thanh toán",
     delete_plan_action: "Xoá kế hoạch",
+    collapse_sidebar: "Thu gọn thanh điều hướng",
+    expand_sidebar: "Mở rộng thanh điều hướng",
+    skip_to_content: "Bỏ qua đến nội dung chính",
+    main_navigation: "Điều hướng chính",
+    mobile_navigation: "Điều hướng di động",
+    close_drawer: "Đóng menu điều hướng",
 
     // Label Modal
     add_new_label: "Thêm danh mục mới",
@@ -538,6 +544,12 @@ export const translations = {
     delete_debt_action: "Delete debt",
     delete_payment_action: "Delete payment",
     delete_plan_action: "Delete plan",
+    collapse_sidebar: "Collapse navigation bar",
+    expand_sidebar: "Expand navigation bar",
+    skip_to_content: "Skip to main content",
+    main_navigation: "Main navigation",
+    mobile_navigation: "Mobile navigation",
+    close_drawer: "Close navigation drawer",
 
     // Label Modal
     add_new_label: "Add new label",

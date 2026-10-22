@@ -17,14 +17,12 @@ import {
 } from "../../enums/Enums";
 import { useTransactions } from "../../hooks/api/useTransactions";
 import { AggregatedExpense } from "../../models/Transaction";
-import { darkTheme } from "../../theme";
+import { darkTheme, paletteTokens } from "../../theme";
 import { getStartDate, pieRangeOptionMask, formatValue } from "../../utils/utils";
 import { useLanguage } from "../../context/LanguageContext";
-import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion";
 
 function ProfileChart() {
   const { language, t } = useLanguage();
-  const prefersReducedMotion = usePrefersReducedMotion();
   const { getTransactions } = useTransactions();
 
   const [range, setRange] = useState<PieChartRangeType>(
@@ -43,9 +41,9 @@ function ProfileChart() {
     queryFn: () => getTransactions(0, 2, startDate, endDate),
   }) as { data: PromiseType<AggregatedExpense[]> };
 
-  const colors = transactions
-    ? transactions.map((obj: AggregatedExpense) => obj.label_color)
-    : [];
+  const colors = (transactions ?? []).map(
+    (_, i) => paletteTokens.chart.colors[i % paletteTokens.chart.colors.length]
+  );
   const amounts = transactions
     ? transactions.map((obj: AggregatedExpense) => obj.value)
     : [];
@@ -67,7 +65,6 @@ function ProfileChart() {
         chart: {
           id: "pie",
           toolbar: { show: false },
-          animations: { enabled: !prefersReducedMotion },
         },
         dataLabels: {
           enabled: false,
@@ -76,7 +73,7 @@ function ProfileChart() {
           show: true,
           position: "left",
           labels: {
-            colors: darkTheme.palette.text.secondary,
+            colors: paletteTokens.textSecondary,
           },
         } as ApexLegend,
         yaxis: {
@@ -99,7 +96,7 @@ function ProfileChart() {
         },
       },
     };
-  }, [transactions, prefersReducedMotion]);
+  }, [transactions]);
 
   return (
     <Box
@@ -141,48 +138,13 @@ function ProfileChart() {
         </FormControl>
       </Box>
       {transactions ? (
-        <>
-          <Box
-            sx={{
-              position: "absolute",
-              width: "1px",
-              height: "1px",
-              padding: 0,
-              margin: "-1px",
-              overflow: "hidden",
-              clip: "rect(0, 0, 0, 0)",
-              whiteSpace: "nowrap",
-              border: 0,
-            }}
-            component="section"
-            aria-label={t("expenses_distribution")}
-          >
-            <table>
-              <caption>{t("expenses_distribution")} - {t("chart_summary")}</caption>
-              <thead>
-                <tr>
-                  <th>{t("label")}</th>
-                  <th>{t("amount")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transactions?.map((item, i) => (
-                  <tr key={i}>
-                    <td>{item.label_name}</td>
-                    <td>{formatValue(item.value)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Box>
-          <Chart
-            options={state.options}
-            series={state.series}
-            type="pie"
-            width="90%"
-            height="300px"
-          />
-        </>
+        <Chart
+          options={state.options}
+          series={state.series}
+          type="pie"
+          width="90%"
+          height="300px"
+        />
       ) : (
         <Typography
           component="p"

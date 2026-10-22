@@ -62,7 +62,8 @@ import {
   debtPaymentSchema,
 } from "../schemas/debtSchema";
 import { formatCurrency, formatValue } from "../utils/utils";
-import { darkTheme } from "../theme";
+import { paletteTokens } from "../theme";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 
 export default function Debts() {
   const { dateFormat, t } = useLanguage();
@@ -331,16 +332,34 @@ export default function Debts() {
       return (
         <Chip
           size="small"
+          icon={<ErrorOutlineIcon sx={{ fontSize: "12px !important", color: `${paletteTokens.error} !important` }} />}
           label={
             overdueDays > 0
               ? t("overdue_days_badge").replace("{days}", String(overdueDays))
               : t("status_overdue")
           }
           sx={{
-            backgroundColor: "rgba(255, 130, 133, 0.15)",
-            color: "#ff8285",
-            fontWeight: 600,
+            backgroundColor: paletteTokens.tint.error12,
+            color: paletteTokens.error,
+            fontWeight: 700,
             fontSize: "12px",
+            border: "none",
+          }}
+        />
+      );
+    }
+    if (status === "PARTIALLY_PAID") {
+      return (
+        <Chip
+          size="small"
+          icon={<WarningAmberIcon sx={{ fontSize: "12px !important", color: `${paletteTokens.warning} !important` }} />}
+          label={t("status_partially_paid")}
+          sx={{
+            backgroundColor: paletteTokens.tint.warning12,
+            color: paletteTokens.warning,
+            fontWeight: 700,
+            fontSize: "12px",
+            border: "none",
           }}
         />
       );
@@ -351,22 +370,9 @@ export default function Debts() {
           size="small"
           label={t("status_fully_paid")}
           sx={{
-            backgroundColor: "rgba(72, 204, 144, 0.15)",
-            color: "#48cc90",
-            fontWeight: 600,
-            fontSize: "12px",
-          }}
-        />
-      );
-    }
-    if (status === "PARTIALLY_PAID") {
-      return (
-        <Chip
-          size="small"
-          label={t("status_partially_paid")}
-          sx={{
-            backgroundColor: "rgba(250, 173, 20, 0.15)",
-            color: "#faad14",
+            backgroundColor: paletteTokens.elevated,
+            color: paletteTokens.textSecondary,
+            border: `1px solid ${paletteTokens.divider}`,
             fontWeight: 600,
             fontSize: "12px",
           }}
@@ -379,8 +385,9 @@ export default function Debts() {
           size="small"
           label={t("status_closed")}
           sx={{
-            backgroundColor: "rgba(255, 255, 255, 0.08)",
-            color: "text.secondary",
+            backgroundColor: paletteTokens.elevated,
+            color: paletteTokens.textSecondary,
+            border: `1px solid ${paletteTokens.divider}`,
             fontWeight: 600,
             fontSize: "12px",
           }}
@@ -392,8 +399,9 @@ export default function Debts() {
         size="small"
         label={t("status_active")}
         sx={{
-          backgroundColor: "rgba(72, 204, 144, 0.15)",
-          color: "#48cc90",
+          backgroundColor: paletteTokens.elevated,
+          color: paletteTokens.textSecondary,
+          border: `1px solid ${paletteTokens.divider}`,
           fontWeight: 600,
           fontSize: "12px",
         }}
@@ -403,8 +411,9 @@ export default function Debts() {
 
   // Progress Bar Color Helper
   const getProgressColor = (status: string, overdueDays: number) => {
-    if (status === "OVERDUE" || overdueDays > 0) return "#ff8285";
-    return "#48cc90";
+    if (status === "OVERDUE" || overdueDays > 0) return paletteTokens.error;
+    if (status === "PARTIALLY_PAID") return paletteTokens.warning;
+    return paletteTokens.primary;
   };
 
   return (
@@ -446,7 +455,7 @@ export default function Debts() {
         <Grid item xs={12} sm={6} lg={3}>
           <Box
             border="1px solid"
-            borderColor={darkTheme.palette.background.paper}
+            borderColor={paletteTokens.divider}
             borderRadius={2}
             padding={3}
             height={"100%"}
@@ -462,7 +471,7 @@ export default function Debts() {
                   component="span"
                   variant="h5"
                   fontWeight={600}
-                  sx={{ color: "#48cc90" }}
+                  sx={{ color: paletteTokens.primary }}
                 >
                   {formatValue(summary?.total_loan_given_remaining ?? 0)}
                 </Typography>
@@ -478,7 +487,7 @@ export default function Debts() {
         <Grid item xs={12} sm={6} lg={3}>
           <Box
             border="1px solid"
-            borderColor={darkTheme.palette.background.paper}
+            borderColor={paletteTokens.divider}
             borderRadius={2}
             padding={3}
             height={"100%"}
@@ -494,7 +503,7 @@ export default function Debts() {
                   component="span"
                   variant="h5"
                   fontWeight={600}
-                  sx={{ color: "#faad14" }}
+                  sx={{ color: "text.primary" }}
                 >
                   {formatValue(summary?.total_debt_borrowed_remaining ?? 0)}
                 </Typography>
@@ -510,7 +519,7 @@ export default function Debts() {
         <Grid item xs={12} sm={6} lg={3}>
           <Box
             border="1px solid"
-            borderColor={darkTheme.palette.background.paper}
+            borderColor={paletteTokens.divider}
             borderRadius={2}
             padding={3}
             height={"100%"}
@@ -537,7 +546,7 @@ export default function Debts() {
         <Grid item xs={12} sm={6} lg={3}>
           <Box
             border="1px solid"
-            borderColor={darkTheme.palette.background.paper}
+            borderColor={paletteTokens.divider}
             borderRadius={2}
             padding={3}
             height={"100%"}
@@ -553,7 +562,7 @@ export default function Debts() {
                   component="span"
                   variant="h5"
                   fontWeight={600}
-                  sx={{ color: (summary?.overdue_count ?? 0) > 0 ? "#ff8285" : "text.primary" }}
+                  sx={{ color: (summary?.overdue_count ?? 0) > 0 ? paletteTokens.error : "text.primary" }}
                 >
                   {summary?.overdue_count ?? 0}
                 </Typography>
@@ -568,13 +577,13 @@ export default function Debts() {
 
       {/* Overdue alert banner if any exist */}
       {(summary?.overdue_count ?? 0) > 0 && (
-        <Alert severity="error" sx={{ mt: 2 }}>
+        <Alert severity="error" role="alert" sx={{ mt: 2, backgroundColor: paletteTokens.tint.error12, color: paletteTokens.error, border: `1px solid ${paletteTokens.error}`, "& .MuiAlert-icon": { color: paletteTokens.error } }}>
           <strong>{summary?.overdue_count} {t("status_overdue").toLowerCase()}</strong>
         </Alert>
       )}
 
       {/* 3. Filter Tabs Bar */}
-      <Box sx={{ borderBottom: 1, borderColor: darkTheme.palette.background.paper, mt: 3, mb: 3 }}>
+      <Box sx={{ borderBottom: 1, borderColor: paletteTokens.divider, mt: 3, mb: 3 }}>
         <Tabs
           value={tabIndex}
           onChange={(_, val) => setTabIndex(val)}
@@ -583,7 +592,7 @@ export default function Debts() {
           scrollButtons="auto"
           sx={{
             "& .MuiTabs-indicator": {
-              backgroundColor: darkTheme.palette.primary.main,
+              backgroundColor: paletteTokens.primary,
               height: 3,
               borderRadius: "3px 3px 0 0",
             },
@@ -633,14 +642,14 @@ export default function Debts() {
                 <Grid item xs={12} sm={6} lg={4} key={debt.id}>
                   <Box
                     border="1px solid"
-                    borderColor={isOverdue ? "#ff8285" : darkTheme.palette.background.paper}
+                    borderColor={paletteTokens.divider}
                     borderRadius={2}
                     padding={3}
                     height="100%"
                     display="flex"
                     flexDirection="column"
                     justifyContent="space-between"
-                    sx={isOverdue ? { backgroundColor: "rgba(255, 130, 133, 0.03)" } : undefined}
+                    sx={{ backgroundColor: paletteTokens.bgPaper }}
                   >
                     <Box>
                       {/* Header: Person Name + Status Chip + Delete Action */}
@@ -672,7 +681,7 @@ export default function Debts() {
                               size="small"
                               onClick={() => setDeleteTargetDebt(debt)}
                               aria-label={`${t("delete")}: ${debt.person_name}`}
-                              sx={{ color: grey[500], "&:hover": { color: "#ff8285" } }}
+                              sx={{ color: grey[500], "&:hover": { color: paletteTokens.error } }}
                             >
                               <DeleteOutlineIcon fontSize="small" />
                             </IconButton>
@@ -702,7 +711,7 @@ export default function Debts() {
                           sx={{
                             height: 8,
                             borderRadius: 4,
-                            backgroundColor: "rgba(255, 255, 255, 0.36)",
+                            backgroundColor: paletteTokens.divider,
                             "& .MuiLinearProgress-bar": {
                               backgroundColor: progressColor,
                               borderRadius: 4,
@@ -725,7 +734,7 @@ export default function Debts() {
                           <Typography variant="caption" color="text.secondary" display="block">
                             {t("total_paid")}
                           </Typography>
-                          <Typography variant="body2" fontWeight={600} sx={{ color: "#48cc90" }}>
+                          <Typography variant="body2" fontWeight={600} sx={{ color: paletteTokens.primary }}>
                             {formatValue(debt.total_paid)}
                           </Typography>
                         </Grid>
@@ -738,9 +747,7 @@ export default function Debts() {
                             fontWeight={600}
                             sx={{
                               color: isOverdue
-                                ? "#ff8285"
-                                : isFullyPaid
-                                ? "#48cc90"
+                                ? paletteTokens.error
                                 : "text.primary",
                             }}
                           >
@@ -758,7 +765,7 @@ export default function Debts() {
                         <Typography
                           variant="caption"
                           sx={{
-                            color: isOverdue ? "#ff8285" : "text.secondary",
+                            color: isOverdue ? paletteTokens.error : "text.secondary",
                             fontWeight: isOverdue ? 700 : 400,
                           }}
                         >
@@ -774,7 +781,8 @@ export default function Debts() {
                             mt: 1,
                             p: 1,
                             borderRadius: 1,
-                            backgroundColor: "rgba(250, 173, 20, 0.1)",
+                            backgroundColor: paletteTokens.elevated,
+                            border: `1px solid ${paletteTokens.divider}`,
                             display: "flex",
                             justifyContent: "space-between",
                           }}
@@ -782,7 +790,7 @@ export default function Debts() {
                           <Typography variant="caption" color="text.secondary">
                             {t("installment_months")}: <strong>{debt.installment_months} {t("months_unit")}</strong>
                           </Typography>
-                          <Typography variant="caption" sx={{ fontWeight: 600, color: "#faad14" }}>
+                          <Typography variant="caption" sx={{ fontWeight: 600, color: "text.primary" }}>
                             ~{formatValue(Math.round(parseFloat(debt.principal_amount) / debt.installment_months))}/{t("months_unit")}
                           </Typography>
                         </Box>
@@ -796,14 +804,14 @@ export default function Debts() {
                             p: 0.8,
                             px: 1.2,
                             borderRadius: 1,
-                            backgroundColor: "rgba(255, 130, 133, 0.1)",
+                            backgroundColor: paletteTokens.tint.error12,
                             display: "flex",
                             alignItems: "center",
                             gap: 0.8,
                           }}
                         >
-                          <WarningAmberIcon sx={{ fontSize: 14, color: "#ff8285" }} />
-                          <Typography variant="caption" sx={{ color: "#ff8285", fontWeight: 600 }}>
+                          <WarningAmberIcon sx={{ fontSize: 14, color: paletteTokens.error }} />
+                          <Typography variant="caption" sx={{ color: paletteTokens.error, fontWeight: 600 }}>
                             {t("overdue_days_badge").replace("{days}", String(debt.overdue_days))}
                           </Typography>
                         </Box>
@@ -832,7 +840,7 @@ export default function Debts() {
                       sx={{
                         pt: 2,
                         mt: 1,
-                        borderTop: `1px solid ${darkTheme.palette.background.paper}`,
+                        borderTop: `1px solid ${paletteTokens.divider}`,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
@@ -841,25 +849,35 @@ export default function Debts() {
                     >
                       <Button
                         size="small"
-                        variant="contained"
+                        variant="outlined"
                         startIcon={<PaymentIcon fontSize="small" />}
                         disabled={isFullyPaid}
                         onClick={() => handleOpenPaymentDialog(debt)}
-                        sx={{ fontSize: "12px", height: 32, px: 1.5 }}
+                        sx={{
+                          fontSize: "12px",
+                          height: 32,
+                          px: 1.5,
+                          borderColor: paletteTokens.controlBorder,
+                          color: paletteTokens.textPrimary,
+                          "&:hover": {
+                            borderColor: paletteTokens.textSecondary,
+                            backgroundColor: "rgba(255, 255, 255, 0.04)",
+                          },
+                        }}
                       >
                         {t("quick_payment")}
                       </Button>
 
                       <Button
                         size="small"
-                        variant="outlined"
+                        variant="text"
                         onClick={() => setDetailDrawerDebt(debt)}
                         sx={{
                           fontSize: "12px",
                           height: 32,
-                          borderColor: darkTheme.palette.background.paper,
-                          color: "text.primary",
-                          "&:hover": { borderColor: "#444" },
+                          color: paletteTokens.primary,
+                          fontWeight: 600,
+                          "&:hover": { backgroundColor: paletteTokens.tint.primary12 },
                         }}
                       >
                         {t("view_details")}
@@ -878,7 +896,7 @@ export default function Debts() {
               px: 3,
               textAlign: "center",
               borderRadius: 2,
-              border: `1px dashed ${darkTheme.palette.background.paper}`,
+              border: `1px dashed ${paletteTokens.divider}`,
             }}
           >
             <HandshakeIcon
@@ -1121,8 +1139,8 @@ export default function Debts() {
                 sx={{
                   p: 1.5,
                   borderRadius: 1.5,
-                  bgcolor: "rgba(255,255,255,0.02)",
-                  border: `1px solid ${darkTheme.palette.background.paper}`,
+                  bgcolor: paletteTokens.bgPaper,
+                  border: `1px solid ${paletteTokens.divider}`,
                 }}
               >
                 <Typography variant="caption" color="text.secondary" display="block">
@@ -1235,9 +1253,9 @@ export default function Debts() {
         PaperProps={{
           sx: {
             width: { xs: "100%", sm: 540 },
-            backgroundColor: "#0d0d0d",
+            backgroundColor: paletteTokens.elevated,
             backgroundImage: "none",
-            borderLeft: `1px solid ${darkTheme.palette.background.paper}`,
+            borderLeft: `1px solid ${paletteTokens.divider}`,
             p: 3,
           },
         }}
@@ -1272,7 +1290,7 @@ export default function Debts() {
                     ? t("tab_debts_borrowed")
                     : t("tab_installments")
                 }
-                sx={{ borderColor: darkTheme.palette.background.paper }}
+                sx={{ borderColor: paletteTokens.divider }}
               />
             </Box>
 
@@ -1281,8 +1299,8 @@ export default function Debts() {
               sx={{
                 p: 2,
                 borderRadius: 2,
-                border: `1px solid ${darkTheme.palette.background.paper}`,
-                bgcolor: "rgba(255,255,255,0.02)",
+                border: `1px solid ${paletteTokens.divider}`,
+                bgcolor: paletteTokens.bgPaper,
                 mb: 3,
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr",
@@ -1308,8 +1326,6 @@ export default function Debts() {
                     color:
                       detailDrawerDebt.status === "OVERDUE"
                         ? "#ff8285"
-                        : detailDrawerDebt.status === "FULLY_PAID"
-                        ? "#48cc90"
                         : "text.primary",
                   }}
                 >
@@ -1320,7 +1336,7 @@ export default function Debts() {
                 <Typography variant="caption" color="text.secondary">
                   {t("total_paid")}
                 </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: "#48cc90" }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: paletteTokens.primary }}>
                   {formatValue(detailDrawerDebt.total_paid)}
                 </Typography>
               </Box>
@@ -1360,7 +1376,7 @@ export default function Debts() {
               ) : (
                 <TableContainer
                   sx={{
-                    border: `1px solid ${darkTheme.palette.background.paper}`,
+                    border: `1px solid ${paletteTokens.divider}`,
                     borderRadius: 1.5,
                   }}
                 >
@@ -1380,7 +1396,7 @@ export default function Debts() {
                           <TableCell sx={{ fontSize: "13px" }}>
                             {p.date ? dayjs(p.date).format(dateFormat) : "—"}
                           </TableCell>
-                          <TableCell sx={{ fontSize: "13px", fontWeight: 600, color: "#48cc90" }}>
+                          <TableCell sx={{ fontSize: "13px", fontWeight: 600, color: paletteTokens.primary }}>
                             {formatValue(p.amount)}
                           </TableCell>
                           <TableCell sx={{ fontSize: "13px" }}>
@@ -1391,8 +1407,8 @@ export default function Debts() {
                                 sx={{
                                   height: 20,
                                   fontSize: 10,
-                                  backgroundColor: "rgba(72, 204, 144, 0.15)",
-                                  color: "#48cc90",
+                                  backgroundColor: paletteTokens.tint.primary12,
+                                  color: paletteTokens.primary,
                                 }}
                               />
                             ) : (
@@ -1412,7 +1428,7 @@ export default function Debts() {
                                 })
                               }
                               aria-label={`${t("delete")}: ${formatValue(Number(p.amount))}`}
-                              sx={{ color: grey[500], "&:hover": { color: "#ff8285" } }}
+                              sx={{ color: grey[500], "&:hover": { color: paletteTokens.error } }}
                             >
                               <DeleteOutlineIcon fontSize="small" />
                             </IconButton>
@@ -1435,7 +1451,7 @@ export default function Debts() {
                   </Typography>
                   <TableContainer
                     sx={{
-                      border: `1px solid ${darkTheme.palette.background.paper}`,
+                      border: `1px solid ${paletteTokens.divider}`,
                       borderRadius: 1.5,
                       maxHeight: 280,
                     }}
@@ -1443,19 +1459,19 @@ export default function Debts() {
                     <Table size="small" stickyHeader>
                       <TableHead>
                         <TableRow>
-                          <TableCell sx={{ color: grey[500], fontSize: "12px", bgcolor: "#0d0d0d" }}>
+                          <TableCell sx={{ color: grey[500], fontSize: "12px", bgcolor: paletteTokens.elevated }}>
                             {t("period_no")}
                           </TableCell>
-                          <TableCell sx={{ color: grey[500], fontSize: "12px", bgcolor: "#0d0d0d" }}>
+                          <TableCell sx={{ color: grey[500], fontSize: "12px", bgcolor: paletteTokens.elevated }}>
                             {t("due_date")}
                           </TableCell>
-                          <TableCell sx={{ color: grey[500], fontSize: "12px", bgcolor: "#0d0d0d" }}>
+                          <TableCell sx={{ color: grey[500], fontSize: "12px", bgcolor: paletteTokens.elevated }}>
                             {t("period_amount")}
                           </TableCell>
-                          <TableCell sx={{ color: grey[500], fontSize: "12px", bgcolor: "#0d0d0d" }}>
+                          <TableCell sx={{ color: grey[500], fontSize: "12px", bgcolor: paletteTokens.elevated }}>
                             {t("paid_period_amount")}
                           </TableCell>
-                          <TableCell align="right" sx={{ color: grey[500], fontSize: "12px", bgcolor: "#0d0d0d" }}>
+                          <TableCell align="right" sx={{ color: grey[500], fontSize: "12px", bgcolor: paletteTokens.elevated }}>
                             {t("status_label")}
                           </TableCell>
                         </TableRow>
@@ -1470,7 +1486,7 @@ export default function Debts() {
                               {item.due_date ? dayjs(item.due_date).format(dateFormat) : "—"}
                             </TableCell>
                             <TableCell sx={{ fontSize: "13px" }}>{formatValue(item.amount)}</TableCell>
-                            <TableCell sx={{ fontSize: "13px", color: "#48cc90" }}>
+                            <TableCell sx={{ fontSize: "13px", color: paletteTokens.primary }}>
                               {formatValue(item.paid_amount)}
                             </TableCell>
                             <TableCell align="right">
@@ -1481,8 +1497,8 @@ export default function Debts() {
                                   sx={{
                                     height: 20,
                                     fontSize: 10,
-                                    backgroundColor: "rgba(72, 204, 144, 0.15)",
-                                    color: "#48cc90",
+                                    backgroundColor: paletteTokens.tint.primary12,
+                                    color: paletteTokens.primary,
                                   }}
                                 />
                               ) : (
@@ -1494,7 +1510,7 @@ export default function Debts() {
                                     height: 20,
                                     fontSize: 10,
                                     color: "text.secondary",
-                                    borderColor: darkTheme.palette.background.paper,
+                                    borderColor: paletteTokens.divider,
                                   }}
                                 />
                               )}

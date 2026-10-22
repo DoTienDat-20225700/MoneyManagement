@@ -1,6 +1,5 @@
 import { Box, Button, Chip, Grid, LinearProgress, Skeleton, Stack, Typography } from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
@@ -8,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useBudgets } from "../../hooks/api/useBudgets";
 import { useLanguage } from "../../context/LanguageContext";
-import { darkTheme } from "../../theme";
+import { darkTheme, paletteTokens, statusColors, BudgetStatus } from "../../theme";
 import { formatValue } from "../../utils/utils";
 
 export default function DashboardBudgetSummary() {
@@ -177,44 +176,46 @@ export default function DashboardBudgetSummary() {
                     <Typography variant="caption" color="text.secondary" fontWeight={600} textTransform="uppercase">
                       {t("budgeted_spending")} / {t("total_budget")}
                     </Typography>
-                    <Typography
-                      variant="body2"
-                      fontWeight={700}
-                      sx={{
-                        color:
-                          overallPercentage > 100
-                            ? "#ff4d4f"
-                            : overallPercentage >= 80
-                            ? "#faad14"
-                            : "#52c41a",
-                      }}
-                    >
-                      {overallPercentage.toFixed(1)}% {t("percentage_used")}
-                    </Typography>
+                    {(() => {
+                      const overallStatus: BudgetStatus =
+                        overallPercentage > 100 ? "exceeded" : overallPercentage >= 80 ? "approaching" : "normal";
+                      const overallColors = statusColors(overallStatus);
+                      return (
+                        <Typography
+                          variant="body2"
+                          fontWeight={700}
+                          sx={{ color: overallColors.color }}
+                        >
+                          {overallPercentage.toFixed(1)}% {t("percentage_used")}
+                        </Typography>
+                      );
+                    })()}
                   </Box>
 
                   {/* Primary Budget Progress Bar */}
-                  <LinearProgress
-                    variant="determinate"
-                    value={Math.min(100, Math.max(0, overallPercentage))}
-                    aria-label={t("budget_progress")}
-                    aria-valuenow={Math.round(overallPercentage)}
-                    sx={{
-                      height: 8,
-                      borderRadius: 4,
-                      mb: 2,
-                      backgroundColor: "rgba(255, 255, 255, 0.36)",
-                      "& .MuiLinearProgress-bar": {
-                        backgroundColor:
-                          overallPercentage > 100
-                            ? "#ff4d4f"
-                            : overallPercentage >= 80
-                            ? "#faad14"
-                            : "#00863A",
-                        borderRadius: 4,
-                      },
-                    }}
-                  />
+                  {(() => {
+                    const overallStatus: BudgetStatus =
+                      overallPercentage > 100 ? "exceeded" : overallPercentage >= 80 ? "approaching" : "normal";
+                    const overallColors = statusColors(overallStatus);
+                    return (
+                      <LinearProgress
+                        variant="determinate"
+                        value={Math.min(100, Math.max(0, overallPercentage))}
+                        aria-label={t("budget_progress")}
+                        aria-valuenow={Math.round(overallPercentage)}
+                        sx={{
+                          height: 8,
+                          borderRadius: 4,
+                          mb: 2,
+                          backgroundColor: "rgba(255, 255, 255, 0.36)",
+                          "& .MuiLinearProgress-bar": {
+                            backgroundColor: overallColors.progressColor,
+                            borderRadius: 4,
+                          },
+                        }}
+                      />
+                    );
+                  })()}
 
                   {/* Budget breakdown figures */}
                   <Grid container spacing={1.5} sx={{ mb: 2 }}>
@@ -230,7 +231,7 @@ export default function DashboardBudgetSummary() {
                       <Typography variant="caption" color="text.secondary" display="block">
                         {t("budgeted_spending")}
                       </Typography>
-                      <Typography variant="body2" fontWeight={700} color="#ff7875">
+                      <Typography variant="body2" fontWeight={700} color={paletteTokens.error}>
                         {formatValue(budgetedSpent)}
                       </Typography>
                     </Grid>
@@ -241,7 +242,7 @@ export default function DashboardBudgetSummary() {
                       <Typography
                         variant="body2"
                         fontWeight={700}
-                        color={remainingBudget > 0 ? "#52c41a" : "#ff4d4f"}
+                        color={remainingBudget > 0 ? "#48cc90" : paletteTokens.error}
                       >
                         {formatValue(remainingBudget)}
                       </Typography>
@@ -287,7 +288,7 @@ export default function DashboardBudgetSummary() {
                       <Typography variant="caption" color="text.secondary">
                         {t("unbudgeted_spending")} ({language === "vi" ? "danh mục chưa đặt ngân sách" : "no budget set"}):
                       </Typography>
-                      <Typography variant="caption" fontWeight={700} color="#ffc53d">
+                      <Typography variant="caption" fontWeight={700} color={paletteTokens.warning}>
                         {formatValue(unbudgetedSpent)}
                       </Typography>
                     </Box>
@@ -324,7 +325,7 @@ export default function DashboardBudgetSummary() {
                     {atRiskBudgets.map((budget) => {
                       const isExceeded = budget.status === "exceeded";
                       const pct = budget.percentage;
-                      const progressColor = isExceeded ? "#ff4d4f" : "#faad14";
+                      const sc = statusColors(budget.status as BudgetStatus);
 
                       return (
                         <Box
@@ -332,12 +333,8 @@ export default function DashboardBudgetSummary() {
                           sx={{
                             p: 1.5,
                             borderRadius: 1.5,
-                            backgroundColor: isExceeded
-                              ? "rgba(255, 77, 79, 0.08)"
-                              : "rgba(250, 173, 20, 0.08)",
-                            border: `1px solid ${
-                              isExceeded ? "rgba(255, 77, 79, 0.25)" : "rgba(250, 173, 20, 0.25)"
-                            }`,
+                            backgroundColor: "transparent",
+                            border: "1px solid rgba(255, 255, 255, 0.08)",
                           }}
                         >
                           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.8 }}>
@@ -359,9 +356,9 @@ export default function DashboardBudgetSummary() {
                               size="small"
                               icon={
                                 isExceeded ? (
-                                  <ErrorOutlineIcon sx={{ fontSize: "12px !important", color: "#ff4d4f !important" }} />
+                                  <ErrorOutlineIcon sx={{ fontSize: "12px !important", color: `${sc.color} !important` }} />
                                 ) : (
-                                  <WarningAmberIcon sx={{ fontSize: "12px !important", color: "#faad14 !important" }} />
+                                  <WarningAmberIcon sx={{ fontSize: "12px !important", color: `${sc.color} !important` }} />
                                 )
                               }
                               label={isExceeded ? t("status_exceeded") : t("status_approaching")}
@@ -369,8 +366,8 @@ export default function DashboardBudgetSummary() {
                                 height: 20,
                                 fontSize: "11px",
                                 fontWeight: 700,
-                                backgroundColor: isExceeded ? "rgba(255,77,79,0.2)" : "rgba(250,173,20,0.2)",
-                                color: isExceeded ? "#ff4d4f" : "#faad14",
+                                backgroundColor: sc.bg,
+                                color: sc.color,
                               }}
                             />
                           </Box>
@@ -386,7 +383,7 @@ export default function DashboardBudgetSummary() {
                               mb: 0.8,
                               backgroundColor: "rgba(255, 255, 255, 0.36)",
                               "& .MuiLinearProgress-bar": {
-                                backgroundColor: progressColor,
+                                backgroundColor: sc.progressColor,
                                 borderRadius: 3,
                               },
                             }}
@@ -396,7 +393,7 @@ export default function DashboardBudgetSummary() {
                             <Typography variant="caption" color="text.secondary">
                               {formatValue(budget.spent)} / {formatValue(budget.limit)}
                             </Typography>
-                            <Typography variant="caption" fontWeight={700} sx={{ color: progressColor }}>
+                            <Typography variant="caption" fontWeight={700} sx={{ color: sc.color }}>
                               {pct.toFixed(0)}%
                             </Typography>
                           </Box>
@@ -416,8 +413,7 @@ export default function DashboardBudgetSummary() {
                       gap: 1,
                     }}
                   >
-                    <CheckCircleOutlineIcon sx={{ color: "#52c41a", fontSize: 40 }} />
-                    <Typography variant="body2" fontWeight={600} color="#52c41a">
+                    <Typography variant="body2" fontWeight={600} color="text.secondary">
                       {t("all_budgets_safe")}
                     </Typography>
                     <Typography variant="caption" color="text.secondary" maxWidth={280}>

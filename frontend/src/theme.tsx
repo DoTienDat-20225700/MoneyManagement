@@ -6,8 +6,60 @@ export const semanticColors = {
   income: "#48cc90",
   expense: "#ff8285",
   warning: "#faad14",
-  info: "#3b82f6",
 };
+
+export const paletteTokens = {
+  primary: "#00863A",
+  primaryHover: "#007030",
+  primaryContrastText: "#ffffff",
+  error: "#ff8285",
+  warning: "#faad14",
+  bgDefault: "#080808",
+  bgPaper: "#1E1E1E",
+  bgCard: "#121212",
+  elevated: "#121212",
+  bgSidebar: "#0d0e12",
+  divider: "#1E1E1E",
+  controlBorder: "#5e5e5e",
+  textPrimary: "#ffffff",
+  textSecondary: "#9e9e9e",
+  tint: {
+    primary12: "rgba(0, 134, 58, 0.12)",
+    error12: "rgba(255, 130, 133, 0.12)",
+    warning12: "rgba(250, 173, 20, 0.12)",
+  },
+  chart: {
+    colors: ["#60A5FA", "#A78BFA", "#22D3EE", "#F472B6", "#94A3B8", "#6B7280"],
+    neutral: "#6B7280",
+    other: "#6B7280",
+    expense: "#ff8285",
+  },
+};
+
+export type BudgetStatus = "normal" | "approaching" | "exceeded";
+
+export function statusColors(status: BudgetStatus) {
+  switch (status) {
+    case "exceeded":
+      return {
+        color: paletteTokens.error,
+        bg: paletteTokens.tint.error12,
+        progressColor: paletteTokens.error,
+      };
+    case "approaching":
+      return {
+        color: paletteTokens.warning,
+        bg: paletteTokens.tint.warning12,
+        progressColor: paletteTokens.warning,
+      };
+    default: // "normal"
+      return {
+        color: "#48cc90",
+        bg: "rgba(72, 204, 144, 0.10)",
+        progressColor: "#48cc90",
+      };
+  }
+}
 
 export const darkTheme = createTheme({
   palette: {
@@ -23,7 +75,7 @@ export const darkTheme = createTheme({
     },
     background: {
       default: "#080808", //background
-      paper: "#2b2b2b", //borders and dividers
+      paper: "#1E1E1E", //borders and dividers
     },
     text: {
       primary: "#fff",
@@ -78,10 +130,10 @@ export const darkTheme = createTheme({
     MuiDialog: {
       styleOverrides: {
         paper: {
-          backgroundColor: "#0d0d0d",
+          backgroundColor: paletteTokens.bgCard,
           backgroundImage: "none",
           borderRadius: 14,
-          border: "1px solid #2b2b2b",
+          border: `1px solid ${paletteTokens.divider}`,
           boxShadow: "0 24px 64px rgba(0, 0, 0, 0.85)",
         },
       },
@@ -143,9 +195,9 @@ export const darkTheme = createTheme({
     MuiDataGrid: {
       styleOverrides: {
         root: {
-          border: `1px solid #2b2b2b`,
+          border: `1px solid ${paletteTokens.divider}`,
           "& .MuiDataGrid-withBorderColor": {
-            borderColor: "#2b2b2b",
+            borderColor: paletteTokens.divider,
           },
         },
       },

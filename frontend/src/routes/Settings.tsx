@@ -30,6 +30,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useLabels } from "../hooks/api/useLabels";
 import { useLanguage } from "../context/LanguageContext";
 import AddLabel from "../components/modals/AddLabel";
+import { paletteTokens } from "../theme";
 
 function Settings() {
   const { language, t } = useLanguage();
@@ -95,10 +96,10 @@ function Settings() {
           sx={{
             width: { xs: "100%", md: 240 },
             flexShrink: 0,
-            bgcolor: "rgba(255, 255, 255, 0.02)",
+            bgcolor: paletteTokens.bgPaper,
             borderRadius: 3,
             p: 1,
-            border: "1px solid rgba(255, 255, 255, 0.06)",
+            border: `1px solid ${paletteTokens.divider}`,
           }}
         >
           <List disablePadding>
@@ -110,14 +111,14 @@ function Settings() {
                   borderRadius: 2,
                   py: 1.2,
                   px: 2,
-                  color: activeTab === "general" ? "#4caf50" : grey[400],
+                  color: activeTab === "general" ? paletteTokens.primary : paletteTokens.textSecondary,
                   bgcolor:
                     activeTab === "general"
-                      ? "rgba(46, 125, 50, 0.15) !important"
+                      ? `${paletteTokens.tint.primary12} !important`
                       : "transparent",
                   "&:hover": {
-                    bgcolor: "rgba(255, 255, 255, 0.05)",
-                    color: "#fff",
+                    bgcolor: "rgba(255, 255, 255, 0.04)",
+                    color: paletteTokens.textPrimary,
                   },
                   transition: "all 0.2s ease",
                 }}
@@ -148,14 +149,14 @@ function Settings() {
                   borderRadius: 2,
                   py: 1.2,
                   px: 2,
-                  color: activeTab === "labels" ? "#4caf50" : grey[400],
+                  color: activeTab === "labels" ? paletteTokens.primary : paletteTokens.textSecondary,
                   bgcolor:
                     activeTab === "labels"
-                      ? "rgba(46, 125, 50, 0.15) !important"
+                      ? `${paletteTokens.tint.primary12} !important`
                       : "transparent",
                   "&:hover": {
-                    bgcolor: "rgba(255, 255, 255, 0.05)",
-                    color: "#fff",
+                    bgcolor: "rgba(255, 255, 255, 0.04)",
+                    color: paletteTokens.textPrimary,
                   },
                   transition: "all 0.2s ease",
                 }}
@@ -189,7 +190,7 @@ function Settings() {
                 <Typography component="h2" variant="h6" mb={2} fontWeight={600}>
                   {t("profile")}
                 </Typography>
-                <Divider sx={{ borderColor: "rgba(255, 255, 255, 0.08)" }} />
+                <Divider sx={{ borderColor: paletteTokens.divider }} />
                 <Box sx={{ display: "flex", flexDirection: "column" }}>
                   <Box
                     py={3}
@@ -210,7 +211,7 @@ function Settings() {
                       {fullName}
                     </Typography>
                   </Box>
-                  <Divider sx={{ borderColor: "rgba(255, 255, 255, 0.08)" }} />
+                  <Divider sx={{ borderColor: paletteTokens.divider }} />
                   <Box
                     py={3}
                     sx={{
@@ -238,7 +239,7 @@ function Settings() {
                 <Typography component="h2" variant="h6" mb={2} fontWeight={600}>
                   {t("options")}
                 </Typography>
-                <Divider sx={{ borderColor: "rgba(255, 255, 255, 0.08)" }} />
+                <Divider sx={{ borderColor: paletteTokens.divider }} />
                 <Box sx={{ display: "flex", flexDirection: "column" }}>
                   <Box
                     py={3}
@@ -317,15 +318,16 @@ function Settings() {
                     py: 1,
                     textTransform: "none",
                     fontWeight: 600,
-                    backgroundColor: "#2e7d32",
-                    "&:hover": { backgroundColor: "#1b5e20" },
+                    backgroundColor: paletteTokens.primary,
+                    color: paletteTokens.primaryContrastText,
+                    "&:hover": { backgroundColor: paletteTokens.primaryHover },
                   }}
                 >
                   {t("add_new_label")}
                 </Button>
               </Box>
 
-              <Divider sx={{ borderColor: "rgba(255, 255, 255, 0.08)", mb: 3 }} />
+              <Divider sx={{ borderColor: paletteTokens.divider, mb: 3 }} />
 
               {isLoadingLabels ? (
                 <Box
@@ -374,27 +376,26 @@ function Settings() {
                         justifyContent: "space-between",
                         p: 2,
                         borderRadius: 2,
-                        bgcolor: "rgba(255, 255, 255, 0.03)",
-                        border: "1px solid rgba(255, 255, 255, 0.07)",
+                        bgcolor: paletteTokens.bgPaper,
+                        border: `1px solid ${paletteTokens.divider}`,
                         transition: "all 0.2s ease",
                         "&:hover": {
-                          borderColor: "rgba(255, 255, 255, 0.15)",
-                          bgcolor: "rgba(255, 255, 255, 0.05)",
+                          borderColor: paletteTokens.controlBorder,
+                          bgcolor: paletteTokens.elevated,
                         },
                       }}
                     >
                       <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                         <Box
                           sx={{
-                            width: 16,
-                            height: 16,
+                            width: 10,
+                            height: 10,
                             borderRadius: "50%",
-                            bgcolor: item.color || "#4caf50",
-                            boxShadow: `0 0 8px ${item.color || "#4caf50"}60`,
+                            bgcolor: item.color || paletteTokens.controlBorder,
                             flexShrink: 0,
                           }}
                         />
-                        <Typography variant="body1" fontWeight={500} color="#fff">
+                        <Typography variant="body1" fontWeight={500} color="text.primary">
                           {item.name}
                         </Typography>
                         <Chip
@@ -403,8 +404,9 @@ function Settings() {
                           sx={{
                             height: 22,
                             fontSize: "11px",
-                            bgcolor: "rgba(255, 255, 255, 0.06)",
-                            color: grey[400],
+                            bgcolor: paletteTokens.elevated,
+                            color: paletteTokens.textSecondary,
+                            border: `1px solid ${paletteTokens.divider}`,
                             fontFamily: "monospace",
                           }}
                         />
@@ -418,8 +420,8 @@ function Settings() {
                           sx={{
                             color: grey[500],
                             "&:hover": {
-                              color: "#f44336",
-                              bgcolor: "rgba(244, 67, 54, 0.1)",
+                              color: paletteTokens.error,
+                              bgcolor: paletteTokens.tint.error12,
                             },
                           }}
                         >

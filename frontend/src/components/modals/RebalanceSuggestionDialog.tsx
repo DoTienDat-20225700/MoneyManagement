@@ -26,6 +26,7 @@ import { useLanguage } from "../../context/LanguageContext";
 import { useBudgets } from "../../hooks/api/useBudgets";
 import { RebalanceSuggestion } from "../../models/CategoryBudget";
 import { formatCurrency, formatValue } from "../../utils/utils";
+import { paletteTokens } from "../../theme";
 
 interface RebalanceSuggestionDialogProps {
   open: boolean;
@@ -307,7 +308,7 @@ export default function RebalanceSuggestionDialog({
                           width: 12,
                           height: 12,
                           borderRadius: "50%",
-                          backgroundColor: item.label_color || "#3B82F6",
+                          backgroundColor: item.label_color || paletteTokens.primary,
                         }}
                       />
                       <Box>

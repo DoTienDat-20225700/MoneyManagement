@@ -34,8 +34,9 @@ export function typeOptionColor(type: TypeOption) {
   let bgColor = "";
   switch (type) {
     case TypeOption.EXPENSE:
-      color = "#ff8285";
-      bgColor = "rgba(255, 130, 133, 0.15)";
+      // Chi tiêu thông thường: xám trung tính
+      color = "#9e9e9e";
+      bgColor = "rgba(158, 158, 158, 0.10)";
       break;
     case TypeOption.EARNING:
       color = "#48cc90";

@@ -38,7 +38,7 @@ import { CategoryBudget } from "../models/CategoryBudget";
 import { CustomLabel } from "../models/CustomLabel";
 import { useLanguage } from "../context/LanguageContext";
 import { formatCurrency, formatValue } from "../utils/utils";
-import { darkTheme } from "../theme";
+import { darkTheme, paletteTokens, statusColors, BudgetStatus } from "../theme";
 import RebalanceSuggestionDialog from "../components/modals/RebalanceSuggestionDialog";
 
 export default function Budgets() {
@@ -243,61 +243,37 @@ export default function Budgets() {
     }
   };
 
-  // Status counters & alerts
+  // Status filter & counters
+  const [statusFilter, setStatusFilter] = useState<"all" | "normal" | "approaching" | "exceeded">("all");
+  const normalBudgets = budgets?.filter((b) => b.status === "normal") ?? [];
   const approachingBudgets = budgets?.filter((b) => b.status === "approaching") ?? [];
   const exceededBudgets = budgets?.filter((b) => b.status === "exceeded") ?? [];
 
+  const filteredBudgets = useMemo(() => {
+    if (!budgets) return [];
+    if (statusFilter === "all") return budgets;
+    return budgets.filter((b) => b.status === statusFilter);
+  }, [budgets, statusFilter]);
+
   // Helper for status chip matching app palette
-  const renderStatusChip = (status: "normal" | "approaching" | "exceeded") => {
-    switch (status) {
-      case "exceeded":
-        return (
-          <Chip
-            size="small"
-            label={t("status_exceeded")}
-            sx={{
-              backgroundColor: "rgba(255, 130, 133, 0.15)",
-              color: "#ff8285",
-              fontWeight: 600,
-              fontSize: "12px",
-            }}
-          />
-        );
-      case "approaching":
-        return (
-          <Chip
-            size="small"
-            label={t("status_approaching")}
-            sx={{
-              backgroundColor: "rgba(250, 173, 20, 0.15)",
-              color: "#faad14",
-              fontWeight: 600,
-              fontSize: "12px",
-            }}
-          />
-        );
-      default:
-        return (
-          <Chip
-            size="small"
-            label={t("status_normal")}
-            sx={{
-              backgroundColor: "rgba(72, 204, 144, 0.15)",
-              color: "#48cc90",
-              fontWeight: 600,
-              fontSize: "12px",
-            }}
-          />
-        );
-    }
+  const renderStatusChip = (status: BudgetStatus) => {
+    const sc = statusColors(status);
+    return (
+      <Chip
+        size="small"
+        label={t(`status_${status}`)}
+        sx={{
+          backgroundColor: sc.bg,
+          color: sc.color,
+          fontWeight: 600,
+          fontSize: "12px",
+        }}
+      />
+    );
   };
 
   // Helper for progress bar color matching app theme
-  const getProgressColor = (status: "normal" | "approaching" | "exceeded") => {
-    if (status === "exceeded") return "#ff8285";
-    if (status === "approaching") return "#faad14";
-    return "#48cc90";
-  };
+  const getProgressColor = (status: BudgetStatus) => statusColors(status).progressColor;
 
   return (
     <Box>
@@ -394,7 +370,7 @@ export default function Budgets() {
       {/* 1. KPI Cards matching WalletGridRow.tsx and Home.tsx */}
       <Grid mt={1} container spacing={2} alignItems={"stretch"}>
         {/* Total Budget */}
-        <Grid item xs={12} sm={6} lg={3}>
+        <Grid item xs={12} sm={4} md={4}>
           <Box
             border="1px solid"
             borderColor={darkTheme.palette.background.paper}
@@ -417,7 +393,7 @@ export default function Budgets() {
         </Grid>
 
         {/* Total Spent */}
-        <Grid item xs={12} sm={6} lg={3}>
+        <Grid item xs={12} sm={4} md={4}>
           <Box
             border="1px solid"
             borderColor={darkTheme.palette.background.paper}
@@ -433,7 +409,7 @@ export default function Budgets() {
                 component="span"
                 variant="h5"
                 fontWeight={600}
-                sx={{ color: "#ff8285" }}
+                sx={{ color: paletteTokens.error }}
               >
                 -{formatValue(summary?.total_spent ?? 0)}
               </Typography>
@@ -445,7 +421,7 @@ export default function Budgets() {
         </Grid>
 
         {/* Total Remaining */}
-        <Grid item xs={12} sm={6} lg={3}>
+        <Grid item xs={12} sm={4} md={4}>
           <Box
             border="1px solid"
             borderColor={darkTheme.palette.background.paper}
@@ -462,7 +438,7 @@ export default function Budgets() {
                 variant="h5"
                 fontWeight={600}
                 sx={{
-                  color: Number(summary?.total_remaining || 0) >= 0 ? "#48cc90" : "#ff8285",
+                  color: Number(summary?.total_remaining || 0) >= 0 ? "#48cc90" : paletteTokens.error,
                 }}
               >
                 {formatValue(summary?.total_remaining ?? 0)}
@@ -471,53 +447,6 @@ export default function Budgets() {
             <Typography component="p" variant="caption" color="text.secondary" sx={{ mt: 1 }}>
               {language === "vi" ? "Khả dụng trong tháng" : "Available in month"}
             </Typography>
-          </Box>
-        </Grid>
-
-        {/* Status Breakdown */}
-        <Grid item xs={12} sm={6} lg={3}>
-          <Box
-            border="1px solid"
-            borderColor={darkTheme.palette.background.paper}
-            borderRadius={2}
-            padding={3}
-            height={"100%"}
-          >
-            <Typography component="h2" variant="body1" mb={1}>
-              {language === "vi" ? "Tình trạng hạn mức" : "Status Summary"}
-            </Typography>
-            <Box display="flex" alignItems="center" gap={1} flexWrap="wrap" sx={{ mt: 1 }}>
-              <Chip
-                size="small"
-                label={`${t("status_normal")}: ${summary?.status_counts?.normal ?? 0}`}
-                sx={{
-                  backgroundColor: "rgba(72, 204, 144, 0.12)",
-                  color: "#48cc90",
-                  fontWeight: 600,
-                  fontSize: "12px",
-                }}
-              />
-              <Chip
-                size="small"
-                label={`${t("status_approaching")}: ${summary?.status_counts?.approaching ?? 0}`}
-                sx={{
-                  backgroundColor: "rgba(250, 173, 20, 0.12)",
-                  color: "#faad14",
-                  fontWeight: 600,
-                  fontSize: "12px",
-                }}
-              />
-              <Chip
-                size="small"
-                label={`${t("status_exceeded")}: ${summary?.status_counts?.exceeded ?? 0}`}
-                sx={{
-                  backgroundColor: "rgba(255, 130, 133, 0.12)",
-                  color: "#ff8285",
-                  fontWeight: 600,
-                  fontSize: "12px",
-                }}
-              />
-            </Box>
           </Box>
         </Grid>
       </Grid>
@@ -543,6 +472,46 @@ export default function Budgets() {
           {language === "vi" ? "Danh sách ngân sách danh mục" : "Category Budgets"}
         </Typography>
 
+        {/* Status Filter line */}
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 1.5,
+            alignItems: "center",
+            mb: 2.5,
+          }}
+        >
+          <Button
+            size="small"
+            variant={statusFilter === "all" ? "contained" : "outlined"}
+            onClick={() => setStatusFilter("all")}
+          >
+            {t("all")} ({budgets?.length ?? 0})
+          </Button>
+          <Button
+            size="small"
+            variant={statusFilter === "normal" ? "contained" : "outlined"}
+            onClick={() => setStatusFilter("normal")}
+          >
+            {t("status_normal")} ({normalBudgets.length})
+          </Button>
+          <Button
+            size="small"
+            variant={statusFilter === "approaching" ? "contained" : "outlined"}
+            onClick={() => setStatusFilter("approaching")}
+          >
+            {t("status_approaching")} ({approachingBudgets.length})
+          </Button>
+          <Button
+            size="small"
+            variant={statusFilter === "exceeded" ? "contained" : "outlined"}
+            onClick={() => setStatusFilter("exceeded")}
+          >
+            {t("status_exceeded")} ({exceededBudgets.length})
+          </Button>
+        </Box>
+
         {isBudgetsLoading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
             <CircularProgress color="primary" />
@@ -559,8 +528,9 @@ export default function Budgets() {
             {t("unable_to_load_data")}
           </Alert>
         ) : budgets && budgets.length > 0 ? (
-          <Grid container spacing={2}>
-            {budgets.map((budget) => {
+          filteredBudgets.length > 0 ? (
+            <Grid container spacing={2}>
+              {filteredBudgets.map((budget) => {
               const spentNum = Number(budget.spent);
               const limitNum = Number(budget.limit);
               const remainingNum = Number(budget.remaining);
@@ -617,7 +587,7 @@ export default function Budgets() {
                               size="small"
                               onClick={() => setDeleteTarget(budget)}
                               aria-label={`${t("delete_budget")}: ${budget.label.name}`}
-                              sx={{ color: grey[500], "&:hover": { color: "#ff8285" } }}
+                              sx={{ color: grey[500], "&:hover": { color: paletteTokens.error } }}
                             >
                               <DeleteOutlineIcon fontSize="small" />
                             </IconButton>
@@ -680,7 +650,7 @@ export default function Budgets() {
                           <Typography
                             variant="body2"
                             fontWeight={600}
-                            sx={{ color: budget.status === "exceeded" ? "#ff8285" : "text.primary" }}
+                            sx={{ color: budget.status === "exceeded" ? paletteTokens.error : "text.primary" }}
                           >
                             {formatValue(spentNum)}
                           </Typography>
@@ -694,7 +664,7 @@ export default function Budgets() {
                             variant="body2"
                             fontWeight={600}
                             sx={{
-                              color: remainingNum >= 0 ? "#48cc90" : "#ff8285",
+                              color: remainingNum >= 0 ? "#48cc90" : paletteTokens.error,
                             }}
                           >
                             {formatValue(remainingNum)}
@@ -710,7 +680,7 @@ export default function Budgets() {
                             p: 0.8,
                             px: 1.2,
                             borderRadius: 1,
-                            backgroundColor: "rgba(255, 130, 133, 0.1)",
+                            backgroundColor: paletteTokens.tint.error12,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "space-between",
@@ -718,8 +688,8 @@ export default function Budgets() {
                           }}
                         >
                           <Box sx={{ display: "flex", alignItems: "center", gap: 0.8 }}>
-                            <ArrowUpwardIcon sx={{ fontSize: 14, color: "#ff8285" }} />
-                            <Typography variant="caption" sx={{ color: "#ff8285", fontWeight: 600 }}>
+                            <ArrowUpwardIcon sx={{ fontSize: 14, color: paletteTokens.error }} />
+                            <Typography variant="caption" sx={{ color: paletteTokens.error, fontWeight: 600 }}>
                               {language === "vi"
                                 ? `Vượt ${formatValue(spentNum - limitNum)}`
                                 : `Exceeded by ${formatValue(spentNum - limitNum)}`}
@@ -737,11 +707,11 @@ export default function Budgets() {
                               lineHeight: 1.4,
                               textTransform: "none",
                               fontWeight: 600,
-                              borderColor: "rgba(250, 173, 20, 0.5)",
-                              color: "#faad14",
+                              borderColor: paletteTokens.warning,
+                              color: paletteTokens.warning,
                               "&:hover": {
-                                borderColor: "#faad14",
-                                backgroundColor: "rgba(250, 173, 20, 0.12)",
+                                borderColor: paletteTokens.warning,
+                                backgroundColor: paletteTokens.tint.warning12,
                               },
                             }}
                           >
@@ -756,6 +726,23 @@ export default function Budgets() {
             })}
           </Grid>
         ) : (
+          <Box
+            sx={{
+              py: 6,
+              px: 3,
+              textAlign: "center",
+              borderRadius: 2,
+              border: `1px dashed ${darkTheme.palette.background.paper}`,
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              {language === "vi"
+                ? "Không có ngân sách nào ở trạng thái này."
+                : "No budgets found for this status."}
+            </Typography>
+          </Box>
+        )
+      ) : (
           /* Empty State */
           <Box
             sx={{

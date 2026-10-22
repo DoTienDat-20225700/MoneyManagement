@@ -36,7 +36,7 @@ import { useForecast } from "../../hooks/api/useForecast";
 import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion";
 import { useLanguage } from "../../context/LanguageContext";
 import { formatValue } from "../../utils/utils";
-import { darkTheme } from "../../theme";
+import { paletteTokens } from "../../theme";
 import {
   DailyTimelinePoint,
   FixedEventItem,
@@ -125,13 +125,13 @@ export default function CashFlowForecast() {
     const yaxisAnnotations = [
       {
         y: 0,
-        borderColor: "#ff8285",
-        strokeDashArray: 2,
+        borderColor: paletteTokens.error,
+        strokeDashArray: 3,
         label: {
-          borderColor: "#ff8285",
+          borderColor: paletteTokens.error,
           style: {
-            color: "#ffffff",
-            background: "#ff8285",
+            color: paletteTokens.primaryContrastText,
+            background: paletteTokens.error,
             fontSize: "11px",
             fontFamily: "Inter",
             fontWeight: 600,
@@ -144,13 +144,13 @@ export default function CashFlowForecast() {
     if (safetyBuffer > 0) {
       yaxisAnnotations.push({
         y: safetyBuffer,
-        borderColor: "#faad14",
+        borderColor: paletteTokens.warning,
         strokeDashArray: 4,
         label: {
-          borderColor: "#faad14",
+          borderColor: paletteTokens.warning,
           style: {
-            color: "#000000",
-            background: "#faad14",
+            color: paletteTokens.primaryContrastText,
+            background: paletteTokens.warning,
             fontSize: "11px",
             fontFamily: "Inter",
             fontWeight: 600,
@@ -172,17 +172,17 @@ export default function CashFlowForecast() {
           y: Number(pt.balance),
           marker: {
             size: 6,
-            fillColor: isNegative ? "#ff8285" : darkTheme.palette.primary.main,
+            fillColor: isNegative ? paletteTokens.error : paletteTokens.textPrimary,
             strokeColor: "#ffffff",
             strokeWidth: 2,
             radius: 3,
           },
           label: {
-            borderColor: isNegative ? "#ff8285" : darkTheme.palette.primary.main,
+            borderColor: isNegative ? paletteTokens.error : paletteTokens.divider,
             offsetY: isNegative ? 24 : -12,
             style: {
               color: "#ffffff",
-              background: isNegative ? "#ff8285" : darkTheme.palette.primary.main,
+              background: isNegative ? paletteTokens.error : paletteTokens.elevated,
               fontSize: "10px",
               fontFamily: "Inter",
               fontWeight: 600,
@@ -201,45 +201,36 @@ export default function CashFlowForecast() {
         animations: { enabled: !prefersReducedMotion, speed: 600 },
         background: "transparent",
       },
-      colors: [darkTheme.palette.primary.main],
+      colors: [paletteTokens.textPrimary],
       stroke: {
         curve: "smooth",
         width: 3,
       },
       fill: {
-        type: "gradient",
-        gradient: {
-          shade: "dark",
-          type: "vertical",
-          shadeIntensity: 0.5,
-          gradientToColors: [darkTheme.palette.primary.main],
-          inverseColors: false,
-          opacityFrom: 0.35,
-          opacityTo: 0.05,
-          stops: [0, 100],
-        },
+        type: "solid",
+        opacity: 0,
       },
       dataLabels: { enabled: false },
       xaxis: {
         categories,
         labels: {
-          style: { colors: darkTheme.palette.text.secondary, fontSize: "11px", fontFamily: "Inter" },
+          style: { colors: paletteTokens.textSecondary, fontSize: "11px", fontFamily: "Inter" },
           rotate: -45,
           rotateAlways: timeline.length > 45,
         },
-        axisBorder: { show: true, color: "#2b2b2b" },
-        axisTicks: { show: true, color: "#2b2b2b" },
+        axisBorder: { show: true, color: paletteTokens.divider },
+        axisTicks: { show: true, color: paletteTokens.divider },
       },
       yaxis: {
         tickAmount: 6,
         labels: {
-          style: { colors: darkTheme.palette.text.secondary, fontFamily: "Inter" },
+          style: { colors: paletteTokens.textSecondary, fontFamily: "Inter" },
           formatter: (val: number) => formatValue(val),
         },
       },
       grid: {
         show: true,
-        borderColor: "#202020",
+        borderColor: paletteTokens.divider,
         strokeDashArray: 3,
       },
       tooltip: {
@@ -257,7 +248,7 @@ export default function CashFlowForecast() {
                 ${pt.fixed_events
                   .map((e) => {
                     const amt = Number(e.amount);
-                    const color = amt >= 0 ? "#48cc90" : "#ff8285";
+                    const color = amt >= 0 ? paletteTokens.primary : paletteTokens.error;
                     const sign = amt >= 0 ? "+" : "";
                     return `<div style="font-size: 11px; display: flex; justify-content: space-between; gap: 12px;">
                       <span>${e.title}</span>
@@ -270,9 +261,9 @@ export default function CashFlowForecast() {
           }
 
           return `
-            <div style="padding: 10px 14px; background: #161616; border: 1px solid #333; border-radius: 6px; font-family: Inter, sans-serif;">
+            <div style="padding: 10px 14px; background: ${paletteTokens.elevated}; border: 1px solid ${paletteTokens.divider}; border-radius: 6px; font-family: Inter, sans-serif;">
               <div style="font-size: 11px; color: #888;">${dateStr}</div>
-              <div style="font-size: 14px; font-weight: 600; color: ${bal >= 0 ? "#fff" : "#ff8285"}; margin-top: 2px;">
+              <div style="font-size: 14px; font-weight: 600; color: ${bal >= 0 ? paletteTokens.textPrimary : paletteTokens.error}; margin-top: 2px;">
                 ${t("balance")}: ${formatValue(bal)}
               </div>
               ${eventsHtml}
@@ -337,11 +328,8 @@ export default function CashFlowForecast() {
     return src;
   };
 
-  const getSourceChipColor = (src: string) => {
-    if (src === "RECURRING") return "#3b82f6";
-    if (src === "DEBT") return "#ec4899";
-    if (src === "INSTALLMENT") return "#8b5cf6";
-    return "#888888";
+  const getSourceChipColor = (_src: string) => {
+    return paletteTokens.controlBorder;
   };
 
   return (
@@ -350,11 +338,11 @@ export default function CashFlowForecast() {
       <Box
         sx={{
           border: "1px solid",
-          borderColor: darkTheme.palette.background.paper,
+          borderColor: paletteTokens.divider,
           borderRadius: 2,
           p: { xs: 2, md: 3 },
           mb: 3,
-          backgroundColor: "rgba(255, 255, 255, 0.01)",
+          backgroundColor: paletteTokens.bgPaper,
         }}
       >
         <Grid container spacing={3} alignItems="center">
@@ -363,7 +351,7 @@ export default function CashFlowForecast() {
               <Typography component="h2" variant="h5" fontWeight={600} color="#fff">
                 {t("forecast_title")}
               </Typography>
-              {isFetching && <CircularProgress size={16} sx={{ color: darkTheme.palette.primary.main }} />}
+              {isFetching && <CircularProgress size={16} sx={{ color: paletteTokens.primary }} />}
             </Box>
             <Typography variant="body2" color="text.secondary">
               {t("forecast_subtitle")}
@@ -384,12 +372,12 @@ export default function CashFlowForecast() {
                 <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
                   {t("forecast_horizon")}
                 </Typography>
-                <ButtonGroup variant="outlined" size="small" sx={{ borderColor: "#2b2b2b" }}>
+                <ButtonGroup variant="outlined" size="small" sx={{ borderColor: paletteTokens.divider }}>
                   <Button
                     onClick={() => setDays(30)}
                     variant={days === 30 ? "contained" : "outlined"}
                     sx={{
-                      backgroundColor: days === 30 ? darkTheme.palette.primary.main : "transparent",
+                      backgroundColor: days === 30 ? paletteTokens.primary : "transparent",
                       color: days === 30 ? "#fff" : "text.secondary",
                       borderColor: "#333",
                     }}
@@ -400,7 +388,7 @@ export default function CashFlowForecast() {
                     onClick={() => setDays(60)}
                     variant={days === 60 ? "contained" : "outlined"}
                     sx={{
-                      backgroundColor: days === 60 ? darkTheme.palette.primary.main : "transparent",
+                      backgroundColor: days === 60 ? paletteTokens.primary : "transparent",
                       color: days === 60 ? "#fff" : "text.secondary",
                       borderColor: "#333",
                     }}
@@ -411,7 +399,7 @@ export default function CashFlowForecast() {
                     onClick={() => setDays(90)}
                     variant={days === 90 ? "contained" : "outlined"}
                     sx={{
-                      backgroundColor: days === 90 ? darkTheme.palette.primary.main : "transparent",
+                      backgroundColor: days === 90 ? paletteTokens.primary : "transparent",
                       color: days === 90 ? "#fff" : "text.secondary",
                       borderColor: "#333",
                     }}
@@ -478,10 +466,10 @@ export default function CashFlowForecast() {
               severity="error"
               icon={<ErrorOutlineIcon fontSize="medium" />}
               sx={{
-                backgroundColor: "rgba(255, 130, 133, 0.12)",
-                color: "#ff8285",
-                border: "1px solid rgba(255, 130, 133, 0.4)",
-                "& .MuiAlert-icon": { color: "#ff8285" },
+                backgroundColor: paletteTokens.tint.error12,
+                color: paletteTokens.error,
+                border: `1px solid ${paletteTokens.error}`,
+                "& .MuiAlert-icon": { color: paletteTokens.error },
               }}
             >
               <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
@@ -500,7 +488,7 @@ export default function CashFlowForecast() {
                     <Chip
                       label={t("low_confidence_badge")}
                       size="small"
-                      sx={{ backgroundColor: "rgba(250, 173, 20, 0.2)", color: "#faad14", borderColor: "#faad14" }}
+                      sx={{ backgroundColor: paletteTokens.tint.warning12, color: paletteTokens.warning, borderColor: paletteTokens.warning }}
                       variant="outlined"
                     />
                   </Tooltip>
@@ -514,10 +502,10 @@ export default function CashFlowForecast() {
               severity="warning"
               icon={<WarningAmberIcon fontSize="medium" />}
               sx={{
-                backgroundColor: "rgba(250, 173, 20, 0.12)",
-                color: "#ffc966",
-                border: "1px solid rgba(250, 173, 20, 0.4)",
-                "& .MuiAlert-icon": { color: "#faad14" },
+                backgroundColor: paletteTokens.tint.warning12,
+                color: paletteTokens.warning,
+                border: `1px solid ${paletteTokens.warning}`,
+                "& .MuiAlert-icon": { color: paletteTokens.warning },
               }}
             >
               <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
@@ -537,7 +525,7 @@ export default function CashFlowForecast() {
                     <Chip
                       label={t("low_confidence_badge")}
                       size="small"
-                      sx={{ backgroundColor: "rgba(250, 173, 20, 0.2)", color: "#faad14", borderColor: "#faad14" }}
+                      sx={{ backgroundColor: paletteTokens.tint.warning12, color: paletteTokens.warning, borderColor: paletteTokens.warning }}
                       variant="outlined"
                     />
                   </Tooltip>
@@ -551,10 +539,10 @@ export default function CashFlowForecast() {
               severity="success"
               icon={<CheckCircleOutlineIcon fontSize="medium" />}
               sx={{
-                backgroundColor: "rgba(0, 134, 58, 0.12)",
-                color: "#6ce49f",
-                border: "1px solid rgba(0, 134, 58, 0.4)",
-                "& .MuiAlert-icon": { color: darkTheme.palette.primary.main },
+                backgroundColor: paletteTokens.tint.primary12,
+                color: paletteTokens.primary,
+                border: `1px solid ${paletteTokens.primary}`,
+                "& .MuiAlert-icon": { color: paletteTokens.primary },
               }}
             >
               <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
@@ -571,7 +559,7 @@ export default function CashFlowForecast() {
                     <Chip
                       label={t("low_confidence_badge")}
                       size="small"
-                      sx={{ backgroundColor: "rgba(250, 173, 20, 0.2)", color: "#faad14", borderColor: "#faad14" }}
+                      sx={{ backgroundColor: paletteTokens.tint.warning12, color: paletteTokens.warning, borderColor: paletteTokens.warning }}
                       variant="outlined"
                     />
                   </Tooltip>
@@ -589,7 +577,7 @@ export default function CashFlowForecast() {
             <Grid key={i} item xs={12} sm={6} lg={3}>
               <Box
                 border="1px solid"
-                borderColor={darkTheme.palette.background.paper}
+                borderColor={paletteTokens.divider}
                 borderRadius={2}
                 padding={3}
                 height="100%"
@@ -606,11 +594,11 @@ export default function CashFlowForecast() {
             <Grid item xs={12} sm={6} lg={3}>
               <Box
                 border="1px solid"
-                borderColor={darkTheme.palette.background.paper}
+                borderColor={paletteTokens.divider}
                 borderRadius={2}
                 padding={3}
                 height="100%"
-                sx={{ backgroundColor: "rgba(255, 255, 255, 0.01)" }}
+                sx={{ backgroundColor: paletteTokens.bgPaper }}
               >
                 <Typography component="h3" variant="body2" color="text.secondary" mb={1}>
                   {t("kpi_current_balance")}
@@ -628,11 +616,11 @@ export default function CashFlowForecast() {
             <Grid item xs={12} sm={6} lg={3}>
               <Box
                 border="1px solid"
-                borderColor={darkTheme.palette.background.paper}
+                borderColor={paletteTokens.divider}
                 borderRadius={2}
                 padding={3}
                 height="100%"
-                sx={{ backgroundColor: "rgba(255, 255, 255, 0.01)" }}
+                sx={{ backgroundColor: paletteTokens.bgPaper }}
               >
                 <Typography component="h3" variant="body2" color="text.secondary" mb={1}>
                   {t("kpi_projected_end")} (+{days}d)
@@ -641,7 +629,7 @@ export default function CashFlowForecast() {
                   component="span"
                   variant="h5"
                   fontWeight={700}
-                  color={Number(forecast.projected_end_balance) >= 0 ? "#48cc90" : "#ff8285"}
+                  color={Number(forecast.projected_end_balance) >= 0 ? "text.primary" : paletteTokens.error}
                 >
                   {formatValue(Number(forecast.projected_end_balance))}
                 </Typography>
@@ -655,11 +643,11 @@ export default function CashFlowForecast() {
             <Grid item xs={12} sm={6} lg={3}>
               <Box
                 border="1px solid"
-                borderColor={darkTheme.palette.background.paper}
+                borderColor={paletteTokens.divider}
                 borderRadius={2}
                 padding={3}
                 height="100%"
-                sx={{ backgroundColor: "rgba(255, 255, 255, 0.01)" }}
+                sx={{ backgroundColor: paletteTokens.bgPaper }}
               >
                 <Typography component="h3" variant="body2" color="text.secondary" mb={1}>
                   {t("kpi_lowest_balance")}
@@ -670,10 +658,10 @@ export default function CashFlowForecast() {
                   fontWeight={700}
                   color={
                     Number(forecast.lowest_balance) < 0
-                      ? "#ff8285"
+                      ? paletteTokens.error
                       : Number(forecast.lowest_balance) < safetyBuffer
-                      ? "#faad14"
-                      : "#48cc90"
+                      ? paletteTokens.warning
+                      : "text.primary"
                   }
                 >
                   {formatValue(Number(forecast.lowest_balance))}
@@ -688,16 +676,16 @@ export default function CashFlowForecast() {
             <Grid item xs={12} sm={6} lg={3}>
               <Box
                 border="1px solid"
-                borderColor={darkTheme.palette.background.paper}
+                borderColor={paletteTokens.divider}
                 borderRadius={2}
                 padding={3}
                 height="100%"
-                sx={{ backgroundColor: "rgba(255, 255, 255, 0.01)" }}
+                sx={{ backgroundColor: paletteTokens.bgPaper }}
               >
                 <Typography component="h3" variant="body2" color="text.secondary" mb={1}>
                   {t("kpi_daily_burn_rate")}
                 </Typography>
-                <Typography component="span" variant="h5" fontWeight={700} color="#ff8285">
+                <Typography component="span" variant="h5" fontWeight={700} color={paletteTokens.error}>
                   ~{formatValue(Number(forecast.daily_burn_rate))}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
@@ -713,11 +701,11 @@ export default function CashFlowForecast() {
       <Box
         sx={{
           border: "1px solid",
-          borderColor: darkTheme.palette.background.paper,
+          borderColor: paletteTokens.divider,
           borderRadius: 2,
           p: { xs: 2, md: 3 },
           mb: 3,
-          backgroundColor: "rgba(255, 255, 255, 0.01)",
+          backgroundColor: paletteTokens.bgPaper,
         }}
       >
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
@@ -776,15 +764,15 @@ export default function CashFlowForecast() {
           <Box
             sx={{
               border: "1px solid",
-              borderColor: darkTheme.palette.background.paper,
+              borderColor: paletteTokens.divider,
               borderRadius: 2,
               p: { xs: 2, md: 3 },
               height: "100%",
-              backgroundColor: "rgba(255, 255, 255, 0.01)",
+              backgroundColor: paletteTokens.bgPaper,
             }}
           >
             <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-              <TipsAndUpdatesOutlinedIcon sx={{ color: darkTheme.palette.primary.main }} />
+              <TipsAndUpdatesOutlinedIcon sx={{ color: paletteTokens.primary }} />
               <Typography component="h3" variant="h6" fontWeight={600} color="#fff">
                 {t("recommendations_title")}
               </Typography>
@@ -795,14 +783,8 @@ export default function CashFlowForecast() {
             ) : forecast?.recommendations && forecast.recommendations.length > 0 ? (
               <Box display="flex" flexDirection="column" gap={1.5}>
                 {forecast.recommendations.map((rec: RecommendationItem, idx: number) => {
-                  const isWarning = rec.code === "SHORTFALL_RISK" || rec.code === "REDUCE_DAILY_SPENDING";
-                  const isBuffer = rec.code === "BELOW_BUFFER" || rec.code === "LOW_CONFIDENCE";
-                  const borderColor = isWarning ? "#ff8285" : isBuffer ? "#faad14" : "#00863A";
-                  const bgColor = isWarning
-                    ? "rgba(255, 130, 133, 0.08)"
-                    : isBuffer
-                    ? "rgba(250, 173, 20, 0.08)"
-                    : "rgba(0, 134, 58, 0.08)";
+                  const borderColor = paletteTokens.divider;
+                  const bgColor = paletteTokens.elevated;
 
                   return (
                     <Box
@@ -832,15 +814,15 @@ export default function CashFlowForecast() {
           <Box
             sx={{
               border: "1px solid",
-              borderColor: darkTheme.palette.background.paper,
+              borderColor: paletteTokens.divider,
               borderRadius: 2,
               p: { xs: 2, md: 3 },
               height: "100%",
-              backgroundColor: "rgba(255, 255, 255, 0.01)",
+              backgroundColor: paletteTokens.bgPaper,
             }}
           >
             <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-              <EventNoteOutlinedIcon sx={{ color: darkTheme.palette.primary.main }} />
+              <EventNoteOutlinedIcon sx={{ color: paletteTokens.primary }} />
               <Typography component="h3" variant="h6" fontWeight={600} color="#fff">
                 {t("upcoming_events_title")}
               </Typography>
@@ -853,17 +835,17 @@ export default function CashFlowForecast() {
                 <Table size="small" stickyHeader>
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ backgroundColor: "#181818", color: darkTheme.palette.text.secondary }}>{t("col_date")}</TableCell>
-                      <TableCell sx={{ backgroundColor: "#181818", color: darkTheme.palette.text.secondary }}>
+                      <TableCell sx={{ backgroundColor: paletteTokens.elevated, color: paletteTokens.textSecondary }}>{t("col_date")}</TableCell>
+                      <TableCell sx={{ backgroundColor: paletteTokens.elevated, color: paletteTokens.textSecondary }}>
                         {t("col_event_title")}
                       </TableCell>
-                      <TableCell sx={{ backgroundColor: "#181818", color: darkTheme.palette.text.secondary }}>
+                      <TableCell sx={{ backgroundColor: paletteTokens.elevated, color: paletteTokens.textSecondary }}>
                         {t("col_event_source")}
                       </TableCell>
-                      <TableCell align="right" sx={{ backgroundColor: "#181818", color: darkTheme.palette.text.secondary }}>
+                      <TableCell align="right" sx={{ backgroundColor: paletteTokens.elevated, color: paletteTokens.textSecondary }}>
                         {t("col_value")}
                       </TableCell>
-                      <TableCell align="right" sx={{ backgroundColor: "#181818", color: darkTheme.palette.text.secondary }}>
+                      <TableCell align="right" sx={{ backgroundColor: paletteTokens.elevated, color: paletteTokens.textSecondary }}>
                         {t("col_event_balance_after")}
                       </TableCell>
                     </TableRow>
@@ -893,7 +875,7 @@ export default function CashFlowForecast() {
                           <TableCell
                             align="right"
                             sx={{
-                              color: isIncome ? "#48cc90" : "#ff8285",
+                              color: isIncome ? paletteTokens.primary : paletteTokens.error,
                               fontWeight: 600,
                               fontSize: "13px",
                               whiteSpace: "nowrap",
@@ -904,7 +886,7 @@ export default function CashFlowForecast() {
                           <TableCell
                             align="right"
                             sx={{
-                              color: ev.balanceAfter >= 0 ? "#fff" : "#ff8285",
+                              color: ev.balanceAfter >= 0 ? "#fff" : paletteTokens.error,
                               fontSize: "13px",
                               whiteSpace: "nowrap",
                             }}

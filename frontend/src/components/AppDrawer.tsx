@@ -1,133 +1,205 @@
 import * as React from "react";
-import List from "@mui/material/List";
-import Divider from "@mui/material/Divider";
-import IconButton from "@mui/material/IconButton";
-import MenuIcon from "@mui/icons-material/Menu";
-import ListItem from "@mui/material/ListItem";
-import ListItemButton from "@mui/material/ListItemButton";
-import ListItemIcon from "@mui/material/ListItemIcon";
-import ListItemText from "@mui/material/ListItemText";
-import TranslateIcon from "@mui/icons-material/Translate";
-import { AppBar, Box, Button, Drawer, Toolbar, Typography } from "@mui/material";
 import { Link, useLocation } from "react-router-dom";
-import { darkTheme } from "../theme";
+import {
+  AppBar,
+  Box,
+  Button,
+  Divider,
+  Drawer,
+  IconButton,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Toolbar,
+  Tooltip,
+  Typography,
+} from "@mui/material";
+import ViewSidebarOutlinedIcon from "@mui/icons-material/ViewSidebarOutlined";
+import TranslateIcon from "@mui/icons-material/Translate";
 import { navigation } from "../navigation";
 import UserDropdown from "./UserDropdown";
 import { useLanguage } from "../context/LanguageContext";
+import { usePrefersReducedMotion } from "../hooks/usePrefersReducedMotion";
 
-const drawerWidth = 260;
-interface Props {
+export const SIDEBAR_WIDTH = 240;
+export const SIDEBAR_COLLAPSED_WIDTH = 0;
+export const TOPBAR_HEIGHT = 56;
+
+interface AppDrawerProps {
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
   window?: () => Window;
 }
 
-export default function DrawerAppBar(props: Props) {
-  const { window } = props;
-  const [mobileOpen, setMobileOpen] = React.useState(false);
+export default function AppDrawer(props: AppDrawerProps) {
+  const { collapsed: controlledCollapsed, onToggleCollapse, window } = props;
   const location = useLocation();
   const { language, toggleLanguage, t } = useLanguage();
+  const prefersReducedMotion = usePrefersReducedMotion();
 
-  const handleDrawerToggle = () => {
-    setMobileOpen((prevState) => !prevState);
+  // Internal state fallback (defaults to open: false) - NO localStorage
+  const [internalCollapsed, setInternalCollapsed] = React.useState<boolean>(false);
+
+  const isCollapsed =
+    controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
+
+  const handleToggle = () => {
+    if (onToggleCollapse) {
+      onToggleCollapse();
+    } else {
+      setInternalCollapsed((prev) => !prev);
+    }
   };
 
-  const getNavLabel = (path: string) => {
-    if (path === "/") return t("dashboard");
-    if (path === "/transactions") return t("transactions");
-    if (path === "/budgets") return t("budgets");
-    if (path === "/reports") return t("reports");
-    if (path === "/saving-plans") return t("saving_plans");
-    if (path === "/debts") return t("debts");
-    return path;
+  // Mobile drawer state
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const hamburgerRef = React.useRef<HTMLButtonElement | null>(null);
 
+  const handleMobileToggle = () => {
+    setMobileOpen((prev) => !prev);
   };
 
-  const drawer = (
+  const handleDrawerClose = () => {
+    setMobileOpen(false);
+    setTimeout(() => {
+      hamburgerRef.current?.focus();
+    }, 0);
+  };
+
+  // Reusable active matching (exact root "/" or startsWith sub-route)
+  const checkIsActive = (path: string) => {
+    return path === "/"
+      ? location.pathname === "/"
+      : location.pathname.startsWith(path);
+  };
+
+  const transitionDuration = prefersReducedMotion ? "none" : "0.2s cubic-bezier(0.4, 0, 0.2, 1)";
+  const sidebarTransition = prefersReducedMotion
+    ? "none"
+    : `width ${transitionDuration}, visibility ${transitionDuration}`;
+
+  // Mobile Drawer content
+  const mobileDrawerContent = (
     <Box
-      onClick={handleDrawerToggle}
       sx={{
-        textAlign: "center",
-        background: darkTheme.palette.background.default,
+        width: SIDEBAR_WIDTH,
         height: "100%",
         display: "flex",
         flexDirection: "column",
+        backgroundColor: "#0d0e12",
+        color: "#fff",
       }}
     >
+      {/* Mobile drawer header */}
       <Box
         component={Link}
         to="/"
+        onClick={handleDrawerClose}
         sx={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
-          gap: 1.2,
-          my: 2.5,
+          gap: 1.5,
+          p: 2,
           textDecoration: "none",
           color: "inherit",
+          minHeight: TOPBAR_HEIGHT,
         }}
       >
         <Box
           component="img"
           src="/logo.png"
-          alt="MoneyManager Logo"
+          alt=""
+          aria-hidden="true"
           sx={{ width: 28, height: 28, objectFit: "contain" }}
         />
-        <Typography variant="h6" fontWeight={700} color="#fff">
+        <Typography
+          variant="h6"
+          fontWeight={700}
+          sx={{
+            color: "#ffffff",
+            letterSpacing: 0.3,
+          }}
+        >
           MoneyManager
         </Typography>
       </Box>
-      <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
-      <List sx={{ px: 1, py: 2 }}>
+
+      <Divider sx={{ borderColor: "rgba(255, 255, 255, 0.08)" }} />
+
+      {/* Mobile nav items */}
+      <List component="nav" aria-label={t("mobile_navigation")} sx={{ px: 1.5, py: 2, flexGrow: 1 }}>
         {navigation.map((item) => {
-          const isActive =
-            item.path === "/"
-              ? location.pathname === "/"
-              : location.pathname.startsWith(item.path);
+          const isActive = checkIsActive(item.path);
+          const label = t(item.translationKey);
+
           return (
             <ListItem key={item.path} disablePadding sx={{ mb: 1 }}>
               <ListItemButton
                 component={Link}
                 to={item.path}
+                onClick={handleDrawerClose}
+                aria-current={isActive ? "page" : undefined}
                 sx={{
-                  borderRadius: 2,
+                  minHeight: 48,
+                  borderRadius: "8px",
                   backgroundColor: isActive
-                    ? "rgba(0, 134, 58, 0.22)"
+                    ? "rgba(0, 134, 58, 0.14)"
                     : "transparent",
                   color: isActive ? "#48cc90" : "#e0e0e0",
-                  border: isActive
-                    ? "1px solid rgba(72, 204, 144, 0.35)"
-                    : "1px solid transparent",
+                  border: "1px solid transparent",
+                  transition: prefersReducedMotion ? "none" : "all 0.2s ease",
                   "&:hover": {
-                    backgroundColor: "rgba(255,255,255,0.06)",
+                    backgroundColor: isActive
+                      ? "rgba(0, 134, 58, 0.32)"
+                      : "rgba(255, 255, 255, 0.06)",
+                    color: "#fff",
+                  },
+                  "&.Mui-focusVisible": {
+                    outline: "2px solid #00863A",
+                    outlineOffset: 2,
                   },
                 }}
               >
-                <ListItemIcon sx={{ color: "inherit", minWidth: 38 }}>
+                <ListItemIcon sx={{ color: "inherit", minWidth: 40 }}>
                   {item.icon}
                 </ListItemIcon>
                 <ListItemText
-                  primary={getNavLabel(item.path)}
-                  primaryTypographyProps={{ fontWeight: isActive ? 600 : 500 }}
+                  primary={label}
+                  primaryTypographyProps={{
+                    fontSize: "15px",
+                    fontWeight: isActive ? 600 : 500,
+                  }}
                 />
               </ListItemButton>
             </ListItem>
           );
         })}
       </List>
-      <Box sx={{ mt: "auto", p: 2 }}>
+
+      {/* Mobile drawer footer */}
+      <Box sx={{ p: 2, borderTop: "1px solid rgba(255, 255, 255, 0.08)" }}>
         <Button
           fullWidth
           variant="outlined"
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleLanguage();
-          }}
-          startIcon={<TranslateIcon fontSize="small" />}
+          size="medium"
+          onClick={toggleLanguage}
+          startIcon={<TranslateIcon fontSize="small" aria-hidden="true" />}
           sx={{
             py: 1,
-            borderRadius: 2,
-            borderColor: "rgba(255,255,255,0.2)",
+            borderRadius: "8px",
+            borderColor: "rgba(255, 255, 255, 0.2)",
             color: "#fff",
+            textTransform: "none",
+            "&:hover": {
+              borderColor: "#48cc90",
+              background: "rgba(72, 204, 144, 0.10)",
+            },
+            "&.Mui-focusVisible": {
+              outline: "2px solid #00863A",
+              outlineOffset: 2,
+            },
           }}
         >
           {language === "vi" ? "🇻🇳 Tiếng Việt" : "🇬🇧 English"}
@@ -139,174 +211,316 @@ export default function DrawerAppBar(props: Props) {
   const container =
     window !== undefined ? () => window().document.body : undefined;
 
+  // Accessible labels for the unified single hamburger button
+  const desktopAriaLabel = isCollapsed ? t("expand_sidebar") : t("collapse_sidebar");
+  const mobileAriaLabel = mobileOpen ? t("close_drawer") : t("open_drawer");
+
   return (
-    <Box sx={{ display: "flex" }}>
-      <AppBar
+    <>
+      {/* =========================================================================
+          1. DESKTOP SIDEBAR (>= md breakpoint)
+             - Completely hidden when collapsed (width: 0, visibility: hidden)
+             - Anchored below TopBar (top: TOPBAR_HEIGHT)
+         ========================================================================= */}
+      <Box
         component="nav"
+        id="main-sidebar-nav"
+        aria-label={t("main_navigation")}
         sx={{
-          background: "rgba(13, 14, 18, 0.85)",
+          display: { xs: "none", md: "flex" },
+          flexDirection: "column",
+          position: "fixed",
+          top: `${TOPBAR_HEIGHT}px`,
+          bottom: 0,
+          left: 0,
+          width: isCollapsed ? 0 : SIDEBAR_WIDTH,
+          visibility: isCollapsed ? "hidden" : "visible",
+          zIndex: 1100,
+          backgroundColor: "#0d0e12",
+          borderRight: isCollapsed ? "none" : "1px solid rgba(255, 255, 255, 0.08)",
+          boxShadow: isCollapsed ? "none" : "4px 0 20px rgba(0, 0, 0, 0.35)",
+          transition: sidebarTransition,
+          overflowX: "hidden",
+          pointerEvents: isCollapsed ? "none" : "auto",
+          "@media print": {
+            display: "none !important",
+          },
+        }}
+      >
+        {/* Sidebar Navigation Items */}
+        <List
+          sx={{
+            px: 1.25,
+            py: 1.5,
+            flexGrow: 1,
+            overflowY: "auto",
+            overflowX: "hidden",
+            width: `${SIDEBAR_WIDTH}px`,
+            boxSizing: "border-box",
+          }}
+        >
+          {navigation.map((item) => {
+            const isActive = checkIsActive(item.path);
+            const label = t(item.translationKey);
+
+            return (
+              <ListItem
+                key={item.path}
+                disablePadding
+                sx={{
+                  mb: 1,
+                  display: "flex",
+                  width: "100%",
+                }}
+              >
+                <ListItemButton
+                  component={Link}
+                  to={item.path}
+                  tabIndex={isCollapsed ? -1 : 0}
+                  aria-current={isActive ? "page" : undefined}
+                  sx={{
+                    minHeight: 44,
+                    width: "100%",
+                    borderRadius: "8px",
+                    justifyContent: "flex-start",
+                    px: 2,
+                    backgroundColor: isActive
+                      ? "rgba(0, 134, 58, 0.14)"
+                      : "transparent",
+                    color: isActive ? "#48cc90" : "#9e9e9e",
+                    border: "1px solid transparent",
+                    transition: prefersReducedMotion ? "none" : "all 0.2s ease",
+                    "&:hover": {
+                      backgroundColor: isActive
+                        ? "rgba(0, 134, 58, 0.32)"
+                        : "rgba(255, 255, 255, 0.06)",
+                      color: "#ffffff",
+                      "& .MuiListItemIcon-root": {
+                        color: isActive ? "#48cc90" : "#ffffff",
+                      },
+                    },
+                    "&.Mui-focusVisible": {
+                      outline: "2px solid #00863A",
+                      outlineOffset: 2,
+                    },
+                  }}
+                >
+                  <ListItemIcon
+                    sx={{
+                      minWidth: 38,
+                      color: "inherit",
+                      justifyContent: "center",
+                      mr: 1,
+                    }}
+                  >
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={label}
+                    primaryTypographyProps={{
+                      fontSize: "14px",
+                      fontWeight: isActive ? 600 : 500,
+                      noWrap: true,
+                    }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            );
+          })}
+        </List>
+      </Box>
+
+      {/* =========================================================================
+          2. TOP BAR (Header)
+             - Fixed at top (0, 0), spans 100% width
+             - Order: [Sidebar Toggle Button] -> [Logo] -> [MoneyManager]
+         ========================================================================= */}
+      <AppBar
+        component="header"
+        elevation={0}
+        sx={{
+          height: TOPBAR_HEIGHT,
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          width: "100%",
+          backgroundColor: "rgba(13, 14, 18, 0.85)",
           backdropFilter: "blur(14px)",
           borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
-          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.35)",
+          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.25)",
+          zIndex: 1200,
+          "@media print": {
+            display: "none !important",
+          },
         }}
       >
         <Toolbar
+          variant="dense"
+          disableGutters
           sx={{
-            px: { xs: 2, sm: 3, md: 4 },
+            height: TOPBAR_HEIGHT,
+            minHeight: TOPBAR_HEIGHT,
+            px: { xs: 1.5, sm: 2, md: 2.5 },
             display: "flex",
             justifyContent: "space-between",
+            alignItems: "center",
           }}
         >
-          {/* Left section: Logo + Divider + Navigation links */}
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
-            <IconButton
-              color="inherit"
-              aria-label={t("open_drawer")}
-              edge="start"
-              onClick={handleDrawerToggle}
-              sx={{ mr: 2, display: { sm: "none" } }}
+          {/* Left section: [Sidebar Toggle Button] -> [Logo] -> [MoneyManager] */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+            {/* Desktop Sidebar Toggle Button */}
+            <Tooltip
+              title={desktopAriaLabel}
+              placement="bottom"
+              arrow
+              disableFocusListener={false}
             >
-              <MenuIcon />
-            </IconButton>
+              <IconButton
+                id="main-hamburger-btn-desktop"
+                color="inherit"
+                aria-label={desktopAriaLabel}
+                aria-controls="main-sidebar-nav"
+                aria-expanded={!isCollapsed}
+                edge="start"
+                onClick={handleToggle}
+                sx={{
+                  display: { xs: "none", md: "inline-flex" },
+                  minWidth: 40,
+                  minHeight: 40,
+                  width: 40,
+                  height: 40,
+                  color: "#e0e0e0",
+                  borderRadius: "8px",
+                  "&:hover": {
+                    color: "#ffffff",
+                    backgroundColor: "rgba(255, 255, 255, 0.06)",
+                  },
+                  "&.Mui-focusVisible": {
+                    outline: "2px solid #00863A",
+                    outlineOffset: 2,
+                  },
+                }}
+              >
+                <ViewSidebarOutlinedIcon aria-hidden="true" />
+              </IconButton>
+            </Tooltip>
 
-            {/* Brand Logo */}
+            {/* Mobile Sidebar Toggle Button */}
+            <Tooltip
+              title={mobileAriaLabel}
+              placement="bottom"
+              arrow
+              disableFocusListener={false}
+            >
+              <IconButton
+                id="main-hamburger-btn-mobile"
+                ref={hamburgerRef}
+                color="inherit"
+                aria-label={mobileAriaLabel}
+                aria-controls="mobile-nav-drawer"
+                aria-expanded={mobileOpen}
+                edge="start"
+                onClick={handleMobileToggle}
+                sx={{
+                  display: { xs: "inline-flex", md: "none" },
+                  minWidth: 40,
+                  minHeight: 40,
+                  width: 40,
+                  height: 40,
+                  color: "#e0e0e0",
+                  borderRadius: "8px",
+                  "&:hover": {
+                    color: "#ffffff",
+                    backgroundColor: "rgba(255, 255, 255, 0.06)",
+                  },
+                  "&.Mui-focusVisible": {
+                    outline: "2px solid #00863A",
+                    outlineOffset: 2,
+                  },
+                }}
+              >
+                <ViewSidebarOutlinedIcon aria-hidden="true" />
+              </IconButton>
+            </Tooltip>
+
+            {/* Logo + Web Name: MoneyManager (always next to button) */}
             <Box
               component={Link}
               to="/"
+              aria-label="MoneyManager"
               sx={{
-                display: { xs: "none", sm: "flex" },
+                display: "flex",
                 alignItems: "center",
-                gap: 1.2,
+                gap: 1.25,
                 textDecoration: "none",
                 color: "inherit",
-                cursor: "pointer",
-                "&:hover": { opacity: 0.9 },
+                borderRadius: "6px",
+                py: 0.5,
+                px: 0.5,
+                "&:focus-visible": {
+                  outline: "2px solid #00863A",
+                  outlineOffset: 2,
+                },
               }}
             >
               <Box
                 component="img"
                 src="/logo.png"
-                alt="MoneyManager Logo"
-                sx={{ width: 28, height: 28, objectFit: "contain" }}
+                alt=""
+                aria-hidden="true"
+                sx={{ width: 28, height: 28, objectFit: "contain", flexShrink: 0 }}
               />
               <Typography
                 variant="h6"
                 fontWeight={700}
                 sx={{
-                  background: "linear-gradient(90deg, #ffffff 0%, #a5d6a7 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
+                  color: "#ffffff",
                   letterSpacing: 0.3,
+                  fontSize: "1.05rem",
+                  lineHeight: 1,
+                  userSelect: "none",
                 }}
               >
                 MoneyManager
               </Typography>
             </Box>
-
-            {/* Separator Divider */}
-            <Box
-              sx={{
-                display: { xs: "none", sm: "block" },
-                width: "1px",
-                height: "22px",
-                bgcolor: "rgba(255, 255, 255, 0.18)",
-                mx: { sm: 2.5, md: 3.5 },
-              }}
-            />
-
-            {/* Navigation links with comfortable spacing and active indicator */}
-            <Box
-              sx={{
-                display: { xs: "none", sm: "flex" },
-                alignItems: "center",
-                gap: 1.5,
-              }}
-            >
-              {navigation.map((item) => {
-                const isActive =
-                  item.path === "/"
-                    ? location.pathname === "/"
-                    : location.pathname.startsWith(item.path);
-
-                return (
-                  <Box
-                    component={Link}
-                    to={item.path}
-                    key={item.path}
-                    sx={{
-                      color: isActive ? "#48cc90" : "rgba(255, 255, 255, 0.7)",
-                      backgroundColor: isActive
-                        ? "rgba(0, 134, 58, 0.22)"
-                        : "transparent",
-                      border: isActive
-                        ? "1px solid rgba(72, 204, 144, 0.35)"
-                        : "1px solid transparent",
-                      borderRadius: "8px",
-                      padding: "6px 16px",
-                      textDecoration: "none",
-                      fontSize: "14px",
-                      fontWeight: isActive ? 600 : 500,
-                      transition: "all 0.2s ease",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      "&:hover": {
-                        color: "#fff",
-                        backgroundColor: isActive
-                          ? "rgba(0, 134, 58, 0.32)"
-                          : "rgba(255, 255, 255, 0.06)",
-                      },
-                    }}
-                  >
-                    {getNavLabel(item.path)}
-                  </Box>
-                );
-              })}
-            </Box>
           </Box>
 
-          {/* Right section: Language Switcher + User Dropdown */}
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-            }}
-          >
-            {/* Bilingual Switcher Toggle Button */}
+          {/* Right section: Bilingual Switcher + User Dropdown */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
             <Button
               onClick={toggleLanguage}
               variant="outlined"
               size="small"
               sx={{
-                height: 34,
-                px: 1.5,
-                borderRadius: "20px",
-                color: "#fff",
+                height: 32,
+                minWidth: 40,
+                px: 1.25,
+                borderRadius: "16px",
+                color: "#ffffff",
                 borderColor: "rgba(255, 255, 255, 0.2)",
                 background: "rgba(255, 255, 255, 0.05)",
-                backdropFilter: "blur(8px)",
                 fontSize: "13px",
                 fontWeight: 600,
-                letterSpacing: 0.5,
                 textTransform: "none",
-                transition: "all 0.25s ease",
+                letterSpacing: 0.5,
+                transition: prefersReducedMotion ? "none" : "all 0.2s ease",
                 "&:hover": {
-                  borderColor: "#4caf50",
-                  background: "rgba(76, 175, 80, 0.15)",
-                  color: "#a5d6a7",
+                  borderColor: "#48cc90",
+                  background: "rgba(72, 204, 144, 0.10)",
+                  color: "#ffffff",
+                },
+                "&.Mui-focusVisible": {
+                  outline: "2px solid #00863A",
+                  outlineOffset: 2,
                 },
                 display: "flex",
                 alignItems: "center",
-                gap: 0.8,
+                gap: 0.75,
               }}
             >
-              <span style={{ fontSize: "16px", lineHeight: 1 }}>
+              <span style={{ fontSize: "15px", lineHeight: 1 }}>
                 {language === "vi" ? "🇻🇳" : "🇬🇧"}
               </span>
               <span>{language === "vi" ? "VI" : "EN"}</span>
@@ -316,29 +530,36 @@ export default function DrawerAppBar(props: Props) {
           </Box>
         </Toolbar>
       </AppBar>
-      <nav>
-        <Drawer
-          container={container}
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{
-            keepMounted: true,
-          }}
-          PaperProps={{
-            style: { background: darkTheme.palette.background.default },
-          }}
-          sx={{
-            display: { xs: "block", sm: "none" },
-            "& .MuiDrawer-paper": {
-              boxSizing: "border-box",
-              width: drawerWidth,
-            },
-          }}
-        >
-          {drawer}
-        </Drawer>
-      </nav>
-    </Box>
+
+      {/* =========================================================================
+          3. MOBILE TEMPORARY DRAWER (< md breakpoint)
+         ========================================================================= */}
+      <Drawer
+        id="mobile-nav-drawer"
+        container={container}
+        variant="temporary"
+        open={mobileOpen}
+        onClose={handleDrawerClose}
+        ModalProps={{
+          keepMounted: true,
+        }}
+        PaperProps={{
+          sx: {
+            backgroundColor: "#0d0e12",
+            backgroundImage: "none",
+            borderRight: "1px solid rgba(255, 255, 255, 0.08)",
+          },
+        }}
+        sx={{
+          display: { xs: "block", md: "none" },
+          "& .MuiDrawer-paper": {
+            boxSizing: "border-box",
+            width: SIDEBAR_WIDTH,
+          },
+        }}
+      >
+        {mobileDrawerContent}
+      </Drawer>
+    </>
   );
 }

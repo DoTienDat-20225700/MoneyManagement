@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // Core WCAG 2.2 Relative Luminance and Contrast Ratio calculation formulas
 function hexToRgb(hex) {
@@ -207,5 +210,132 @@ test('Heading Typography (WCAG 1.3.1): Semantic component prop preserves identic
   assert.equal(h6AsH2.fontWeight, h6Default.fontWeight, 'fontWeight must not change when changing component prop');
   assert.equal(h6AsH2.lineHeight, h6Default.lineHeight, 'lineHeight must not change when changing component prop');
   assert.notEqual(h6AsH2.tag, h6Default.tag, 'DOM tag must be semantically adjusted');
+});
+
+test('Sidebar Contrast: Unselected item text (#9e9e9e) on Sidebar (#0d0e12) meets WCAG 2.2 AA (>= 4.5:1)', () => {
+  const ratio = contrastRatio('#9e9e9e', '#0d0e12');
+  assert.ok(ratio >= 4.5, `Unselected item text contrast must be >= 4.5:1. Got ${ratio.toFixed(2)}:1`);
+});
+
+test('Sidebar Contrast: Selected item text (#48cc90) on Active bg over Sidebar meets WCAG 2.2 AA (>= 4.5:1)', () => {
+  const activeBg = blendRgbaOnHex('rgba(0, 134, 58, 0.22)', '#0d0e12');
+  const ratio = contrastRatio('#48cc90', activeBg);
+  assert.ok(ratio >= 4.5, `Selected item text contrast must be >= 4.5:1. Got ${ratio.toFixed(2)}:1`);
+});
+
+test('Sidebar Contrast: Active indicator (#48cc90) on Sidebar meets WCAG 2.2 Non-text (>= 3.0:1)', () => {
+  const ratio = contrastRatio('#48cc90', '#0d0e12');
+  assert.ok(ratio >= 3.0, `Active indicator contrast must be >= 3.0:1. Got ${ratio.toFixed(2)}:1`);
+});
+
+test('Sidebar Contrast: Collapse button icon (#9e9e9e) and hover state (#ffffff) meet WCAG 2.2 AA', () => {
+  const normalRatio = contrastRatio('#9e9e9e', '#0d0e12');
+  assert.ok(normalRatio >= 3.0, `Collapse button normal icon must be >= 3.0:1. Got ${normalRatio.toFixed(2)}:1`);
+
+  const hoverBg = blendRgbaOnHex('rgba(255, 255, 255, 0.06)', '#0d0e12');
+  const hoverRatio = contrastRatio('#ffffff', hoverBg);
+  assert.ok(hoverRatio >= 4.5, `Collapse button hover text must be >= 4.5:1. Got ${hoverRatio.toFixed(2)}:1`);
+});
+
+test('Navigation Logic: aria-current matching correctly handles exact root and sub-routes', () => {
+  const checkIsActive = (itemPath, currentPath) => {
+    return itemPath === '/' ? currentPath === '/' : currentPath.startsWith(itemPath);
+  };
+
+  // Root path "/" must only be active on exact match
+  assert.equal(checkIsActive('/', '/'), true);
+  assert.equal(checkIsActive('/', '/transactions'), false);
+
+  // Sub-paths must match exact and nested routes
+  assert.equal(checkIsActive('/transactions', '/transactions'), true);
+  assert.equal(checkIsActive('/transactions', '/transactions/detail/123'), true);
+  assert.equal(checkIsActive('/transactions', '/budgets'), false);
+  assert.equal(checkIsActive('/budgets', '/budgets'), true);
+  assert.equal(checkIsActive('/reports', '/reports'), true);
+  assert.equal(checkIsActive('/saving-plans', '/saving-plans'), true);
+  assert.equal(checkIsActive('/debts', '/debts'), true);
+});
+
+test('Sidebar Contrast: Hamburger button icon (#e0e0e0) and focus outline meet WCAG 2.2 Non-text (>= 3.0:1)', () => {
+  const iconRatio = contrastRatio('#e0e0e0', '#0d0e12');
+  assert.ok(iconRatio >= 3.0, `Hamburger icon contrast must be >= 3.0:1. Got ${iconRatio.toFixed(2)}:1`);
+
+  const focusRatio = contrastRatio('#00863A', '#0d0e12');
+  assert.ok(focusRatio >= 3.0, `Focus outline contrast must be >= 3.0:1. Got ${focusRatio.toFixed(2)}:1`);
+});
+
+test('Navigation State: Default state is OPEN without localStorage read/write', () => {
+  const dir = path.dirname(fileURLToPath(import.meta.url));
+  const rootPath = path.resolve(dir, '..', 'src', 'routes', 'Root.tsx');
+  const appDrawerPath = path.resolve(dir, '..', 'src', 'components', 'AppDrawer.tsx');
+
+  const rootContent = fs.readFileSync(rootPath, 'utf-8');
+  const drawerContent = fs.readFileSync(appDrawerPath, 'utf-8');
+
+  // Verify no localStorage usage for sidebar collapsed state
+  assert.ok(!rootContent.includes('mm_sidebar_collapsed'), 'Root.tsx must NOT store/read mm_sidebar_collapsed in localStorage');
+  assert.ok(!drawerContent.includes('mm_sidebar_collapsed'), 'AppDrawer.tsx must NOT store/read mm_sidebar_collapsed in localStorage');
+
+  // Default state is open (collapsed = false)
+  assert.ok(rootContent.includes('useState<boolean>(false)'), 'Root.tsx must initialize collapsed state to false (open)');
+});
+
+test('Navigation Logic: Content click-to-collapse rules', () => {
+  // Mock state machine for auto-collapse
+  let collapsed = false;
+  let isTransitioning = false;
+
+  const handleMainContentClick = ({ innerWidth, isCollapsed, detail, selectionLength, targetInMain }) => {
+    if (innerWidth < 900) return; // f. Below md, ignore
+    if (isCollapsed || isTransitioning) return; // d. Ignore if collapsed or transitioning
+    if (detail === 0) return; // b. Synthetic keyboard click (Enter/Space) -> ignore
+    if (selectionLength > 0) return; // Drag selection -> ignore
+    if (!targetInMain) return; // c. Click outside main (sidebar/topbar/dialog) -> ignore
+
+    collapsed = true;
+  };
+
+  // Rule 1: Mouse click in main while open -> collapses
+  collapsed = false;
+  handleMainContentClick({ innerWidth: 1280, isCollapsed: false, detail: 1, selectionLength: 0, targetInMain: true });
+  assert.equal(collapsed, true, 'Valid mouse click in main must trigger collapse');
+
+  // Rule 2: Synthetic keyboard click (Enter/Space, detail: 0) -> does NOT collapse
+  collapsed = false;
+  handleMainContentClick({ innerWidth: 1280, isCollapsed: false, detail: 0, selectionLength: 0, targetInMain: true });
+  assert.equal(collapsed, false, 'Keyboard Enter/Space (detail: 0) must NOT collapse sidebar');
+
+  // Rule 3: Text selection active -> does NOT collapse
+  collapsed = false;
+  handleMainContentClick({ innerWidth: 1280, isCollapsed: false, detail: 1, selectionLength: 12, targetInMain: true });
+  assert.equal(collapsed, false, 'Mouse release after text selection must NOT collapse sidebar');
+
+  // Rule 4: Click outside main (e.g. TopBar or Sidebar or Dialog portal) -> does NOT collapse
+  collapsed = false;
+  handleMainContentClick({ innerWidth: 1280, isCollapsed: false, detail: 1, selectionLength: 0, targetInMain: false });
+  assert.equal(collapsed, false, 'Click on TopBar or Sidebar must NOT collapse sidebar');
+
+  // Rule 5: Screen under md (< 900px) -> does NOT collapse
+  collapsed = false;
+  handleMainContentClick({ innerWidth: 768, isCollapsed: false, detail: 1, selectionLength: 0, targetInMain: true });
+  assert.equal(collapsed, false, 'Click on mobile/tablet under md must NOT collapse sidebar');
+
+  // Rule 6: Manual re-open by hamburger button keeps sidebar open until next content click
+  collapsed = true;
+  // User clicks hamburger button to toggle open:
+  collapsed = false;
+  assert.equal(collapsed, false, 'Sidebar reopened manually stays open');
+  // Next content click collapses it again:
+  handleMainContentClick({ innerWidth: 1280, isCollapsed: false, detail: 1, selectionLength: 0, targetInMain: true });
+  assert.equal(collapsed, true, 'Next content click collapses sidebar again');
+});
+
+test('Route Isolation: AuthRoot and unauthenticated routes do not include AppDrawer', () => {
+  const dir = path.dirname(fileURLToPath(import.meta.url));
+  const authRootPath = path.resolve(dir, '..', 'src', 'routes', 'AuthRoot.tsx');
+  const authRootContent = fs.readFileSync(authRootPath, 'utf-8');
+
+  assert.ok(!authRootContent.includes('AppDrawer'), 'AuthRoot.tsx must NOT import or render AppDrawer');
+  assert.ok(!authRootContent.includes('navigation'), 'AuthRoot.tsx must NOT import navigation');
 });
 

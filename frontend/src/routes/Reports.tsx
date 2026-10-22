@@ -38,7 +38,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { useReports } from "../hooks/api/useReports";
 import { useLabels } from "../hooks/api/useLabels";
 import { formatValue } from "../utils/utils";
-import { darkTheme } from "../theme";
+import { darkTheme, paletteTokens } from "../theme";
 import { CustomLabel } from "../models/CustomLabel";
 import { usePrefersReducedMotion } from "../hooks/usePrefersReducedMotion";
 import LatestTransactions from "../components/LatestTransactions";
@@ -250,7 +250,7 @@ export default function Reports() {
           toolbar: { show: false },
           animations: { enabled: !prefersReducedMotion },
         },
-        colors: [darkTheme.palette.primary.main, "#ff8285"],
+        colors: [paletteTokens.primary, paletteTokens.chart.expense],
         plotOptions: {
           bar: {
             horizontal: false,
@@ -263,19 +263,19 @@ export default function Reports() {
         xaxis: {
           categories,
           labels: {
-            style: { colors: darkTheme.palette.text.secondary, fontSize: "12px", fontFamily: "Inter" },
+            style: { colors: paletteTokens.textSecondary, fontSize: "12px", fontFamily: "Inter" },
           },
         },
         yaxis: {
           tickAmount: 5,
           labels: {
-            style: { colors: darkTheme.palette.text.secondary, fontFamily: "Inter" },
+            style: { colors: paletteTokens.textSecondary, fontFamily: "Inter" },
             formatter: (val: number) => formatValue(val),
           },
         },
         grid: {
           show: true,
-          borderColor: grey[900],
+          borderColor: paletteTokens.divider,
         },
         tooltip: {
           theme: "dark",
@@ -287,25 +287,51 @@ export default function Reports() {
           show: true,
           position: "top",
           horizontalAlign: "right",
-          labels: { colors: darkTheme.palette.text.secondary },
+          labels: { colors: paletteTokens.textSecondary },
           fontFamily: "Inter",
         },
       },
     };
   }, [reportSummary?.monthly_trends, language, prefersReducedMotion]);
 
-  // Chart 2: Category Breakdown (Pie chart matching ProfileChart style)
+  // Chart 2: Category Breakdown (Pie chart with Palette v2 top 5 + "Khác")
   const categoryBreakdownChart = useMemo<{ series: number[]; options: ApexOptions }>(() => {
     const breakdown = reportSummary?.category_breakdown || [];
-    const series = breakdown.map((item) => Number(item.total));
-    const labelsList = breakdown.map((item) =>
-      item.label_name === "Chưa phân loại" ? t("uncategorized") : item.label_name
-    );
-    const colorsList = breakdown.map((item, idx) => {
-      if (item.label_color && item.label_color.startsWith("#")) return item.label_color;
-      const palette = ["#00863A", "#ff8285", "#faad14", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6"];
-      return palette[idx % palette.length];
-    });
+    const chartColors = paletteTokens.chart.colors;
+    const otherColor = paletteTokens.chart.other;
+
+    const sorted = [...breakdown].sort((a, b) => Number(b.total) - Number(a.total));
+    let topItems: { name: string; total: number; color: string }[] = [];
+
+    if (sorted.length <= 5) {
+      topItems = sorted.map((item, idx) => ({
+        name: item.label_name === "Chưa phân loại" ? t("uncategorized") : item.label_name,
+        total: Number(item.total),
+        color: chartColors[idx % chartColors.length],
+      }));
+    } else {
+      const top5 = sorted.slice(0, 5);
+      const others = sorted.slice(5);
+      const otherTotal = others.reduce((acc, curr) => acc + Number(curr.total), 0);
+
+      topItems = top5.map((item, idx) => ({
+        name: item.label_name === "Chưa phân loại" ? t("uncategorized") : item.label_name,
+        total: Number(item.total),
+        color: chartColors[idx % chartColors.length],
+      }));
+
+      if (otherTotal > 0) {
+        topItems.push({
+          name: language === "vi" ? "Khác" : "Other",
+          total: otherTotal,
+          color: otherColor,
+        });
+      }
+    }
+
+    const series = topItems.map((item) => item.total);
+    const labelsList = topItems.map((item) => item.name);
+    const colorsList = topItems.map((item) => item.color);
 
     return {
       series,
@@ -325,7 +351,7 @@ export default function Reports() {
           show: true,
           position: "left",
           labels: {
-            colors: darkTheme.palette.text.secondary,
+            colors: paletteTokens.textSecondary,
           },
           fontFamily: "Inter",
         },
@@ -345,7 +371,7 @@ export default function Reports() {
         },
       },
     };
-  }, [reportSummary?.category_breakdown, t, prefersReducedMotion]);
+  }, [reportSummary?.category_breakdown, language, t, prefersReducedMotion]);
 
   const userName = user
     ? `${user.first_name || ""} ${user.last_name || ""}`.trim() || user.email
@@ -522,19 +548,28 @@ export default function Reports() {
               onClick={handleExportExcel}
               disabled={isExporting || isDateInvalid}
               sx={{
-                backgroundColor: "#00863A",
-                "&:hover": { backgroundColor: "#006d2f" },
+                backgroundColor: paletteTokens.primary,
+                color: paletteTokens.primaryContrastText,
+                "&:hover": { backgroundColor: paletteTokens.primaryHover },
               }}
             >
               {t("export_excel")}
             </Button>
 
             <Button
-              variant="contained"
+              variant="outlined"
               size="medium"
               startIcon={<PrintOutlinedIcon />}
               onClick={handlePrint}
               disabled={isDateInvalid}
+              sx={{
+                borderColor: paletteTokens.controlBorder,
+                color: paletteTokens.textPrimary,
+                "&:hover": {
+                  borderColor: paletteTokens.textSecondary,
+                  backgroundColor: "rgba(255, 255, 255, 0.04)",
+                },
+              }}
             >
               {t("print_report")}
             </Button>
@@ -687,7 +722,7 @@ export default function Reports() {
               <Grid key={i} item xs={12} sm={6} lg={3}>
                 <Box
                   border="1px solid"
-                  borderColor={darkTheme.palette.background.paper}
+                  borderColor={paletteTokens.divider}
                   borderRadius={2}
                   padding={3}
                   height={"100%"}
@@ -706,7 +741,7 @@ export default function Reports() {
               <Box
                 className="print-card print-avoid-break"
                 border="1px solid"
-                borderColor={darkTheme.palette.background.paper}
+                borderColor={paletteTokens.divider}
                 borderRadius={2}
                 padding={3}
                 height={"100%"}
@@ -719,7 +754,7 @@ export default function Reports() {
                     component="span"
                     variant="h5"
                     fontWeight={600}
-                    sx={{ color: "#48cc90" }}
+                    sx={{ color: paletteTokens.primary }}
                   >
                     +{formatValue(totalIncome)}
                   </Typography>
@@ -727,7 +762,7 @@ export default function Reports() {
                 <Typography
                   component="p"
                   variant="caption"
-                  color={incomeChangePct >= 0 ? "#48cc90" : "#ff8285"}
+                  color={incomeChangePct >= 0 ? paletteTokens.primary : "text.secondary"}
                   sx={{ mt: 1 }}
                 >
                   {incomeChangePct >= 0 ? `+${incomeChangePct}%` : `${incomeChangePct}%`}{" "}
@@ -741,7 +776,7 @@ export default function Reports() {
               <Box
                 className="print-card print-avoid-break"
                 border="1px solid"
-                borderColor={darkTheme.palette.background.paper}
+                borderColor={paletteTokens.divider}
                 borderRadius={2}
                 padding={3}
                 height={"100%"}
@@ -754,7 +789,7 @@ export default function Reports() {
                     component="span"
                     variant="h5"
                     fontWeight={600}
-                    sx={{ color: "#ff8285" }}
+                    color="text.primary"
                   >
                     -{formatValue(totalExpense)}
                   </Typography>
@@ -776,7 +811,7 @@ export default function Reports() {
               <Box
                 className="print-card print-avoid-break"
                 border="1px solid"
-                borderColor={darkTheme.palette.background.paper}
+                borderColor={paletteTokens.divider}
                 borderRadius={2}
                 padding={3}
                 height={"100%"}
@@ -789,7 +824,7 @@ export default function Reports() {
                     component="span"
                     variant="h5"
                     fontWeight={600}
-                    sx={{ color: netCashFlow >= 0 ? "#48cc90" : "#ff8285" }}
+                    sx={{ color: netCashFlow >= 0 ? paletteTokens.primary : paletteTokens.error }}
                   >
                     {netCashFlow >= 0 ? `+${formatValue(netCashFlow)}` : formatValue(netCashFlow)}
                   </Typography>
@@ -797,7 +832,7 @@ export default function Reports() {
                 <Typography
                   component="p"
                   variant="caption"
-                  color={netCashFlowChangePct > 0 ? "#48cc90" : "#ff8285"}
+                  color={netCashFlowChangePct >= 0 ? paletteTokens.primary : paletteTokens.error}
                   sx={{ mt: 1 }}
                 >
                   {netCashFlowChangePct > 0 ? `+${netCashFlowChangePct}%` : `${netCashFlowChangePct}%`}{" "}
@@ -811,7 +846,7 @@ export default function Reports() {
               <Box
                 className="print-card print-avoid-break"
                 border="1px solid"
-                borderColor={darkTheme.palette.background.paper}
+                borderColor={paletteTokens.divider}
                 borderRadius={2}
                 padding={3}
                 height={"100%"}
@@ -839,7 +874,7 @@ export default function Reports() {
           <Box
             className="print-card print-chart-container print-avoid-break"
             border="1px solid"
-            borderColor={darkTheme.palette.background.paper}
+            borderColor={paletteTokens.divider}
             borderRadius={2}
             padding={3}
             height={380}
@@ -884,7 +919,7 @@ export default function Reports() {
           <Box
             className="print-card print-chart-container print-avoid-break"
             border="1px solid"
-            borderColor={darkTheme.palette.background.paper}
+            borderColor={paletteTokens.divider}
             borderRadius={2}
             padding={3}
             height={380}
@@ -930,7 +965,7 @@ export default function Reports() {
           <Box
             className="print-card print-avoid-break"
             border="1px solid"
-            borderColor={darkTheme.palette.background.paper}
+            borderColor={paletteTokens.divider}
             borderRadius={2}
             padding={3}
           >
@@ -957,7 +992,7 @@ export default function Reports() {
                   <Grid key={idx} item xs={12} sm={6} md={4}>
                     <Box
                       border="1px solid"
-                      borderColor={darkTheme.palette.background.paper}
+                      borderColor={paletteTokens.divider}
                       borderRadius={2}
                       padding={2}
                     >
@@ -1079,11 +1114,11 @@ export default function Reports() {
                           <td style={{ textAlign: "center" }}>{idx + 1}</td>
                           <td style={{ textAlign: "center" }}>{dayjs(tx.date).format(dateFormat)}</td>
                           <td>{tx.title}</td>
-                          <td style={{ textAlign: "center", fontWeight: 600, color: isIncome ? "#16a34a" : "#dc2626" }}>
+                          <td style={{ textAlign: "center", fontWeight: 600, color: isIncome ? paletteTokens.primary : "text.primary" }}>
                             {isIncome ? (language === "vi" ? "Khoản thu" : "Earning") : (language === "vi" ? "Khoản chi" : "Expense")}
                           </td>
                           <td>{tx.label?.name || (language === "vi" ? "Chưa phân loại" : "Uncategorized")}</td>
-                          <td style={{ textAlign: "right", fontWeight: 600, color: isIncome ? "#16a34a" : "#dc2626" }}>
+                          <td style={{ textAlign: "right", fontWeight: 600, color: isIncome ? paletteTokens.primary : "text.primary" }}>
                             {isIncome ? `+${formatValue(Number(tx.value))}` : `-${formatValue(Number(tx.value))}`}
                           </td>
                           <td style={{ textAlign: "center" }}>{tx.recurrent ? (language === "vi" ? "Có" : "Yes") : "-"}</td>
@@ -1105,7 +1140,7 @@ export default function Reports() {
                       <td colSpan={5} style={{ textAlign: "right", paddingRight: "10px" }}>
                         {language === "vi" ? `Tổng cộng (${transactionsList.length} giao dịch):` : `Total (${transactionsList.length} transactions):`}
                       </td>
-                      <td style={{ textAlign: "right", color: netCashFlow >= 0 ? "#16a34a" : "#dc2626" }}>
+                      <td style={{ textAlign: "right", color: netCashFlow >= 0 ? paletteTokens.primary : paletteTokens.error }}>
                         {netCashFlow >= 0 ? `+${formatValue(netCashFlow)}` : formatValue(netCashFlow)}
                       </td>
                       <td colSpan={2}></td>
