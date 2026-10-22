@@ -56,7 +56,11 @@ Kết quả trích xuất trực tiếp từ bộ công cụ kiểm thử tự �
 ### 3.7. Giảm thiểu Chuyển động (Animation from Interactions - SC 2.3.3)
 - Tích hợp hook `usePrefersReducedMotion()`.
 - Khi người dùng bật cài đặt "Reduce motion" trên hệ điều hành, tất cả các thuộc tính animation/transition chuyển đổi độ rộng sidebar và margin vùng nội dung tự động chuyển thành `"none"`.
-- Sự kiện co giãn biểu đồ (`window.dispatchEvent(new Event('resize'))`) được kích hoạt tức thì thay vì chờ timeout animation 200ms.
+- Sự kiện co giãn biểu đồ (`window.dispatchEvent(new Event('resize'))`) được kích hoạt thông qua sự kiện trình duyệt `transitionend` đúng một lần duy nhất, hoặc kích hoạt tức thì khi bật `prefers-reduced-motion`.
+
+### 3.8. Loại bỏ Bẫy cuộn Nội dung (No Keyboard Scroll Traps - SC 2.1.2)
+- Danh sách cảnh báo ngân sách ở Dashboard được đặt chiều cao tự động (`height: "auto"`) thay vì cố định `maxHeight: 220px`.
+- Toàn bộ các danh mục tiệm cận/vượt hạn mức hiển thị đầy đủ, không bị cắt cụt mục ở đáy ("Ăn uống"), đồng thời loại bỏ vùng cuộn lồng nhau (nested scrollbar) gây khó khăn cho việc điều hướng bằng phím Tab hoặc mũi tên.
 
 ---
 

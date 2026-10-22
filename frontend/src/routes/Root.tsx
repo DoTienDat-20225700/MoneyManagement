@@ -25,43 +25,59 @@ function Root() {
 
   // Auto-collapse on main content click (desktop only, when sidebar is open)
   const handleMainContentClick = (event: React.MouseEvent<HTMLElement>) => {
-    // f. Below md (< 900px), do nothing
+    // Below md (< 900px), do nothing
     if (window.innerWidth < 900) return;
 
-    // d. Only collapse when currently open, and ignore while in transition
+    // Only collapse when currently open, and ignore while in transition
     if (collapsed || isTransitioningRef.current) return;
 
-    // b. Synthetic keyboard click (Enter / Space) has event.detail === 0 -> Do NOT collapse
+    // Synthetic keyboard click (Enter / Space) has event.detail === 0 -> Do NOT collapse (WCAG 3.2.1)
     if (event.detail === 0) return;
 
     // Skip if user is dragging/selecting text in content
     const selection = window.getSelection();
     if (selection && selection.toString().trim().length > 0) return;
 
-    // c. Verify click is inside <main> and not in a Portal/Dialog/Menu
+    // Verify click is inside <main>
     const mainEl = document.getElementById("main-content");
     if (!mainEl || !mainEl.contains(event.target as Node)) return;
 
-    // a. Collapse on valid mouse/touch click
+    // Risk 8 Mitigation: Do NOT collapse if user clicked an element that triggers/controls a popup,
+    // select dropdown, menu, or dialog (avoids popover anchor shift and misplacement).
+    const target = event.target as HTMLElement | null;
+    if (target) {
+      const isPopupTrigger = target.closest(
+        '[aria-haspopup], [aria-expanded], .MuiSelect-select, .MuiAutocomplete-popupIndicator, .MuiMenu-root, .MuiPopover-root'
+      );
+      if (isPopupTrigger) return;
+    }
+
+    // Also do not collapse if an overlay (Menu / Popover / Dialog) is currently active in the DOM
+    const hasOpenOverlay = document.querySelector(
+      '.MuiPopover-root:not([style*="visibility: hidden"]), .MuiDialog-root, .MuiMenu-root'
+    );
+    if (hasOpenOverlay) return;
+
+    // Collapse on valid mouse/touch click in main content area
+    isTransitioningRef.current = !prefersReducedMotion;
     setCollapsed(true);
   };
 
-  // Dispatch window resize event exactly ONCE after transition finishes (or immediately if reduced motion)
+  // When prefers-reduced-motion is active, immediately dispatch resize on collapse change
   useEffect(() => {
     if (prefersReducedMotion) {
       isTransitioningRef.current = false;
       window.dispatchEvent(new Event("resize"));
-      return;
     }
+  }, [collapsed, prefersReducedMotion]);
 
-    isTransitioningRef.current = true;
-    const timer = setTimeout(() => {
+  // Transitionend handler: dispatch exactly ONE resize event after transition completes
+  const handleTransitionEnd = (e: React.TransitionEvent<HTMLElement>) => {
+    if (e.target === e.currentTarget && (e.propertyName === "width" || e.propertyName === "margin-left")) {
       isTransitioningRef.current = false;
       window.dispatchEvent(new Event("resize"));
-    }, 220); // 200ms transition + 20ms buffer
-
-    return () => clearTimeout(timer);
-  }, [collapsed, prefersReducedMotion]);
+    }
+  };
 
   const currentSidebarWidth = collapsed
     ? SIDEBAR_COLLAPSED_WIDTH
@@ -159,6 +175,7 @@ function Root() {
           id="main-content"
           tabIndex={-1}
           onClick={handleMainContentClick}
+          onTransitionEnd={handleTransitionEnd}
           sx={{
             flexGrow: 1,
             minWidth: 0,

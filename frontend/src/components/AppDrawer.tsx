@@ -16,7 +16,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import ViewSidebarOutlinedIcon from "@mui/icons-material/ViewSidebarOutlined";
+import MenuIcon from "@mui/icons-material/Menu";
 import TranslateIcon from "@mui/icons-material/Translate";
 import { navigation } from "../navigation";
 import UserDropdown from "./UserDropdown";
@@ -24,7 +24,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { usePrefersReducedMotion } from "../hooks/usePrefersReducedMotion";
 
 export const SIDEBAR_WIDTH = 240;
-export const SIDEBAR_COLLAPSED_WIDTH = 0;
+export const SIDEBAR_COLLAPSED_WIDTH = 72;
 export const TOPBAR_HEIGHT = 56;
 
 interface AppDrawerProps {
@@ -233,15 +233,13 @@ export default function AppDrawer(props: AppDrawerProps) {
           top: `${TOPBAR_HEIGHT}px`,
           bottom: 0,
           left: 0,
-          width: isCollapsed ? 0 : SIDEBAR_WIDTH,
-          visibility: isCollapsed ? "hidden" : "visible",
+          width: isCollapsed ? `${SIDEBAR_COLLAPSED_WIDTH}px` : `${SIDEBAR_WIDTH}px`,
           zIndex: 1100,
           backgroundColor: "#0d0e12",
-          borderRight: isCollapsed ? "none" : "1px solid rgba(255, 255, 255, 0.08)",
-          boxShadow: isCollapsed ? "none" : "4px 0 20px rgba(0, 0, 0, 0.35)",
+          borderRight: "1px solid rgba(255, 255, 255, 0.08)",
+          boxShadow: "4px 0 20px rgba(0, 0, 0, 0.35)",
           transition: sidebarTransition,
           overflowX: "hidden",
-          pointerEvents: isCollapsed ? "none" : "auto",
           "@media print": {
             display: "none !important",
           },
@@ -250,12 +248,12 @@ export default function AppDrawer(props: AppDrawerProps) {
         {/* Sidebar Navigation Items */}
         <List
           sx={{
-            px: 1.25,
+            px: isCollapsed ? 1 : 1.25,
             py: 1.5,
             flexGrow: 1,
             overflowY: "auto",
             overflowX: "hidden",
-            width: `${SIDEBAR_WIDTH}px`,
+            width: "100%",
             boxSizing: "border-box",
           }}
         >
@@ -271,59 +269,73 @@ export default function AppDrawer(props: AppDrawerProps) {
                   mb: 1,
                   display: "flex",
                   width: "100%",
+                  justifyContent: "center",
                 }}
               >
-                <ListItemButton
-                  component={Link}
-                  to={item.path}
-                  tabIndex={isCollapsed ? -1 : 0}
-                  aria-current={isActive ? "page" : undefined}
-                  sx={{
-                    minHeight: 44,
-                    width: "100%",
-                    borderRadius: "8px",
-                    justifyContent: "flex-start",
-                    px: 2,
-                    backgroundColor: isActive
-                      ? "rgba(0, 134, 58, 0.14)"
-                      : "transparent",
-                    color: isActive ? "#48cc90" : "#9e9e9e",
-                    border: "1px solid transparent",
-                    transition: prefersReducedMotion ? "none" : "all 0.2s ease",
-                    "&:hover": {
-                      backgroundColor: isActive
-                        ? "rgba(0, 134, 58, 0.32)"
-                        : "rgba(255, 255, 255, 0.06)",
-                      color: "#ffffff",
-                      "& .MuiListItemIcon-root": {
-                        color: isActive ? "#48cc90" : "#ffffff",
-                      },
-                    },
-                    "&.Mui-focusVisible": {
-                      outline: "2px solid #00863A",
-                      outlineOffset: 2,
-                    },
-                  }}
+                <Tooltip
+                  title={isCollapsed ? label : ""}
+                  placement="right"
+                  arrow
+                  disableHoverListener={!isCollapsed}
+                  disableFocusListener={!isCollapsed}
+                  disableTouchListener={!isCollapsed}
                 >
-                  <ListItemIcon
+                  <ListItemButton
+                    component={Link}
+                    to={item.path}
+                    tabIndex={0}
+                    aria-current={isActive ? "page" : undefined}
+                    aria-label={isCollapsed ? label : undefined}
                     sx={{
-                      minWidth: 38,
-                      color: "inherit",
-                      justifyContent: "center",
-                      mr: 1,
+                      minHeight: 48,
+                      width: "100%",
+                      borderRadius: "8px",
+                      justifyContent: isCollapsed ? "center" : "flex-start",
+                      px: isCollapsed ? 1 : 2,
+                      backgroundColor: isActive
+                        ? "rgba(0, 134, 58, 0.14)"
+                        : "transparent",
+                      color: isActive ? "#48cc90" : "#9e9e9e",
+                      border: "1px solid transparent",
+                      borderLeft: isActive ? "3px solid #00863A" : "3px solid transparent",
+                      transition: prefersReducedMotion ? "none" : "all 0.2s ease",
+                      "&:hover": {
+                        backgroundColor: isActive
+                          ? "rgba(0, 134, 58, 0.32)"
+                          : "rgba(255, 255, 255, 0.06)",
+                        color: "#ffffff",
+                        "& .MuiListItemIcon-root": {
+                          color: isActive ? "#48cc90" : "#ffffff",
+                        },
+                      },
+                      "&.Mui-focusVisible": {
+                        outline: "2px solid #00863A",
+                        outlineOffset: 2,
+                      },
                     }}
                   >
-                    {item.icon}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={label}
-                    primaryTypographyProps={{
-                      fontSize: "14px",
-                      fontWeight: isActive ? 600 : 500,
-                      noWrap: true,
-                    }}
-                  />
-                </ListItemButton>
+                    <ListItemIcon
+                      sx={{
+                        minWidth: isCollapsed ? 0 : 38,
+                        color: "inherit",
+                        justifyContent: "center",
+                        mr: isCollapsed ? 0 : 1,
+                      }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+                    {!isCollapsed && (
+                      <ListItemText
+                        primary={label}
+                        primaryTypographyProps={{
+                          fontSize: "14px",
+                          fontWeight: isActive ? 600 : 500,
+                          noWrap: true,
+                        }}
+                      />
+                    )}
+                  </ListItemButton>
+                </Tooltip>
               </ListItem>
             );
           })}
@@ -402,7 +414,7 @@ export default function AppDrawer(props: AppDrawerProps) {
                   },
                 }}
               >
-                <ViewSidebarOutlinedIcon aria-hidden="true" />
+                <MenuIcon aria-hidden="true" />
               </IconButton>
             </Tooltip>
 
@@ -440,7 +452,7 @@ export default function AppDrawer(props: AppDrawerProps) {
                   },
                 }}
               >
-                <ViewSidebarOutlinedIcon aria-hidden="true" />
+                <MenuIcon aria-hidden="true" />
               </IconButton>
             </Tooltip>
 

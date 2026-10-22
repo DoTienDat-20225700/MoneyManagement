@@ -321,7 +321,7 @@ export default function DashboardBudgetSummary() {
                 </Typography>
 
                 {atRiskBudgets.length > 0 ? (
-                  <Stack spacing={1.5} sx={{ overflowY: "auto", maxHeight: 220, pr: 0.5 }}>
+                  <Stack spacing={1.5} sx={{ height: "auto" }}>
                     {atRiskBudgets.map((budget) => {
                       const isExceeded = budget.status === "exceeded";
                       const pct = budget.percentage;

@@ -54,11 +54,17 @@ Khi người dùng tương tác với vùng nội dung chính (`<main id="main-c
 4. **Phạm vi kiểm soát (DOM Containment)**: Click trong Sidebar, TopBar hoặc các hộp thoại `Dialog`, menu `Popover` (render qua React Portal ra ngoài `<main>`) hoàn toàn không làm sidebar đóng.
 5. **Chống nhấp nháy chuyển động**: Không kích hoạt thu gọn khi sidebar đã ở trạng thái đóng hoặc đang trong quá trình chuyển đổi (`isTransitioningRef`).
 6. **Thời gian chuyển động**: Thời lượng chuyển động ngắn mượt mà `200ms` (`0.2s cubic-bezier(0.4, 0, 0.2, 1)`). Tự động tắt hoàn toàn khi hệ điều hành kích hoạt `prefers-reduced-motion`.
-7. **Đồng bộ vị trí Popover / Select**: Sau khi animation kết thúc (220ms), phát sự kiện `window.dispatchEvent(new Event('resize'))` đúng một lần để kích hoạt bộ tính toán vị trí tự động `updatePosition()` của MUI Popover/Menu, giữ cho menu thả xuống bám khít lại ô nhập.
+7. **Đồng bộ vị trí & Xử lý rủi ro Popover**: Lắng nghe sự kiện `transitionend` trên container nội dung chính để phát sự kiện `window.dispatchEvent(new Event('resize'))` đúng MỘT lần duy nhất sau khi animation kết thúc (khi bật `prefers-reduced-motion` thì dispatch ngay lập tức). Đặc biệt, hệ thống chủ động bỏ qua việc tự thu gọn nếu người dùng click vào phần tử kích hoạt Popup/Dropdown/Select/Menu (`[aria-haspopup]`, `[aria-expanded]`, `.MuiSelect-select`, `.MuiAutocomplete-popupIndicator`) hoặc khi đang có Modal/Menu active trong DOM, loại bỏ hoàn toàn rủi ro menu popover bị lệch tọa độ anchor.
 
 ### 2.5. Chế độ in ấn (`@media print`)
 - Sidebar desktop, Mobile Drawer và TopBar đều tự động ẩn hoàn toàn (`display: none !important`).
 - Vùng nội dung `<main>` chiếm toàn bộ chiều rộng trang in (`margin: 0 !important; padding: 0 !important; width: 100% !important; max-width: 100% !important;`).
+
+### 2.6. Khắc phục lỗi cắt đáy "Danh mục cần lưu ý" (Dashboard Budget Summary)
+- Danh sách các mục ngân sách cần lưu ý (`atRiskBudgets`) được chuyển sang chiều cao tự động (`height: "auto"`, loại bỏ giới hạn cứng `maxHeight: 220px`).
+- **Lý do lựa chọn giải pháp chiều cao tự động**:
+  - Đơn giản và tự nhiên: Thường chỉ có 1-3 danh mục tiệm cận/vượt ngưỡng, chiều cao tự động giúp hiển thị đầy đủ thẻ cảnh báo và thanh tiến độ mà không bị cắt lấp lửng ở đáy.
+  - Tối ưu Accessibility: Tránh tạo ra vùng cuộn lồng nhau (nested scroll container), loại bỏ nguy cơ bẫy cuộn bàn phím (keyboard scroll trap) và không cần thêm tabIndex phụ.
 
 ---
 
