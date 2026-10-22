@@ -144,7 +144,7 @@ class TransactionAPIView(APIView):
 
         with db_transaction.atomic():
             try:
-                transaction = Transaction.objects.select_for_update().get(
+                transaction = Transaction.objects.select_for_update(of=('self',)).get(
                     pk=transaction_pk, wallet__user=user)
             except Transaction.DoesNotExist:
                 return custom_user_error_response("Không tìm thấy giao dịch.", 404)
@@ -1240,7 +1240,13 @@ class DebtAPIView(APIView):
         except DebtLoan.DoesNotExist:
             return custom_user_error_response("Không tìm thấy hợp đồng nợ.", 404)
 
-        debt.delete()
+        try:
+            debt.delete()
+        except DebtLoan.DoesNotExist:
+            return custom_user_error_response("Không tìm thấy hợp đồng nợ.", 404)
+        except ValidationError as error:
+            msg = error.message_dict if hasattr(error, 'message_dict') else (error.message if hasattr(error, 'message') else str(error))
+            return custom_user_error_response(msg, 400)
         return custom_success_response("Hợp đồng nợ đã được xoá thành công!")
 
 

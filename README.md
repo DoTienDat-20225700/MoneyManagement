@@ -71,6 +71,14 @@ npm run dev
 
 Frontend sẽ khởi chạy tại: `http://localhost:5173`
 
+### 4. Chạy Kiểm Thử Đồng Thời (Concurrency Tests) với PostgreSQL
+
+Mặc định test suite chạy trên SQLite (`python manage.py test`). Để chạy kiểm thử đồng thời trên PostgreSQL:
+```bash
+docker compose -f docker-compose.test.yml up -d
+TEST_DB=postgres python manage.py test hubModels.test_concurrency_postgres
+```
+
 ---
 
 ## 🧑‍💻 Thông Tin Tác Giả (Author)

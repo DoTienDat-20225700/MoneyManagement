@@ -134,12 +134,25 @@ WSGI_APPLICATION = 'hubSettings.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    },
-}
+TEST_DB = config('TEST_DB', default='').lower()
+if TEST_DB in ('postgres', 'postgresql'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('TEST_DB_NAME', default='moneymanagement_test'),
+            'USER': config('TEST_DB_USER', default='test_user'),
+            'PASSWORD': config('TEST_DB_PASSWORD', default='test_password'),
+            'HOST': config('TEST_DB_HOST', default='127.0.0.1'),
+            'PORT': config('TEST_DB_PORT', default='5433'),
+        }
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators

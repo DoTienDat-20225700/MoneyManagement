@@ -489,7 +489,7 @@ class Transaction(WalletBasedModel):
 
         with db_transaction.atomic():
             try:
-                transaction = cls.objects.select_for_update().select_related('wallet').get(
+                transaction = cls.objects.select_for_update(of=('self',)).select_related('wallet').get(
                     pk=transaction_pk, wallet__user=user)
             except cls.DoesNotExist:
                 raise cls.DoesNotExist()
@@ -1410,27 +1410,36 @@ class DebtLoan(WalletBasedModel):
             return debt
 
     def delete(self, **kwargs):
+        wallet_id = self.wallet_id
         with db_transaction.atomic():
             try:
-                wallet = Wallet.objects.select_for_update().get(pk=self.wallet_id)
+                wallet = Wallet.objects.select_for_update().get(pk=wallet_id)
             except Wallet.DoesNotExist:
                 return super().delete(**kwargs)
 
+            try:
+                debt = DebtLoan.objects.select_for_update().get(pk=self.pk)
+            except DebtLoan.DoesNotExist:
+                raise DebtLoan.DoesNotExist('Hợp đồng nợ không tồn tại hoặc đã bị xóa bởi luồng khác.')
+
+            if debt.wallet_id != wallet.pk:
+                raise ValidationError('Ví của hợp đồng nợ đã bị thay đổi, không thể thực hiện thao tác xóa.')
+
             # 1. Reverse all payments made with update_wallet
-            for payment in self.payments.filter(update_wallet=True):
-                if self.type == 'LOAN_GIVEN':
+            for payment in debt.payments.filter(update_wallet=True):
+                if debt.type == 'LOAN_GIVEN':
                     wallet.update_balance(-payment.amount)
-                elif self.type in ('DEBT_BORROWED', 'INSTALLMENT'):
+                elif debt.type in ('DEBT_BORROWED', 'INSTALLMENT'):
                     wallet.update_balance(payment.amount)
 
             # 2. Reverse initial contract effect ONLY IF wallet_applied = True
-            if self.wallet_applied:
-                if self.type == 'LOAN_GIVEN':
-                    wallet.update_balance(self.principal_amount)
-                elif self.type == 'DEBT_BORROWED':
-                    wallet.update_balance(-self.principal_amount)
+            if debt.wallet_applied:
+                if debt.type == 'LOAN_GIVEN':
+                    wallet.update_balance(debt.principal_amount)
+                elif debt.type == 'DEBT_BORROWED':
+                    wallet.update_balance(-debt.principal_amount)
 
-            return super().delete(**kwargs)
+            return super(DebtLoan, debt).delete(**kwargs)
 
 
 class DebtPayment(models.Model):
@@ -1506,7 +1515,7 @@ class DebtPayment(models.Model):
         with db_transaction.atomic():
             try:
                 wallet = Wallet.objects.select_for_update().get(user=user)
-                debt = DebtLoan.objects.select_for_update().get(payments__id=payment_pk, wallet=wallet)
+                debt = DebtLoan.objects.select_for_update(of=('self',)).get(payments__id=payment_pk, wallet=wallet)
                 payment = cls.objects.select_for_update().get(pk=payment_pk, debt=debt)
             except (cls.DoesNotExist, DebtLoan.DoesNotExist):
                 raise cls.DoesNotExist('Không tìm thấy khoản thanh toán.')
@@ -1570,7 +1579,7 @@ class DebtPayment(models.Model):
         with db_transaction.atomic():
             try:
                 wallet = Wallet.objects.select_for_update().get(user=user)
-                debt = DebtLoan.objects.select_for_update().get(payments__id=payment_pk, wallet=wallet)
+                debt = DebtLoan.objects.select_for_update(of=('self',)).get(payments__id=payment_pk, wallet=wallet)
                 payment = cls.objects.select_for_update().get(pk=payment_pk, debt=debt)
             except (cls.DoesNotExist, DebtLoan.DoesNotExist):
                 raise cls.DoesNotExist('Không tìm thấy khoản thanh toán.')
