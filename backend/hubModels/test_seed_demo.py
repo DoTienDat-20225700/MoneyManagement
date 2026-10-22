@@ -219,3 +219,35 @@ class SeedDemoCommandTestCase(TestCase):
         finally:
             if os.path.exists(guide_file):
                 os.remove(guide_file)
+
+    def test_09_refuse_reset_without_yes(self):
+        """
+        Từ chối khi truyền --reset mà thiếu --yes.
+        """
+        with self.assertRaises(CommandError) as ctx:
+            call_command('seed_demo', '--reset', stdout=self.out)
+        self.assertIn("bắt buộc phải kèm cờ --yes", str(ctx.exception))
+
+    def test_10_refuse_when_production_db_without_force(self):
+        """
+        Từ chối chạy khi tên database trông như production nếu thiếu --force.
+        """
+        prod_databases = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': 'moneymanagement_production.sqlite3',
+            }
+        }
+        with override_settings(DATABASES=prod_databases):
+            with self.assertRaises(CommandError) as ctx:
+                call_command('seed_demo', '--reset', '--yes', stdout=self.out)
+            self.assertIn("DB không phải production", str(ctx.exception))
+
+    def test_11_command_fails_when_verification_fails(self):
+        """
+        Command thoát mã khác 0 (raise CommandError) nếu verify_demo_data phát hiện vi phạm.
+        """
+        with mock.patch('hubModels.management.commands.seed_demo.verify_demo_data', return_value=["Lỗi vi phạm cố ý để test"]):
+            with self.assertRaises(CommandError) as ctx:
+                call_command('seed_demo', '--reset', '--yes', stdout=self.out)
+            self.assertIn("Dữ liệu demo không vượt qua kiểm chứng", str(ctx.exception))

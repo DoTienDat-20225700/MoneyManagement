@@ -1,6 +1,6 @@
 import os
 import sys
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import Optional
 
@@ -65,10 +65,13 @@ class Command(BaseCommand):
         seed = options.get('seed', 2026)
         guide_path = options.get('write_guide')
 
-        # Safety Check: DEBUG protection
-        if not settings.DEBUG and not force:
+        # Safety Check: DEBUG protection & Production DB check
+        db_name = str(settings.DATABASES.get('default', {}).get('NAME', '')).lower()
+        db_host = str(settings.DATABASES.get('default', {}).get('HOST', '')).lower()
+        is_prod_like = ('prod' in db_name) or ('production' in db_name) or (db_host and db_host not in ('localhost', '127.0.0.1', 'db', 'postgres'))
+        if (not settings.DEBUG or is_prod_like) and not force:
             raise CommandError(
-                "LỖI AN TOÀN: Command seed_demo chỉ được phép chạy khi settings.DEBUG = True. "
+                "LỖI AN TOÀN: Command seed_demo chỉ được phép chạy khi settings.DEBUG = True và DB không phải production. "
                 "Nếu bạn chắc chắn muốn chạy trên môi trường khác, hãy truyền cờ --force."
             )
 
@@ -82,13 +85,9 @@ class Command(BaseCommand):
 
         # Confirmation if --reset
         if reset and not yes:
-            confirm = input(
-                "Bạn có chắc chắn muốn xoá và tạo lại dữ liệu cho 2 tài khoản demo "
-                f"({', '.join(DEMO_ACCOUNTS.keys())})? [y/N]: "
+            raise CommandError(
+                "LỖI AN TOÀN: Khi dùng cờ --reset, bắt buộc phải kèm cờ --yes để xác nhận xoá và tạo lại dữ liệu demo."
             )
-            if confirm.lower() not in ('y', 'yes'):
-                self.stdout.write("Huỷ thao tác theo yêu cầu người dùng.")
-                return
 
         self.stdout.write(self.style.MIGRATE_HEADING("=== BẮT ĐẦU SINH DỮ LIỆU DEMO ==="))
         today = timezone.localdate()
@@ -132,6 +131,13 @@ class Command(BaseCommand):
                 self.stdout.write(f"      - {v}")
 
         self.stdout.write("=" * 65)
+
+        # Command exits with non-zero status if verification fails
+        if violations1 or violations2:
+            total_violations = len(violations1) + len(violations2)
+            raise CommandError(
+                f"Dữ liệu demo không vượt qua kiểm chứng tính nhất quán ({total_violations} lỗi vi phạm)."
+            )
 
         # Print detailed summary tables
         self._print_user_summary(user1, "KỊCH BẢN 1: CĂNG THẲNG DÒNG TIỀN (STRESSED SCENARIO)", today)
@@ -213,6 +219,30 @@ class Command(BaseCommand):
         min_bal1 = Decimal(str(min_p1['balance']))
         min_day1 = (min_p1['date'] - today).days
 
+        # Dynamic budget numbers
+        b_mua_sam = w1.category_budgets.filter(label__name="Mua sắm", month=today.month, year=today.year).first()
+        b_an_uong = w1.category_budgets.filter(label__name="Ăn uống", month=today.month, year=today.year).first()
+        spent_ms = b_mua_sam.get_spent() if b_mua_sam else Decimal('1250000.00')
+        amt_ms = b_mua_sam.amount if b_mua_sam else Decimal('1000000.00')
+        spent_au = b_an_uong.get_spent() if b_an_uong else Decimal('2750000.00')
+        amt_au = b_an_uong.amount if b_an_uong else Decimal('3000000.00')
+        ratio_au = (spent_au / amt_au * 100) if amt_au > 0 else Decimal('91.7')
+
+        # Dynamic debt numbers
+        overdue_debts = [d for d in w1.debts.filter(due_date__lt=today) if d.get_remaining_amount() > 0]
+        overdue_debt = overdue_debts[0] if overdue_debts else None
+        overdue_count = len(overdue_debts)
+        overdue_name = overdue_debt.person_name if overdue_debt else "Hà (Đồng nghiệp cũ)"
+        overdue_rem = overdue_debt.get_remaining_amount() if overdue_debt else Decimal('1500000.00')
+        overdue_days = (today - overdue_debt.due_date).days if overdue_debt and overdue_debt.due_date else 5
+
+        due_soon_debts = [d for d in w1.debts.filter(due_date__gte=today, due_date__lte=today + timedelta(days=7)) if d.get_remaining_amount() > 0]
+        due_soon_debt = due_soon_debts[0] if due_soon_debts else None
+        due_soon_count = len(due_soon_debts)
+        due_soon_name = due_soon_debt.person_name if due_soon_debt else "Anh Hùng (Anh họ)"
+        due_soon_rem = due_soon_debt.get_remaining_amount() if due_soon_debt else Decimal('2000000.00')
+        due_soon_days = (due_soon_debt.due_date - today).days if due_soon_debt and due_soon_debt.due_date else 6
+
         content = f"""# KỊCH BẢN DEMO TỪNG BƯỚC (MONEYMANAGEMENT)
 
 **Ngày chạy dữ liệu:** {today.strftime('%d/%m/%Y')}  
@@ -232,8 +262,8 @@ class Command(BaseCommand):
 ### Bước 2: Cảnh báo & Tái cân bằng Ngân sách (F05)
 - **Mở trang:** `/budgets`
 - **Quan sát:**
-  - Danh mục **Mua sắm**: Đã chi `1.250.000 đ / 1.000.000 đ` (VƯỢT NGÂN SÁCH). Nút **"Tái cân bằng"** xuất hiện nổi bật.
-  - Danh mục **Ăn uống**: Đã chi `2.750.000 đ / 3.000.000 đ` (~91.7%, TIỆM CẬN NGƯỠNG).
+  - Danh mục **Mua sắm**: Đã chi `{spent_ms:,.0f} đ / {amt_ms:,.0f} đ` (VƯỢT NGÂN SÁCH). Nút **"Tái cân bằng"** xuất hiện nổi bật.
+  - Danh mục **Ăn uống**: Đã chi `{spent_au:,.0f} đ / {amt_au:,.0f} đ` (~{ratio_au:.1f}%, TIỆM CẬN NGƯỠNG).
   - Danh mục **Giải trí** & **Sách vở**: Đã chi dưới 40%, còn dư hạn mức.
 - **Thao tác 1 (Tái cân bằng):**
   - Bấm nút "Tái cân bằng" trên thẻ Mua sắm.
@@ -247,8 +277,8 @@ class Command(BaseCommand):
 ### Bước 3: Quản lý Sổ nợ & Trả góp (F02)
 - **Mở trang:** `/debts`
 - **Quan sát Summary:**
-  - Khoản quá hạn: **1 khoản** (Hà - 1.500.000 đ quá hạn 5 ngày).
-  - Khoản sắp đến hạn trong 7 ngày: **1 khoản** (Anh Hùng - 2.000.000 đ đến hạn sau 6 ngày).
+  - Khoản quá hạn: **{overdue_count} khoản** ({overdue_name} - {overdue_rem:,.0f} đ quá hạn {overdue_days} ngày).
+  - Khoản sắp đến hạn trong 7 ngày: **{due_soon_count} khoản** ({due_soon_name} - {due_soon_rem:,.0f} đ đến hạn sau {due_soon_days} ngày).
   - Khoản đã trả xong: **Chị Linh** (1.000.000 đ).
   - Các hợp đồng trả góp: **Laptop ASUS** (đã trả 4/12 kỳ) và **iPhone 15** (đã trả 2/6 kỳ).
 - **Thao tác:** Bấm xem lịch trả góp chi tiết của Laptop để thấy kỳ tiếp theo đến hạn ngày +20.

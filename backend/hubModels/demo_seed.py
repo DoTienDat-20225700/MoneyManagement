@@ -352,7 +352,10 @@ class DemoDataSeeder:
         # -------------------------------------------------------------
         opening_date = today - timedelta(days=180)
         # Calibrate opening balance based on day of month to maintain consistent 18-26d critical cashflow dip
-        opening_amt = Decimal("24700000.00") - Decimal(str((today.day - 17) * 420000))
+        if today.day <= 15:
+            opening_amt = Decimal("39540000.00") - Decimal(str((today.day - 5) * 420000))
+        else:
+            opening_amt = Decimal("24700000.00") - Decimal(str((today.day - 17) * 420000))
         tx_opening = Transaction(
             wallet=wallet,
             title="Số dư đầu kỳ",
