@@ -25,7 +25,7 @@ import { usePrefersReducedMotion } from "../hooks/usePrefersReducedMotion";
 import { paletteTokens } from "../theme";
 
 export const SIDEBAR_WIDTH = 240;
-export const SIDEBAR_COLLAPSED_WIDTH = 72;
+export const SIDEBAR_COLLAPSED_WIDTH = 0;
 export const TOPBAR_HEIGHT = 56;
 
 interface AppDrawerProps {
@@ -234,13 +234,15 @@ export default function AppDrawer(props: AppDrawerProps) {
           top: `${TOPBAR_HEIGHT}px`,
           bottom: 0,
           left: 0,
-          width: isCollapsed ? `${SIDEBAR_COLLAPSED_WIDTH}px` : `${SIDEBAR_WIDTH}px`,
+          width: isCollapsed ? 0 : `${SIDEBAR_WIDTH}px`,
+          visibility: isCollapsed ? "hidden" : "visible",
           zIndex: 1100,
           backgroundColor: paletteTokens.bgCard,
-          borderRight: "1px solid rgba(255, 255, 255, 0.08)",
-          boxShadow: "4px 0 20px rgba(0, 0, 0, 0.35)",
+          borderRight: isCollapsed ? "none" : "1px solid rgba(255, 255, 255, 0.08)",
+          boxShadow: isCollapsed ? "none" : "4px 0 20px rgba(0, 0, 0, 0.35)",
           transition: sidebarTransition,
           overflowX: "hidden",
+          pointerEvents: isCollapsed ? "none" : "auto",
           "@media print": {
             display: "none !important",
           },
@@ -249,12 +251,12 @@ export default function AppDrawer(props: AppDrawerProps) {
         {/* Sidebar Navigation Items */}
         <List
           sx={{
-            px: isCollapsed ? 1 : 1.25,
+            px: 1.25,
             py: 1.5,
             flexGrow: 1,
             overflowY: "auto",
             overflowX: "hidden",
-            width: "100%",
+            width: `${SIDEBAR_WIDTH}px`,
             boxSizing: "border-box",
           }}
         >
@@ -270,73 +272,60 @@ export default function AppDrawer(props: AppDrawerProps) {
                   mb: 1,
                   display: "flex",
                   width: "100%",
-                  justifyContent: "center",
                 }}
               >
-                <Tooltip
-                  title={isCollapsed ? label : ""}
-                  placement="right"
-                  arrow
-                  disableHoverListener={!isCollapsed}
-                  disableFocusListener={!isCollapsed}
-                  disableTouchListener={!isCollapsed}
-                >
-                  <ListItemButton
-                    component={Link}
-                    to={item.path}
-                    tabIndex={0}
-                    aria-current={isActive ? "page" : undefined}
-                    aria-label={isCollapsed ? label : undefined}
-                    sx={{
-                      minHeight: 48,
-                      width: "100%",
-                      borderRadius: "8px",
-                      justifyContent: isCollapsed ? "center" : "flex-start",
-                      px: isCollapsed ? 1 : 2,
+                <ListItemButton
+                  component={Link}
+                  to={item.path}
+                  tabIndex={isCollapsed ? -1 : 0}
+                  aria-current={isActive ? "page" : undefined}
+                  sx={{
+                    minHeight: 44,
+                    width: "100%",
+                    borderRadius: "8px",
+                    justifyContent: "flex-start",
+                    px: 2,
+                    backgroundColor: isActive
+                      ? "rgba(0, 134, 58, 0.14)"
+                      : "transparent",
+                    color: isActive ? paletteTokens.success : "#9e9e9e",
+                    border: "1px solid transparent",
+                    borderLeft: isActive ? `3px solid ${paletteTokens.primary}` : "3px solid transparent",
+                    transition: prefersReducedMotion ? "none" : "all 0.2s ease",
+                    "&:hover": {
                       backgroundColor: isActive
-                        ? "rgba(0, 134, 58, 0.14)"
-                        : "transparent",
-                      color: isActive ? paletteTokens.success : "#9e9e9e",
-                      border: "1px solid transparent",
-                      borderLeft: isActive ? `3px solid ${paletteTokens.primary}` : "3px solid transparent",
-                      transition: prefersReducedMotion ? "none" : "all 0.2s ease",
-                      "&:hover": {
-                        backgroundColor: isActive
-                          ? "rgba(0, 134, 58, 0.32)"
-                          : "rgba(255, 255, 255, 0.06)",
-                        color: "#ffffff",
-                        "& .MuiListItemIcon-root": {
-                          color: isActive ? paletteTokens.success : "#ffffff",
-                        },
+                        ? "rgba(0, 134, 58, 0.32)"
+                        : "rgba(255, 255, 255, 0.06)",
+                      color: "#ffffff",
+                      "& .MuiListItemIcon-root": {
+                        color: isActive ? paletteTokens.success : "#ffffff",
                       },
-                      "&.Mui-focusVisible": {
-                        outline: `2px solid ${paletteTokens.primary}`,
-                        outlineOffset: 2,
-                      },
+                    },
+                    "&.Mui-focusVisible": {
+                      outline: `2px solid ${paletteTokens.primary}`,
+                      outlineOffset: 2,
+                    },
+                  }}
+                >
+                  <ListItemIcon
+                    sx={{
+                      minWidth: 38,
+                      color: "inherit",
+                      justifyContent: "center",
+                      mr: 1,
                     }}
                   >
-                    <ListItemIcon
-                      sx={{
-                        minWidth: isCollapsed ? 0 : 38,
-                        color: "inherit",
-                        justifyContent: "center",
-                        mr: isCollapsed ? 0 : 1,
-                      }}
-                    >
-                      {item.icon}
-                    </ListItemIcon>
-                    {!isCollapsed && (
-                      <ListItemText
-                        primary={label}
-                        primaryTypographyProps={{
-                          fontSize: "14px",
-                          fontWeight: isActive ? 600 : 500,
-                          noWrap: true,
-                        }}
-                      />
-                    )}
-                  </ListItemButton>
-                </Tooltip>
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={label}
+                    primaryTypographyProps={{
+                      fontSize: "14px",
+                      fontWeight: isActive ? 600 : 500,
+                      noWrap: true,
+                    }}
+                  />
+                </ListItemButton>
               </ListItem>
             );
           })}
