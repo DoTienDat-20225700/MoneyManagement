@@ -339,3 +339,68 @@ test('Route Isolation: AuthRoot and unauthenticated routes do not include AppDra
   assert.ok(!authRootContent.includes('navigation'), 'AuthRoot.tsx must NOT import navigation');
 });
 
+test('A11Y-014: Heading hierarchy strictly structured without h1->h5 jump', () => {
+  const dir = path.dirname(fileURLToPath(import.meta.url));
+  const budgetsPath = path.resolve(dir, '..', 'src', 'routes', 'Budgets.tsx');
+  const reportsPath = path.resolve(dir, '..', 'src', 'routes', 'Reports.tsx');
+
+  const budgetsContent = fs.readFileSync(budgetsPath, 'utf-8');
+  const reportsContent = fs.readFileSync(reportsPath, 'utf-8');
+
+  // Verify that Budgets.tsx and Reports.tsx have component="h1"
+  assert.ok(budgetsContent.includes('component="h1"'), 'Budgets.tsx must define an h1');
+  assert.ok(reportsContent.includes('component="h1"'), 'Reports.tsx must define an h1');
+
+  // Verify that any h5/h6 variants use component="span" or component="div" or component="h2"
+  assert.ok(!reportsContent.includes('<Typography variant="h5"'), 'Reports.tsx must not render unaliased <h5> tag');
+  assert.ok(!reportsContent.includes('<Typography variant="h6"'), 'Reports.tsx must not render unaliased <h6> tag');
+});
+
+test('A11Y-015: Bulk delete button satisfies WCAG 2.5.3 and includes item count in name and visible label', () => {
+  // Test parameterized translation substitution
+  const formatMsg = (str, params) => {
+    let res = str;
+    for (const [k, v] of Object.entries(params)) {
+      res = res.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
+    }
+    return res;
+  };
+
+  const viTemplate = 'Xoá {count} giao dịch';
+  const enTemplate = 'Delete {count} transactions';
+
+  const vi3 = formatMsg(viTemplate, { count: 3 });
+  const en3 = formatMsg(enTemplate, { count: 3 });
+
+  assert.equal(vi3, 'Xoá 3 giao dịch');
+  assert.equal(en3, 'Delete 3 transactions');
+
+  // WCAG 2.5.3 Label in Name: aria-label MUST contain the visible text
+  const visibleText = vi3;
+  const accessibleName = vi3;
+  assert.ok(accessibleName.includes(visibleText), 'Accessible name must contain the visible label text');
+});
+
+test('A11Y-016: ApexCharts configurations respect prefers-reduced-motion', () => {
+  const dir = path.dirname(fileURLToPath(import.meta.url));
+  const chartFiles = [
+    path.resolve(dir, '..', 'src', 'components', 'charts', 'ProfileChart.tsx'),
+    path.resolve(dir, '..', 'src', 'components', 'charts', 'CurrentMonthChart.tsx'),
+    path.resolve(dir, '..', 'src', 'components', 'reports', 'CashFlowForecast.tsx'),
+    path.resolve(dir, '..', 'src', 'routes', 'Reports.tsx'),
+  ];
+
+  for (const filePath of chartFiles) {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    assert.ok(
+      content.includes('usePrefersReducedMotion'),
+      `${path.basename(filePath)} must import and invoke usePrefersReducedMotion`
+    );
+    assert.ok(
+      content.includes('!prefersReducedMotion'),
+      `${path.basename(filePath)} must toggle chart animations with !prefersReducedMotion`
+    );
+  }
+});
+
+

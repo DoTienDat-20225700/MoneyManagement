@@ -9,7 +9,7 @@ interface LanguageContextType {
   dateFormat: string;
   setLanguage: (lang: Language) => void;
   toggleLanguage: () => void;
-  t: (key: TranslationKey) => string;
+  t: (key: TranslationKey, params?: Record<string, string | number>) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -40,12 +40,15 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({
     dayjs.locale(language);
   }, [language]);
 
-  const t = (key: TranslationKey): string => {
+  const t = (key: TranslationKey, params?: Record<string, string | number>): string => {
     const langDict = translations[language];
-    if (langDict && key in langDict) {
-      return langDict[key];
+    let str: string = langDict && key in langDict ? langDict[key] : (translations.en[key] || key);
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        str = str.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
+      });
     }
-    return translations.en[key] || key;
+    return str;
   };
 
   return (

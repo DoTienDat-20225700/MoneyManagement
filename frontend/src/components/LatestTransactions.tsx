@@ -33,6 +33,7 @@ import {
   GridDeleteIcon,
   GridRowId,
   GridRowsProp,
+  GridRowSelectionModel,
   viVN,
   enUS,
 } from "@mui/x-data-grid";
@@ -82,6 +83,46 @@ function LatestTransactions(props: Props) {
     date: string;
     labelId: number | string;
   } | null>(null);
+
+  // Selection & bulk delete state
+  const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([]);
+  const [confirmBulkOpen, setConfirmBulkOpen] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+
+  const bulkDeleteLabel =
+    rowSelectionModel.length === 1
+      ? t("delete_selected_transactions_one")
+      : t("delete_selected_transactions_other", { count: rowSelectionModel.length });
+
+  const handleBulkDelete = async () => {
+    setIsBulkDeleting(true);
+    try {
+      for (const id of rowSelectionModel) {
+        await deleteTransaction({ transactionId: Number(id) });
+      }
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["wallet"] });
+      queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      queryClient.invalidateQueries({ queryKey: ["budget_summary"] });
+      queryClient.invalidateQueries({ queryKey: ["report_summary"] });
+      queryClient.invalidateQueries({ queryKey: ["report_transactions"] });
+      enqueueSnackbar(t("transaction_deleted"), {
+        variant: "success",
+        autoHideDuration: 3000,
+        anchorOrigin: { horizontal: "right", vertical: "bottom" },
+      });
+      setRowSelectionModel([]);
+      setConfirmBulkOpen(false);
+    } catch {
+      enqueueSnackbar(t("err_transaction_delete"), {
+        variant: "error",
+        autoHideDuration: 3000,
+        anchorOrigin: { horizontal: "right", vertical: "bottom" },
+      });
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
 
   const deleteMutation = useMutation({
     mutationFn: deleteTransaction,
@@ -357,6 +398,55 @@ function LatestTransactions(props: Props) {
 
   return (
     <>
+      {rowSelectionModel.length > 0 && !props.headOnly && (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            p: 1.5,
+            mb: 2,
+            borderRadius: 2,
+            bgcolor: "rgba(255, 130, 133, 0.08)",
+            border: `1px solid ${paletteTokens.error}`,
+          }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 600, color: "text.primary" }}>
+            {bulkDeleteLabel}
+          </Typography>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => setRowSelectionModel([])}
+              sx={{ textTransform: "none", color: "text.secondary", borderColor: paletteTokens.divider }}
+            >
+              {t("clear_selection")}
+            </Button>
+            <Button
+              size="small"
+              variant="contained"
+              color="error"
+              startIcon={isBulkDeleting ? <CircularProgress size={16} color="inherit" /> : <GridDeleteIcon />}
+              aria-label={bulkDeleteLabel}
+              onClick={() => setConfirmBulkOpen(true)}
+              disabled={isBulkDeleting}
+              sx={{
+                textTransform: "none",
+                fontWeight: 600,
+                backgroundColor: paletteTokens.error,
+                color: "#fff",
+                "&:hover": {
+                  backgroundColor: "#e06c70",
+                },
+              }}
+            >
+              {bulkDeleteLabel}
+            </Button>
+          </Box>
+        </Box>
+      )}
+
       <DataGrid
         rows={
           props.headOnly
@@ -364,6 +454,9 @@ function LatestTransactions(props: Props) {
             : transformData(props.data)
         }
         columns={columns}
+        checkboxSelection={!props.headOnly}
+        rowSelectionModel={rowSelectionModel}
+        onRowSelectionModelChange={(newModel) => setRowSelectionModel(newModel)}
         hideFooter={props.headOnly}
         autoHeight
         disableRowSelectionOnClick
@@ -539,6 +632,52 @@ function LatestTransactions(props: Props) {
               t("save_changes")
             )}
           </Button>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Dialog for Bulk Delete */}
+      <Dialog
+        open={confirmBulkOpen}
+        onClose={() => setConfirmBulkOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>{bulkDeleteLabel}</span>
+          <IconButton size="small" onClick={() => setConfirmBulkOpen(false)} aria-label={t("close")} sx={{ color: "text.secondary" }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ pt: "16px !important" }}>
+          <Typography variant="body2" color="text.secondary" mb={3}>
+            {t("confirm_bulk_delete_transactions", { count: rowSelectionModel.length })}
+          </Typography>
+          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5 }}>
+            <Button
+              variant="outlined"
+              onClick={() => setConfirmBulkOpen(false)}
+              disabled={isBulkDeleting}
+              sx={{ textTransform: "none" }}
+            >
+              {t("cancel")}
+            </Button>
+            <Button
+              variant="contained"
+              color="error"
+              onClick={handleBulkDelete}
+              disabled={isBulkDeleting}
+              startIcon={isBulkDeleting ? <CircularProgress size={16} color="inherit" /> : <GridDeleteIcon />}
+              aria-label={bulkDeleteLabel}
+              sx={{
+                textTransform: "none",
+                fontWeight: 600,
+                backgroundColor: paletteTokens.error,
+                color: "#fff",
+              }}
+            >
+              {bulkDeleteLabel}
+            </Button>
+          </Box>
         </DialogContent>
       </Dialog>
     </>

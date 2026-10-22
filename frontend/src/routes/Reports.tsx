@@ -476,10 +476,10 @@ export default function Reports() {
       <Box className="print-only" sx={{ mb: 2.5, pb: 2, borderBottom: "2px solid #00863A" }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <Box>
-            <Typography variant="h5" sx={{ fontWeight: 800, color: "#00863A !important", letterSpacing: 0.5 }}>
+            <Typography component="div" variant="h5" sx={{ fontWeight: 800, color: "#00863A !important", letterSpacing: 0.5 }}>
               MONEYMANAGER
             </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.3 }}>
+            <Typography component="div" variant="h6" sx={{ fontWeight: 700, mt: 0.3 }}>
               {language === "vi" ? "BÁO CÁO TÀI CHÍNH" : "FINANCIAL REPORT"}
             </Typography>
           </Box>

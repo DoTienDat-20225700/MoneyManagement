@@ -20,10 +20,12 @@ import { Transaction } from "../../models/Transaction";
 import { darkTheme, paletteTokens } from "../../theme";
 import { barRangeOptionMask, getStartDate, formatValue } from "../../utils/utils";
 import { useLanguage } from "../../context/LanguageContext";
+import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion";
 import dayjs from "dayjs";
 
 function CurrentMonthChart() {
   const { language, dateFormat, t } = useLanguage();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const { getTransactions } = useTransactions();
   const [range, setRange] = useState<BarChartRangeType>(
     BarChartRangeOptions.LastWeek
@@ -50,6 +52,7 @@ function CurrentMonthChart() {
         chart: {
           toolbar: { show: false },
           id: "bar",
+          animations: { enabled: !prefersReducedMotion },
         },
         plotOptions: {
           bar: {
@@ -115,7 +118,7 @@ function CurrentMonthChart() {
       options: ApexOptions;
       series: ApexOptions["series"];
     };
-  }, [lineChartData, language, dateFormat]);
+  }, [lineChartData, language, dateFormat, prefersReducedMotion]);
 
   useEffect(() => {
     const dataSet = transactions

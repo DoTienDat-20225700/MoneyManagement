@@ -74,6 +74,36 @@ Kết quả trích xuất trực tiếp từ bộ công cụ kiểm thử tự �
 - Danh sách cảnh báo ngân sách ở Dashboard được đặt chiều cao tự động (`height: "auto"`) thay vì cố định `maxHeight: 220px`.
 - Toàn bộ các danh mục tiệm cận/vượt hạn mức hiển thị đầy đủ, không bị cắt cụt mục ở đáy ("Ăn uống"), đồng thời loại bỏ vùng cuộn lồng nhau (nested scrollbar) gây khó khăn cho việc điều hướng bằng phím Tab hoặc mũi tên.
 
+### 3.9. Thứ bậc Tiêu đề Liền mạch (Heading Hierarchy - SC 1.3.1 - A11Y-014)
+- Loại bỏ hoàn toàn hiện tượng nhảy cóc tiêu đề từ `h1` sang `h5` hoặc `h6` tại `Budgets.tsx` và `Reports.tsx`.
+- Thẻ HTML5 được phân cấp nghiêm ngặt:
+  - `component="h1"`: Tiêu đề trang duy nhất (`"Quản lý ngân sách"`, `"Báo cáo tài chính"`).
+  - `component="h2"`: Các khối chức năng chính (`"Danh sách ngân sách danh mục"`, `"Giao dịch trong kỳ"`, các thẻ chỉ số KPI tổng).
+  - Header in ấn (`.print-only`) chuyển sang `component="div"`, không đưa thẻ `<h5>`/`<h6>` vào cây phân cấp tài liệu.
+- **Kiểm chứng Computed Style**: Do MUI áp dụng kiểu dáng qua các class `.MuiTypography-[variant]` chứ không gắn vào thẻ HTML tag selector, việc khai báo `component="h2"` với `variant="h6"` giữ nguyên 100% computed style:
+  - `font-size`: `1.25rem` (20px)
+  - `font-weight`: `600`
+  - `line-height`: `1.6`
+  - `margin`: `mb={1.5}` (12px)
+
+### 3.10. Nhãn Tiếp cận Thao tác Hàng loạt (Label in Name - SC 2.5.3 - A11Y-015)
+- Tính năng chọn và xóa hàng loạt giao dịch tại `LatestTransactions.tsx` hiển thị thanh thao tác với nhãn rõ ràng có số lượng:
+  - `1 mục`: `"Xoá 1 giao dịch"` (tiếng Anh: `"Delete 1 transaction"`).
+  - `N mục`: `"Xoá {count} giao dịch"` (tiếng Anh: `"Delete {count} transactions"`).
+- Thuộc tính `aria-label` trên nút xóa hàng loạt khớp chính xác từng từ với văn bản hiển thị (`aria-label={bulkDeleteLabel}` chứa `bulkDeleteLabel`), đáp ứng hoàn toàn tiêu chuẩn WCAG 2.5.3 (Label in Name).
+- Bổ sung hộp thoại xác nhận xóa hàng loạt với văn bản cảnh báo có tham số số lượng và nút xác nhận có nhãn truy cập đồng bộ.
+
+### 3.11. ApexCharts Hỗ trợ Tôn trọng Cài đặt Giảm chuyển động (Animation from Interactions - SC 2.3.3 - A11Y-016)
+- Tích hợp hook dùng chung `usePrefersReducedMotion()` vào tất cả các cấu hình ApexCharts trong toàn bộ dự án:
+  1. `ProfileChart.tsx` (Biểu đồ phân bổ chi tiêu - Donut/Pie)
+  2. `CurrentMonthChart.tsx` (Biểu đồ chi tiêu theo ngày - Bar)
+  3. `CashFlowForecast.tsx` (Biểu đồ dự báo dòng tiền 30/60/90 ngày - Area)
+  4. `Reports.tsx` (`monthlyTrendsChart` - Bar và `categoryBreakdownChart` - Pie)
+- Khi người dùng bật tùy chọn "Reduce motion" trong hệ điều hành:
+  - `chart.animations.enabled = false` (tắt toàn bộ hiệu ứng vẽ biểu đồ ban đầu và hiệu ứng co giãn).
+  - `chart.animations.dynamicAnimation.enabled = false`.
+  - Giúp người dùng mắc chứng rối loạn tiền đình (vestibular disorder) hoặc nhạy cảm với chuyển động không bị chóng mặt hay phân tâm.
+
 ---
 
 ## 4. Kết quả Thực thi Unit Test Tự động
@@ -95,5 +125,9 @@ Bộ test Node.js tích hợp sẵn (`node --test scripts/contrast.test.mjs`):
 - `✔ Navigation State: Default state is OPEN without localStorage read/write`
 - `✔ Navigation Logic: Content click-to-collapse rules`
 - `✔ Route Isolation: AuthRoot and unauthenticated routes do not include AppDrawer`
+- `✔ A11Y-014: Heading hierarchy strictly structured without h1->h5 jump`
+- `✔ A11Y-015: Bulk delete button satisfies WCAG 2.5.3 and includes item count in name and visible label`
+- `✔ A11Y-016: ApexCharts configurations respect prefers-reduced-motion`
 
-**Tổng: 17 / 17 tests passed (100%)**.
+**Tổng: 20 / 20 tests passed (100%)**.
+

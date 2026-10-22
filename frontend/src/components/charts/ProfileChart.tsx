@@ -20,9 +20,11 @@ import { AggregatedExpense } from "../../models/Transaction";
 import { paletteTokens } from "../../theme";
 import { getStartDate, pieRangeOptionMask, formatValue } from "../../utils/utils";
 import { useLanguage } from "../../context/LanguageContext";
+import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion";
 
 function ProfileChart() {
   const { language, t } = useLanguage();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const { getTransactions } = useTransactions();
 
   const [range, setRange] = useState<PieChartRangeType>(
@@ -85,6 +87,7 @@ function ProfileChart() {
         chart: {
           id: "pie",
           toolbar: { show: false },
+          animations: { enabled: !prefersReducedMotion },
         },
         dataLabels: {
           enabled: false,
@@ -116,7 +119,7 @@ function ProfileChart() {
         },
       },
     };
-  }, [processedData]);
+  }, [processedData, prefersReducedMotion]);
 
   return (
     <Box
