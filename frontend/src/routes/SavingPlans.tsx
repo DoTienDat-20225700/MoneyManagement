@@ -596,7 +596,7 @@ export default function SavingPlans() {
                   flexDirection="column"
                   justifyContent="space-between"
                   sx={{
-                    backgroundColor: paletteTokens.bgPaper,
+                    backgroundColor: paletteTokens.bgCard,
                   }}
                 >
                   <Box>
@@ -648,7 +648,7 @@ export default function SavingPlans() {
                             size="small"
                             label={t("plan_closed")}
                             sx={{
-                              backgroundColor: paletteTokens.elevated,
+                              backgroundColor: paletteTokens.bgCard,
                               color: paletteTokens.textSecondary,
                               border: `1px solid ${paletteTokens.divider}`,
                               fontWeight: 600,
@@ -660,7 +660,7 @@ export default function SavingPlans() {
                             size="small"
                             label={t("plan_active")}
                             sx={{
-                              backgroundColor: paletteTokens.elevated,
+                              backgroundColor: paletteTokens.bgCard,
                               color: paletteTokens.textSecondary,
                               border: `1px solid ${paletteTokens.divider}`,
                               fontWeight: 600,
@@ -680,7 +680,7 @@ export default function SavingPlans() {
                         <Typography
                           variant="caption"
                           fontWeight={700}
-                          sx={{ color: isCompleted ? "#48cc90" : "#fff" }}
+                          sx={{ color: isCompleted ? paletteTokens.success : "text.primary" }}
                         >
                           {pct.toFixed(1)}%
                         </Typography>
@@ -741,7 +741,7 @@ export default function SavingPlans() {
                         <Typography
                           variant="body2"
                           fontWeight={600}
-                          sx={{ color: isCompleted ? "#48cc90" : "text.primary" }}
+                          sx={{ color: isCompleted ? paletteTokens.success : "text.primary" }}
                         >
                           {formatValue(remaining)}
                         </Typography>
@@ -881,7 +881,7 @@ export default function SavingPlans() {
                         <IconButton
                           size="small"
                           aria-label={`${t("delete")}: ${plan.title}`}
-                          sx={{ color: grey[500], "&:hover": { color: "#ff8285" } }}
+                          sx={{ color: grey[500], "&:hover": { color: paletteTokens.error } }}
                           onClick={() => setDeleteTargetPlan(plan)}
                         >
                           <DeleteOutlineIcon fontSize="small" />
@@ -991,7 +991,7 @@ export default function SavingPlans() {
                   <Typography variant="caption" color="text.secondary">
                     {t("amount_saved")}: {formatValue(Number(contributionModalPlan.amount_saved || 0))}
                   </Typography>
-                  <Typography variant="caption" color="#48cc90">
+                  <Typography variant="caption" color={paletteTokens.success}>
                     {t("remaining_amount")}: {formatValue(Number(contributionModalPlan.remaining_amount || 0))}
                   </Typography>
                 </Box>
@@ -1180,7 +1180,7 @@ export default function SavingPlans() {
                               <IconButton
                                 size="small"
                                 aria-label={t("delete_contribution")}
-                                sx={{ color: grey[500], "&:hover": { color: "#ff8285" } }}
+                                sx={{ color: grey[500], "&:hover": { color: paletteTokens.error } }}
                                 onClick={() => setDeleteTargetContrib(contrib)}
                               >
                                 <DeleteOutlineIcon fontSize="small" />

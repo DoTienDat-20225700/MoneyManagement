@@ -5,7 +5,7 @@ import { Box, Grid, IconButton, Skeleton, Typography } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { useState } from "react";
 import { Wallet } from "../../models/Wallet";
-import { darkTheme } from "../../theme";
+import { paletteTokens } from "../../theme";
 import { formatValue } from "../../utils/utils";
 import EditBalanceForm from "../forms/EditBalanceForm";
 import { useLanguage } from "../../context/LanguageContext";
@@ -25,10 +25,11 @@ function WalletGridRow(props: Props) {
       <Grid item xs={12} lg={4}>
         <Box
           border="1px solid"
-          borderColor={darkTheme.palette.background.paper}
+          borderColor={paletteTokens.divider}
           borderRadius={2}
           padding={3}
           height={"100%"}
+          sx={{ backgroundColor: paletteTokens.bgCard }}
         >
           <Typography component="h2" variant="body1" mb={1}>
             {t("balance")}
@@ -94,10 +95,11 @@ function WalletGridRow(props: Props) {
       <Grid item xs={12} sm={6} lg={4}>
         <Box
           border="1px solid"
-          borderColor={darkTheme.palette.background.paper}
+          borderColor={paletteTokens.divider}
           borderRadius={2}
           padding={3}
           height={"100%"}
+          sx={{ backgroundColor: paletteTokens.bgCard }}
         >
           <Typography component="h2" variant="body1" mb={1}>
             {t("monthly_earnings")}
@@ -119,7 +121,7 @@ function WalletGridRow(props: Props) {
             </Typography>
           ) : (
             <Box display="flex" alignItems="center" gap={2}>
-              <Typography component="span" variant="h5" fontWeight={600} sx={{ color: "#48cc90" }}>
+              <Typography component="span" variant="h5" fontWeight={600} sx={{ color: paletteTokens.success }}>
                 +{formatValue(Math.abs(Number(props.wallet?.monthly_earnings || 0)))}
               </Typography>
             </Box>
@@ -129,10 +131,11 @@ function WalletGridRow(props: Props) {
       <Grid item xs={12} sm={6} lg={4}>
         <Box
           border="1px solid"
-          borderColor={darkTheme.palette.background.paper}
+          borderColor={paletteTokens.divider}
           borderRadius={2}
           padding={3}
           height={"100%"}
+          sx={{ backgroundColor: paletteTokens.bgCard }}
         >
           <Typography component="h2" variant="body1" mb={1}>
             {t("monthly_expenses")}
@@ -154,7 +157,7 @@ function WalletGridRow(props: Props) {
             </Typography>
           ) : (
             <Box display="flex" alignItems="center" gap={2}>
-              <Typography component="span" variant="h5" fontWeight={600} sx={{ color: "error.main" }}>
+              <Typography component="span" variant="h5" fontWeight={600} sx={{ color: "text.primary" }}>
                 -{formatValue(Math.abs(Number(props.wallet?.monthly_expenses || 0)))}
               </Typography>
             </Box>

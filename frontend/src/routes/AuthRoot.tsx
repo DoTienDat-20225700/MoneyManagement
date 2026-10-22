@@ -1,6 +1,7 @@
 import { Box, Button, Typography } from "@mui/material";
 import { Outlet } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
+import { paletteTokens } from "../theme";
 
 function AuthRoot() {
   const { language, toggleLanguage } = useLanguage();
@@ -105,9 +106,8 @@ function AuthRoot() {
               textTransform: "none",
               transition: "all 0.25s ease",
               "&:hover": {
-                borderColor: "#4caf50",
-                background: "rgba(76, 175, 80, 0.15)",
-                boxShadow: "0 0 10px rgba(76, 175, 80, 0.3)",
+                borderColor: paletteTokens.primary,
+                background: paletteTokens.tint.primary12,
               },
             }}
           >

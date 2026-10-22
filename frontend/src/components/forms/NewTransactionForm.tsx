@@ -43,6 +43,7 @@ import { formatCurrency, formatValue } from "../../utils/utils";
 import AsyncAutocomplete from "../AsyncAutocomplete";
 import { useLanguage } from "../../context/LanguageContext";
 import RebalanceSuggestionDialog from "../modals/RebalanceSuggestionDialog";
+import { paletteTokens } from "../../theme";
 
 export interface NewTransactionFormProps {
   isEdit?: boolean;
@@ -349,18 +350,18 @@ function NewTransactionForm({ isEdit = false }: NewTransactionFormProps = {}) {
               border: "1px solid",
               borderColor:
                 budgetImpact.status === "exceeded"
-                  ? "rgba(239, 68, 68, 0.4)"
-                  : "rgba(245, 158, 11, 0.4)",
+                  ? paletteTokens.tint.error12
+                  : paletteTokens.tint.warning12,
             }}
           >
             <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}>
               {budgetImpact.status === "exceeded" ? (
                 <ErrorOutlineIcon
-                  sx={{ color: "#EF4444", fontSize: 20, mt: 0.2 }}
+                  sx={{ color: paletteTokens.error, fontSize: 20, mt: 0.2 }}
                 />
               ) : (
                 <WarningAmberIcon
-                  sx={{ color: "#F59E0B", fontSize: 20, mt: 0.2 }}
+                  sx={{ color: paletteTokens.warning, fontSize: 20, mt: 0.2 }}
                 />
               )}
               <Box sx={{ flex: 1 }}>
@@ -368,7 +369,9 @@ function NewTransactionForm({ isEdit = false }: NewTransactionFormProps = {}) {
                   variant="body2"
                   fontWeight={600}
                   color={
-                    budgetImpact.status === "exceeded" ? "#EF4444" : "#F59E0B"
+                    budgetImpact.status === "exceeded"
+                      ? paletteTokens.error
+                      : paletteTokens.warning
                   }
                 >
                   {budgetImpact.status === "exceeded"
@@ -408,8 +411,8 @@ function NewTransactionForm({ isEdit = false }: NewTransactionFormProps = {}) {
                     "& .MuiLinearProgress-bar": {
                       backgroundColor:
                         budgetImpact.status === "exceeded"
-                          ? "#ff8285"
-                          : "#F59E0B",
+                          ? paletteTokens.error
+                          : paletteTokens.warning,
                       borderRadius: 3,
                     },
                   }}

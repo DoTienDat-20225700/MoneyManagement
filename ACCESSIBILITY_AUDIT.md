@@ -10,15 +10,27 @@ Kết quả trích xuất trực tiếp từ bộ công cụ kiểm thử tự �
 
 | Thành phần / Cặp màu kiểm tra | Màu tiền cảnh (FG) | Màu hậu cảnh (BG) | Tỷ lệ đo được | Yêu cầu WCAG | Trạng thái |
 |---|---|---|---|---|---|
-| **Chữ mục chưa chọn** trên nền Sidebar | `#9e9e9e` | `#0d0e12` | **7.48 : 1** | >= 4.5 : 1 (AA Chữ nhỏ) | ✅ ĐẠT (Đạt cả AAA) |
-| **Chữ mục đang chọn** trên nền active | `#48cc90` | `rgba(0,134,58,0.22)` trên `#0d0e12` | **9.84 : 1** | >= 4.5 : 1 (AA Chữ nhỏ) | ✅ ĐẠT (Đạt cả AAA) |
-| **Chỉ báo mục đang chọn (Indicator bar)** | `#48cc90` | `#0d0e12` | **9.84 : 1** | >= 3.0 : 1 (UI Component) | ✅ ĐẠT |
-| **Icon nút hamburger trên thanh trên** | `#e0e0e0` | `#0d0e12` | **15.17 : 1** | >= 3.0 : 1 (UI Component) | ✅ ĐẠT (Đạt cả AAA) |
-| **Icon nút hamburger khi hover** | `#ffffff` | `rgba(255,255,255,0.06)` trên `#0d0e12` | **18.25 : 1** | >= 3.0 : 1 (UI Component) | ✅ ĐẠT |
-| **Vòng focus nút hamburger (`:focus-visible`)** | `#00863A` | `#0d0e12` | **4.26 : 1** | >= 3.0 : 1 (Focus Indicator) | ✅ ĐẠT |
-| **Viền vi mô mục đang chọn** | `rgba(72,204,144,0.35)` | `#0d0e12` | **3.85 : 1** | >= 3.0 : 1 (UI Border) | ✅ ĐẠT |
+| **Chữ mục chưa chọn** trên nền Sidebar | `#9e9e9e` | `#0d0e12` | **7.20 : 1** | >= 4.5 : 1 (AA Chữ nhỏ) | ✅ ĐẠT (Đạt cả AAA) |
+| **Chữ mục đang chọn** trên nền active | `#48cc90` | `rgba(0,134,58,0.14)` trên `#0d0e12` | **8.43 : 1** | >= 4.5 : 1 (AA Chữ nhỏ) | ✅ ĐẠT (Đạt cả AAA) |
+| **Chỉ báo mục đang chọn (Indicator bar)** | `#48cc90` | `#0d0e12` | **9.48 : 1** | >= 3.0 : 1 (UI Component) | ✅ ĐẠT |
+| **Icon nút hamburger trên thanh trên** | `#e0e0e0` | `#0d0e12` | **14.61 : 1** | >= 3.0 : 1 (UI Component) | ✅ ĐẠT (Đạt cả AAA) |
+| **Icon nút hamburger khi hover** | `#ffffff` | `rgba(255,255,255,0.06)` trên `#0d0e12` | **16.99 : 1** | >= 3.0 : 1 (UI Component) | ✅ ĐẠT |
+| **Vòng focus nút hamburger (`:focus-visible`)** | `#00863A` | `#0d0e12` | **4.11 : 1** | >= 3.0 : 1 (Focus Indicator) | ✅ ĐẠT |
+| **Chữ `text.secondary` trên thẻ `bgCard`** | `#9e9e9e` | `#121212` | **6.67 : 1** | >= 4.5 : 1 (AA Chữ nhỏ) | ✅ ĐẠT |
+| **Chữ cảnh báo `error.main` trên `bgCard`** | `#ff8285` | `#121212` | **7.47 : 1** | >= 4.5 : 1 (AA Chữ nhỏ) | ✅ ĐẠT |
+| **Chữ thu nhập `success.main` trên `bgCard`** | `#48cc90` | `#121212` | **8.78 : 1** | >= 4.5 : 1 (AA Chữ nhỏ) | ✅ ĐẠT |
+| **Các màu biểu đồ Chart (1-5) trên `bgCard`** | `#60A5FA`..`#94A3B8` | `#121212` | **6.89:1 - 10.15:1** | >= 3.0 : 1 (Graphical Object) | ✅ ĐẠT |
+| **Màu biểu đồ Khác (`#6B7280`) trên `bgCard`** | `#6B7280` | `#121212` | **3.88 : 1** | >= 3.0 : 1 (Graphical Object) | ✅ ĐẠT |
+| **Viền controls OutlinedInput** | `#5e5e5e` | `#080808` | **3.09 : 1** | >= 3.0 : 1 (UI Border) | ✅ ĐẠT |
+| **Track LinearProgress** | `rgba(255,255,255,0.36)` | `#2b2b2b` | **3.32 : 1** | >= 3.0 : 1 (Graphical Object) | ✅ ĐẠT |
 
-> **Tổng kết bộ test tương phản**: Đạt **53 / 53** cặp kiểm tra (0 lỗi).
+> **Tổng kết bộ test tương phản**: Đạt **63 / 63** cặp kiểm tra (0 lỗi, 100% đạt chuẩn WCAG 2.2 AA).
+
+### 2.1. Đảm bảo Không Sử dụng Màu sắc Đơn độc (Use of Color - SC 1.4.1)
+- **Số tiền**: Chi tiêu mang dấu trừ `-` kèm tiền tệ `đ`; thu nhập mang dấu cộng `+`.
+- **Ngân sách vượt mức**: Ngoài thanh tiến độ màu đỏ, hệ thống bổ sung văn bản hiển thị rõ ràng số tiền chênh lệch (ví dụ: `"Vượt 250.000 đ"`).
+- **Sổ nợ**: Trạng thái quá hạn (`OVERDUE`) hoặc sắp đến hạn (`ACTIVE`) đi kèm chip chữ và ngày hết hạn cụ thể, không chỉ dựa vào màu sắc.
+- **Biểu đồ danh mục**: Bổ sung tooltip chi tiết và nhãn tên danh mục, danh mục "Khác" hiển thị rõ tên thay vì chỉ phụ thuộc vào mã màu xám.
 
 ---
 

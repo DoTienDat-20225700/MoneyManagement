@@ -31,9 +31,6 @@ export default function ImportInvoice() {
       fullScreen={fullScreen}
       open={isOpen}
       onClose={closeModal}
-      PaperProps={{
-        style: { background: "#0d0d0d" },
-      }}
     >
       <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span>{t("import_invoices")}</span>

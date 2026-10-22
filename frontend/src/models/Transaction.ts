@@ -1,5 +1,6 @@
 import { TypeOption } from "../enums/Enums";
 import { CustomLabel } from "./CustomLabel";
+import { paletteTokens } from "../theme";
 
 export interface Transaction {
   id: number;
@@ -30,17 +31,16 @@ export function typeOptionMask(type: TypeOption, lang?: "vi" | "en") {
 }
 
 export function typeOptionColor(type: TypeOption) {
-  let color = "";
-  let bgColor = "";
+  let color = paletteTokens.textSecondary;
+  let bgColor = "rgba(255, 255, 255, 0.05)";
   switch (type) {
     case TypeOption.EXPENSE:
-      // Chi tiêu thông thường: xám trung tính
-      color = "#9e9e9e";
-      bgColor = "rgba(158, 158, 158, 0.10)";
+      color = paletteTokens.textSecondary;
+      bgColor = "rgba(255, 255, 255, 0.05)";
       break;
     case TypeOption.EARNING:
-      color = "#48cc90";
-      bgColor = "#48cc9030";
+      color = paletteTokens.success;
+      bgColor = paletteTokens.tint.success12;
       break;
   }
   return { bgColor, color };

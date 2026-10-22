@@ -158,10 +158,10 @@ export default function RebalanceSuggestionDialog({
       fullWidth
       PaperProps={{
         sx: {
-          backgroundColor: "#121212",
+          backgroundColor: paletteTokens.bgCard,
           backgroundImage: "none",
           borderRadius: 3,
-          border: "1px solid rgba(255, 255, 255, 0.1)",
+          border: `1px solid ${paletteTokens.divider}`,
         },
       }}
     >
@@ -211,7 +211,7 @@ export default function RebalanceSuggestionDialog({
             <Typography variant="caption" color="text.secondary" display="block">
               {t("rebalance_target_category")}
             </Typography>
-            <Typography variant="subtitle1" fontWeight={600} color="#EF4444">
+            <Typography variant="subtitle1" fontWeight={600} color={paletteTokens.error}>
               {targetLabelName}
             </Typography>
           </Box>
@@ -219,7 +219,7 @@ export default function RebalanceSuggestionDialog({
             <Typography variant="caption" color="text.secondary" display="block">
               {t("rebalance_deficit_amount")}
             </Typography>
-            <Typography variant="subtitle1" fontWeight={700} color="#EF4444">
+            <Typography variant="subtitle1" fontWeight={700} color={paletteTokens.error}>
               +{formatValue(deficitAmount)} đ
             </Typography>
           </Box>
@@ -318,15 +318,15 @@ export default function RebalanceSuggestionDialog({
                           </Typography>
                           {item.is_non_essential && (
                             <Chip
-                              icon={<StarIcon sx={{ "&&": { fontSize: 13, color: "#F59E0B" } }} />}
+                              icon={<StarIcon sx={{ "&&": { fontSize: 13, color: paletteTokens.warning } }} />}
                               label={t("rebalance_non_essential_badge")}
                               size="small"
                               sx={{
                                 height: 20,
                                 fontSize: "11px",
-                                backgroundColor: "rgba(245, 158, 11, 0.12)",
-                                color: "#F59E0B",
-                                border: "1px solid rgba(245, 158, 11, 0.3)",
+                                backgroundColor: paletteTokens.tint.warning12,
+                                color: paletteTokens.warning,
+                                border: `1px solid ${paletteTokens.tint.warning12}`,
                               }}
                             />
                           )}

@@ -10,12 +10,12 @@ import {
   Typography,
   Alert,
 } from "@mui/material";
-import { grey } from "@mui/material/colors";
 import { useQuery } from "@tanstack/react-query";
 import LatestTransactions from "../components/LatestTransactions";
 import { useTransactions } from "../hooks/api/useTransactions";
 import { useLanguage } from "../context/LanguageContext";
 import { Transaction } from "../models/Transaction";
+import { paletteTokens } from "../theme";
 
 function Transactions() {
   const { t } = useLanguage();
@@ -59,7 +59,7 @@ function Transactions() {
             InputProps={{
               style: { fontSize: "14px", height: "40px" },
               startAdornment: (
-                <InputAdornment position="start" sx={{ color: grey[800] }}>
+                <InputAdornment position="start" sx={{ color: paletteTokens.textSecondary }}>
                   <SearchIcon />
                 </InputAdornment>
               ),

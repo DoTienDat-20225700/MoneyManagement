@@ -115,7 +115,7 @@ function Home() {
                 <LatestTransactions data={transactions} headOnly={true} />
                 <Link to={"/transactions"}>
                   <Button
-                    variant="contained"
+                    variant="outlined"
                     size="medium"
                     sx={{ marginTop: 2 }}
                   >

@@ -1,18 +1,57 @@
 # Tài liệu Thiết kế Giao diện (DESIGN.md) - MoneyManagement
 
-## 1. Hệ thống Màu sắc & Token Thiết kế (Dark Theme)
-Ứng dụng MoneyManagement sử dụng phong cách Dark Theme hiện đại với nền tối sâu, lớp phủ kính mờ (glassmorphism/backdrop-filter) và điểm nhấn xanh ngọc lục bảo (Emerald Green):
+## 1. Hệ thống Màu sắc & Token Thiết kế Tối giản (Quy tắc 90/8/2)
 
-- **Nền chính (Background Default)**: `#080808`
-- **Nền phụ / Khối nổi (Background Paper)**: `#2b2b2b`
-- **Nền Sidebar & Drawer**: `#0d0e12` (với lớp phủ mờ `backdrop-filter: blur(14px)`)
-- **Nền TopBar**: `rgba(13, 14, 18, 0.85)` (kèm `backdrop-filter: blur(14px)`)
-- **Màu chủ đạo (Primary)**: `#00863A` (dùng cho nút chính, focus ring)
-- **Màu điểm nhấn trạng thái chọn (Active Accent)**: `#48cc90` (chữ & viền chỉ báo)
-- **Nền mục đang chọn (Active Background)**: `rgba(0, 134, 58, 0.22)`
-- **Viền mục đang chọn (Active Border)**: `1px solid rgba(72, 204, 144, 0.35)`
-- **Văn bản chính (text.primary)**: `#ffffff`
-- **Văn bản phụ (text.secondary)**: `#9e9e9e` (đạt tỷ lệ tương phản >= 5.28:1 trên paper và >= 7.48:1 trên nền tối)
+Hệ thống giao diện MoneyManagement được chuẩn hoá theo quy tắc thiết kế tối giản **90/8/2**:
+- **~90% Trung tính (Neutral)**: Chiếm phần lớn diện tích giao diện (nền, thẻ card, đường phân chia, chữ và số liệu thông thường).
+- **~8% Xanh thương hiệu / Thu nhập (Brand Emerald & Income)**: Điểm nhấn nhận diện thương hiệu, nút hành động chính, dòng tiền dương (+), chỉ báo điều hướng.
+- **~2% Cảnh báo & Trạng thái nghiêm trọng (Warning & Danger)**: Chỉ xuất hiện khi có vấn đề cần lưu ý (ngân sách tiệm cận/vượt hạn mức, nợ quá hạn, dự báo cạn dòng tiền).
+
+### 1.1. Bảng Token Theme (Nguồn sự thật duy nhất tại `frontend/src/theme.tsx`)
+
+| Token (`paletteTokens`) | Giá trị Hex | Key trong MUI Theme | Mục đích sử dụng |
+|---|---|---|---|
+| `bgDefault` | `#080808` | `palette.background.default` | Nền phẳng toàn ứng dụng (Đã loại bỏ hoàn toàn bokeh, glow, radial-gradient) |
+| `bgCard` | `#121212` | `palette.background.paper` (Card, Dialog, Drawer) | Nền thẻ bề mặt, khối nội dung, modal và panel |
+| `divider` | `#1E1E1E` | `palette.divider` | Viền thẻ, đường kẻ phân chia các khối và hàng bảng |
+| `controlBorder` | `#5e5e5e` | `palette.outlinedBorder` | Viền input, controls chưa focus (đạt 3.09:1 WCAG Non-text) |
+| `textPrimary` | `#ffffff` | `palette.text.primary` | Tiêu đề chính, nhãn quan trọng, số tiền chi tiêu (kèm dấu `-`) |
+| `textSecondary` | `#9e9e9e` | `palette.text.secondary` | Nhãn phụ trợ, mô tả, đơn vị đo, trục biểu đồ (đạt 7.48:1 WCAG AA) |
+| `primary` | `#00863A` | `palette.primary.main` | Nút hành động chính đặc (`contained`), focus indicator viền 2px |
+| `primaryHover` | `#007030` | `palette.primary.dark` | Trạng thái hover của nút primary |
+| `success` | `#48cc90` | `palette.success.main` | Chữ/icon thu nhập dương (kèm dấu `+`), thanh tiến độ bình thường |
+| `warning` | `#faad14` | `palette.warning.main` | Cảnh báo mức độ tiệm cận hạn mức (approaching), nợ sắp đến hạn |
+| `error` | `#ff8285` | `palette.error.main` | Cảnh báo cạn tiền (CRITICAL), nợ quá hạn (OVERDUE), vượt ngân sách |
+| `info` | `#9e9e9e` | `palette.info.main` | Đưa về trung tính để MUI `severity="info"` không bị rơi vào màu xanh dương |
+
+### 1.2. Bảng màu Biểu đồ (Chart Color Palette)
+Biểu đồ tròn/phân bổ cơ cấu danh mục (`ProfileChart`) sử dụng 5 màu cố định dịu mắt + 1 màu trung tính cho phần gộp, **cố ý không dùng xanh lá, đỏ hoặc vàng** để người dùng không nhầm lẫn với màu trạng thái cảnh báo:
+1. `#60A5FA` (Soft Sky Blue)
+2. `#A78BFA` (Soft Purple)
+3. `#22D3EE` (Soft Cyan)
+4. `#F472B6` (Soft Pink)
+5. `#94A3B8` (Slate Grey)
+6. `#6B7280` (Màu trung tính cho nhóm gộp "Khác")
+
+### 1.3. Các Quy tắc Bắt buộc & Mẫu thiết kế Bị cấm (Anti-patterns)
+
+1. **Quy tắc "Một màu một nghĩa"**:
+   - Màu xanh lá (`#48cc90` / `#00863A`): Chỉ biểu thị tăng trưởng thu nhập hoặc thương hiệu / hành động chính.
+   - Màu đỏ (`#ff8285`): Chỉ biểu thị vượt ngân sách, nợ quá hạn, dự báo cạn dòng tiền hoặc lỗi thao tác/xóa dữ liệu. Tuyệt đối không tô đỏ số tiền chi tiêu thông thường.
+2. **Quy tắc hiển thị Chi tiêu**:
+   - Số tiền chi tiêu dùng màu trung tính `text.primary` (`#ffffff`) kèm dấu trừ `-` phía trước (ví dụ `-150.000 đ`).
+   - Số tiền thu nhập dùng màu `success` (`#48cc90`) kèm dấu cộng `+` phía trước (ví dụ `+5.000.000 đ`).
+3. **Quy tắc "Một trạng thái chỉ thể hiện ở MỘT chỗ chính" (Tránh đa lớp màu trùng lặp)**:
+   - Nghiêm cấm: Một thẻ ngân sách vừa viền đỏ, vừa nền đỏ nhạt, vừa có chip đỏ, vừa có banner đỏ, vừa có text số tiền đỏ.
+   - Chuẩn hoá: Trạng thái vi phạm chỉ thể hiện qua thanh tiến độ (progress bar) + MỘT tín hiệu chữ/biểu tượng không phụ thuộc màu (WCAG 1.4.1). Ví dụ: footnote "Vượt 120.000 đ" hoặc icon cảnh báo nhỏ kèm chữ.
+4. **Bỏ toàn bộ Chip và Banner "An toàn / Bình thường"**:
+   - Trạng thái hoạt động bình thường là trạng thái mặc định, không cần tô xanh hay gắn chip/badge "An toàn". Giảm tải triệt để nhiễu thị giác.
+5. **Chip Danh mục**:
+   - Dùng nền xám trung tính với một chấm tròn màu nhỏ (8px) lấy từ `label_color`. Không tô phủ toàn bộ nền chip bằng màu danh mục.
+6. **Tối đa 1 nút Primary đặc (`contained`) mỗi màn hình**:
+   - Mỗi màn hình chỉ có duy nhất 1 nút chính kích hoạt hành động quan trọng nhất. Các nút phụ trợ, nút lọc (filter) hoặc tab đều là `variant="outlined"` hoặc `variant="text"`.
+7. **Nền phẳng (Flat Dark Background)**:
+   - Đã loại bỏ 100% các lớp bokeh trang trí, ảnh nền mờ đốm nâu/xanh và gradient overlay. Sử dụng nền phẳng `paletteTokens.bgDefault` (#080808) kết hợp thẻ `bgCard` (#121212) và viền `divider` (#1E1E1E).
 
 ---
 

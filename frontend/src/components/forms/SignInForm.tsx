@@ -8,6 +8,7 @@ import { useMutation } from "@tanstack/react-query";
 import { grey } from "@mui/material/colors";
 import { useLanguage } from "../../context/LanguageContext";
 import { useSnackbar } from "notistack";
+import { paletteTokens } from "../../theme";
 
 function SignInForm() {
   const navigate = useNavigate();
@@ -129,7 +130,7 @@ function SignInForm() {
           textAlign="center"
         >
           {t("dont_have_account")}{" "}
-          <Link to="/auth/sign-up" style={{ color: "#4caf50", fontWeight: 500 }}>
+          <Link to="/auth/sign-up" style={{ color: paletteTokens.success, fontWeight: 500 }}>
             {t("sign_up")}
           </Link>
         </Typography>

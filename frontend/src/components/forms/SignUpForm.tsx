@@ -8,6 +8,7 @@ import { grey } from "@mui/material/colors";
 import { SignUpFormData, signUpFormSchema } from "../../schemas/signUpSchema";
 import { useLanguage } from "../../context/LanguageContext";
 import { useSnackbar } from "notistack";
+import { paletteTokens } from "../../theme";
 
 function SignUpForm() {
   const navigate = useNavigate();
@@ -214,7 +215,7 @@ function SignUpForm() {
           textAlign="center"
         >
           {t("already_have_account")}{" "}
-          <Link to="/auth/sign-in" style={{ color: "#4caf50", fontWeight: 500 }}>
+          <Link to="/auth/sign-in" style={{ color: paletteTokens.success, fontWeight: 500 }}>
             {t("sign_in")}
           </Link>
         </Typography>

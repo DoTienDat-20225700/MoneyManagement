@@ -370,8 +370,8 @@ export default function Debts() {
           size="small"
           label={t("status_fully_paid")}
           sx={{
-            backgroundColor: paletteTokens.elevated,
-            color: paletteTokens.textSecondary,
+            backgroundColor: paletteTokens.bgCard,
+            color: "text.primary",
             border: `1px solid ${paletteTokens.divider}`,
             fontWeight: 600,
             fontSize: "12px",
@@ -385,7 +385,7 @@ export default function Debts() {
           size="small"
           label={t("status_closed")}
           sx={{
-            backgroundColor: paletteTokens.elevated,
+            backgroundColor: paletteTokens.bgCard,
             color: paletteTokens.textSecondary,
             border: `1px solid ${paletteTokens.divider}`,
             fontWeight: 600,
@@ -399,7 +399,7 @@ export default function Debts() {
         size="small"
         label={t("status_active")}
         sx={{
-          backgroundColor: paletteTokens.elevated,
+          backgroundColor: paletteTokens.bgCard,
           color: paletteTokens.textSecondary,
           border: `1px solid ${paletteTokens.divider}`,
           fontWeight: 600,
@@ -781,7 +781,7 @@ export default function Debts() {
                             mt: 1,
                             p: 1,
                             borderRadius: 1,
-                            backgroundColor: paletteTokens.elevated,
+                            backgroundColor: paletteTokens.bgCard,
                             border: `1px solid ${paletteTokens.divider}`,
                             display: "flex",
                             justifyContent: "space-between",
@@ -1253,7 +1253,7 @@ export default function Debts() {
         PaperProps={{
           sx: {
             width: { xs: "100%", sm: 540 },
-            backgroundColor: paletteTokens.elevated,
+            backgroundColor: paletteTokens.bgCard,
             backgroundImage: "none",
             borderLeft: `1px solid ${paletteTokens.divider}`,
             p: 3,
@@ -1325,7 +1325,7 @@ export default function Debts() {
                     fontWeight: 700,
                     color:
                       detailDrawerDebt.status === "OVERDUE"
-                        ? "#ff8285"
+                        ? paletteTokens.error
                         : "text.primary",
                   }}
                 >
@@ -1459,19 +1459,19 @@ export default function Debts() {
                     <Table size="small" stickyHeader>
                       <TableHead>
                         <TableRow>
-                          <TableCell sx={{ color: grey[500], fontSize: "12px", bgcolor: paletteTokens.elevated }}>
+                          <TableCell sx={{ color: grey[500], fontSize: "12px", bgcolor: paletteTokens.bgCard }}>
                             {t("period_no")}
                           </TableCell>
-                          <TableCell sx={{ color: grey[500], fontSize: "12px", bgcolor: paletteTokens.elevated }}>
+                          <TableCell sx={{ color: grey[500], fontSize: "12px", bgcolor: paletteTokens.bgCard }}>
                             {t("due_date")}
                           </TableCell>
-                          <TableCell sx={{ color: grey[500], fontSize: "12px", bgcolor: paletteTokens.elevated }}>
+                          <TableCell sx={{ color: grey[500], fontSize: "12px", bgcolor: paletteTokens.bgCard }}>
                             {t("period_amount")}
                           </TableCell>
-                          <TableCell sx={{ color: grey[500], fontSize: "12px", bgcolor: paletteTokens.elevated }}>
+                          <TableCell sx={{ color: grey[500], fontSize: "12px", bgcolor: paletteTokens.bgCard }}>
                             {t("paid_period_amount")}
                           </TableCell>
-                          <TableCell align="right" sx={{ color: grey[500], fontSize: "12px", bgcolor: paletteTokens.elevated }}>
+                          <TableCell align="right" sx={{ color: grey[500], fontSize: "12px", bgcolor: paletteTokens.bgCard }}>
                             {t("status_label")}
                           </TableCell>
                         </TableRow>

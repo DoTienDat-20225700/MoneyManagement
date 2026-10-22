@@ -6,7 +6,6 @@ import {
   Select,
   Typography,
 } from "@mui/material";
-import { grey } from "@mui/material/colors";
 import { useQuery } from "@tanstack/react-query";
 import { ApexOptions } from "apexcharts";
 import { useEffect, useMemo, useState } from "react";
@@ -18,7 +17,7 @@ import {
 } from "../../enums/Enums";
 import { useTransactions } from "../../hooks/api/useTransactions";
 import { Transaction } from "../../models/Transaction";
-import { darkTheme } from "../../theme";
+import { darkTheme, paletteTokens } from "../../theme";
 import { barRangeOptionMask, getStartDate, formatValue } from "../../utils/utils";
 import { useLanguage } from "../../context/LanguageContext";
 import dayjs from "dayjs";
@@ -65,7 +64,7 @@ function CurrentMonthChart() {
           type: "numeric",
           labels: {
             style: {
-              colors: grey[700],
+              colors: paletteTokens.textSecondary,
             },
             show: true,
             formatter: function (value: string) {
@@ -78,7 +77,7 @@ function CurrentMonthChart() {
           labels: {
             show: true,
             style: {
-              colors: grey[700],
+              colors: paletteTokens.textSecondary,
             },
             formatter: function (val) {
               return formatValue(val);
@@ -87,7 +86,7 @@ function CurrentMonthChart() {
         },
         grid: {
           show: true,
-          borderColor: grey[900],
+          borderColor: paletteTokens.divider,
         },
         dataLabels: { enabled: false },
         tooltip: {
@@ -132,10 +131,11 @@ function CurrentMonthChart() {
   return (
     <Box
       border="1px solid"
-      borderColor={darkTheme.palette.background.paper}
+      borderColor={paletteTokens.divider}
       borderRadius={2}
       padding={3}
       height={380}
+      sx={{ backgroundColor: paletteTokens.bgCard }}
     >
       <Box
         sx={{

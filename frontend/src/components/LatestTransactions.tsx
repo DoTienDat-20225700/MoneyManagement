@@ -19,7 +19,9 @@ import {
   Select,
   TextField,
   Tooltip,
+  Typography,
 } from "@mui/material";
+import { paletteTokens } from "../theme";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -31,7 +33,6 @@ import {
   GridDeleteIcon,
   GridRowId,
   GridRowsProp,
-  GridValueFormatterParams,
   viVN,
   enUS,
 } from "@mui/x-data-grid";
@@ -190,10 +191,27 @@ function LatestTransactions(props: Props) {
         if (params.value && params.value.name) {
           return (
             <Chip
+              icon={
+                <Box
+                  component="span"
+                  sx={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    backgroundColor: params.value.color || paletteTokens.primary,
+                    ml: "6px !important",
+                    mr: "-2px !important",
+                  }}
+                />
+              }
               label={params.value.name}
-              variant="outlined"
               size="small"
-              style={{ borderColor: params.value.color }}
+              sx={{
+                backgroundColor: "rgba(255, 255, 255, 0.05)",
+                border: `1px solid ${paletteTokens.divider}`,
+                color: "text.primary",
+                fontSize: "12px",
+              }}
             />
           );
         }
@@ -203,8 +221,8 @@ function LatestTransactions(props: Props) {
             variant="outlined"
             size="small"
             sx={{
-              color: grey[500],
-              borderColor: grey[800],
+              color: paletteTokens.textSecondary,
+              borderColor: paletteTokens.divider,
               borderStyle: "dashed",
             }}
           />
@@ -232,8 +250,15 @@ function LatestTransactions(props: Props) {
       field: "value",
       headerName: t("col_value"),
       width: 140,
-      valueFormatter: (params: GridValueFormatterParams) => {
-        return formatValue(params.value);
+      renderCell: (params) => {
+        const isIncome = params.row?.type === TypeOption.EARNING || params.row?.type === "EARNING";
+        const sign = isIncome ? "+" : "-";
+        const color = isIncome ? paletteTokens.success : "text.primary";
+        return (
+          <Typography variant="body2" fontWeight={600} sx={{ color }}>
+            {sign}{formatValue(params.value)}
+          </Typography>
+        );
       },
     },
     {

@@ -22,7 +22,6 @@ import {
 import { grey } from "@mui/material/colors";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import TipsAndUpdatesOutlinedIcon from "@mui/icons-material/TipsAndUpdatesOutlined";
 import EventNoteOutlinedIcon from "@mui/icons-material/EventNoteOutlined";
 import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
@@ -182,7 +181,7 @@ export default function CashFlowForecast() {
             offsetY: isNegative ? 24 : -12,
             style: {
               color: "#ffffff",
-              background: isNegative ? paletteTokens.error : paletteTokens.elevated,
+              background: isNegative ? paletteTokens.error : paletteTokens.bgCard,
               fontSize: "10px",
               fontFamily: "Inter",
               fontWeight: 600,
@@ -244,7 +243,7 @@ export default function CashFlowForecast() {
           if (pt.fixed_events && pt.fixed_events.length > 0) {
             eventsHtml = `
               <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.15);">
-                <div style="font-size: 11px; color: #aaa; margin-bottom: 4px;">${t("upcoming_events_title")}:</div>
+                <div style="font-size: 11px; color: ${paletteTokens.textSecondary}; margin-bottom: 4px;">${t("upcoming_events_title")}:</div>
                 ${pt.fixed_events
                   .map((e) => {
                     const amt = Number(e.amount);
@@ -261,8 +260,8 @@ export default function CashFlowForecast() {
           }
 
           return `
-            <div style="padding: 10px 14px; background: ${paletteTokens.elevated}; border: 1px solid ${paletteTokens.divider}; border-radius: 6px; font-family: Inter, sans-serif;">
-              <div style="font-size: 11px; color: #888;">${dateStr}</div>
+            <div style="padding: 10px 14px; background: ${paletteTokens.bgCard}; border: 1px solid ${paletteTokens.divider}; border-radius: 6px; font-family: Inter, sans-serif;">
+              <div style="font-size: 11px; color: ${paletteTokens.textSecondary};">${dateStr}</div>
               <div style="font-size: 14px; font-weight: 600; color: ${bal >= 0 ? paletteTokens.textPrimary : paletteTokens.error}; margin-top: 2px;">
                 ${t("balance")}: ${formatValue(bal)}
               </div>
@@ -375,33 +374,33 @@ export default function CashFlowForecast() {
                 <ButtonGroup variant="outlined" size="small" sx={{ borderColor: paletteTokens.divider }}>
                   <Button
                     onClick={() => setDays(30)}
-                    variant={days === 30 ? "contained" : "outlined"}
+                    variant="outlined"
                     sx={{
-                      backgroundColor: days === 30 ? paletteTokens.primary : "transparent",
+                      backgroundColor: days === 30 ? "rgba(255, 255, 255, 0.12)" : "transparent",
                       color: days === 30 ? "#fff" : "text.secondary",
-                      borderColor: "#333",
+                      borderColor: paletteTokens.divider,
                     }}
                   >
                     30d
                   </Button>
                   <Button
                     onClick={() => setDays(60)}
-                    variant={days === 60 ? "contained" : "outlined"}
+                    variant="outlined"
                     sx={{
-                      backgroundColor: days === 60 ? paletteTokens.primary : "transparent",
+                      backgroundColor: days === 60 ? "rgba(255, 255, 255, 0.12)" : "transparent",
                       color: days === 60 ? "#fff" : "text.secondary",
-                      borderColor: "#333",
+                      borderColor: paletteTokens.divider,
                     }}
                   >
                     60d
                   </Button>
                   <Button
                     onClick={() => setDays(90)}
-                    variant={days === 90 ? "contained" : "outlined"}
+                    variant="outlined"
                     sx={{
-                      backgroundColor: days === 90 ? paletteTokens.primary : "transparent",
+                      backgroundColor: days === 90 ? "rgba(255, 255, 255, 0.12)" : "transparent",
                       color: days === 90 ? "#fff" : "text.secondary",
-                      borderColor: "#333",
+                      borderColor: paletteTokens.divider,
                     }}
                   >
                     90d
@@ -534,37 +533,18 @@ export default function CashFlowForecast() {
             </Alert>
           )}
 
-          {forecast.risk_level === "SAFE" && (
+          {forecast.risk_level === "SAFE" && forecast.low_confidence && (
             <Alert
-              severity="success"
-              icon={<CheckCircleOutlineIcon fontSize="medium" />}
+              severity="info"
               sx={{
-                backgroundColor: paletteTokens.tint.primary12,
-                color: paletteTokens.primary,
-                border: `1px solid ${paletteTokens.primary}`,
-                "& .MuiAlert-icon": { color: paletteTokens.primary },
+                backgroundColor: "rgba(255, 255, 255, 0.04)",
+                color: paletteTokens.textSecondary,
+                border: `1px solid ${paletteTokens.divider}`,
               }}
             >
-              <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
-                <Box>
-                  <Typography variant="subtitle1" fontWeight={700}>
-                    {t("risk_safe")}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mt: 0.5 }}>
-                    {t("risk_safe_desc")}
-                  </Typography>
-                </Box>
-                {forecast.low_confidence && (
-                  <Tooltip title={t("low_confidence_tooltip")}>
-                    <Chip
-                      label={t("low_confidence_badge")}
-                      size="small"
-                      sx={{ backgroundColor: paletteTokens.tint.warning12, color: paletteTokens.warning, borderColor: paletteTokens.warning }}
-                      variant="outlined"
-                    />
-                  </Tooltip>
-                )}
-              </Box>
+              <Typography variant="body2">
+                {t("low_confidence_tooltip")}
+              </Typography>
             </Alert>
           )}
         </Box>
@@ -598,12 +578,12 @@ export default function CashFlowForecast() {
                 borderRadius={2}
                 padding={3}
                 height="100%"
-                sx={{ backgroundColor: paletteTokens.bgPaper }}
+                sx={{ backgroundColor: paletteTokens.bgCard }}
               >
                 <Typography component="h3" variant="body2" color="text.secondary" mb={1}>
                   {t("kpi_current_balance")}
                 </Typography>
-                <Typography component="span" variant="h5" fontWeight={700} color="#fff">
+                <Typography component="span" variant="h5" fontWeight={700} color="text.primary">
                   {formatValue(Number(forecast.current_balance))}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
@@ -620,7 +600,7 @@ export default function CashFlowForecast() {
                 borderRadius={2}
                 padding={3}
                 height="100%"
-                sx={{ backgroundColor: paletteTokens.bgPaper }}
+                sx={{ backgroundColor: paletteTokens.bgCard }}
               >
                 <Typography component="h3" variant="body2" color="text.secondary" mb={1}>
                   {t("kpi_projected_end")} (+{days}d)
@@ -647,7 +627,7 @@ export default function CashFlowForecast() {
                 borderRadius={2}
                 padding={3}
                 height="100%"
-                sx={{ backgroundColor: paletteTokens.bgPaper }}
+                sx={{ backgroundColor: paletteTokens.bgCard }}
               >
                 <Typography component="h3" variant="body2" color="text.secondary" mb={1}>
                   {t("kpi_lowest_balance")}
@@ -680,12 +660,12 @@ export default function CashFlowForecast() {
                 borderRadius={2}
                 padding={3}
                 height="100%"
-                sx={{ backgroundColor: paletteTokens.bgPaper }}
+                sx={{ backgroundColor: paletteTokens.bgCard }}
               >
                 <Typography component="h3" variant="body2" color="text.secondary" mb={1}>
                   {t("kpi_daily_burn_rate")}
                 </Typography>
-                <Typography component="span" variant="h5" fontWeight={700} color={paletteTokens.error}>
+                <Typography component="span" variant="h5" fontWeight={700} color="text.primary">
                   ~{formatValue(Number(forecast.daily_burn_rate))}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
@@ -705,7 +685,7 @@ export default function CashFlowForecast() {
           borderRadius: 2,
           p: { xs: 2, md: 3 },
           mb: 3,
-          backgroundColor: paletteTokens.bgPaper,
+          backgroundColor: paletteTokens.bgCard,
         }}
       >
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
@@ -768,12 +748,12 @@ export default function CashFlowForecast() {
               borderRadius: 2,
               p: { xs: 2, md: 3 },
               height: "100%",
-              backgroundColor: paletteTokens.bgPaper,
+              backgroundColor: paletteTokens.bgCard,
             }}
           >
             <Box display="flex" alignItems="center" gap={1.5} mb={2}>
               <TipsAndUpdatesOutlinedIcon sx={{ color: paletteTokens.primary }} />
-              <Typography component="h3" variant="h6" fontWeight={600} color="#fff">
+              <Typography component="h3" variant="h6" fontWeight={600} color="text.primary">
                 {t("recommendations_title")}
               </Typography>
             </Box>
@@ -784,7 +764,7 @@ export default function CashFlowForecast() {
               <Box display="flex" flexDirection="column" gap={1.5}>
                 {forecast.recommendations.map((rec: RecommendationItem, idx: number) => {
                   const borderColor = paletteTokens.divider;
-                  const bgColor = paletteTokens.elevated;
+                  const bgColor = paletteTokens.bgCard;
 
                   return (
                     <Box
@@ -796,7 +776,7 @@ export default function CashFlowForecast() {
                         backgroundColor: bgColor,
                       }}
                     >
-                      <Typography variant="body2" sx={{ color: "#fff", lineHeight: 1.5 }}>
+                      <Typography variant="body2" sx={{ color: "text.primary", lineHeight: 1.5 }}>
                         {renderRecommendationText(rec)}
                       </Typography>
                     </Box>
@@ -818,12 +798,12 @@ export default function CashFlowForecast() {
               borderRadius: 2,
               p: { xs: 2, md: 3 },
               height: "100%",
-              backgroundColor: paletteTokens.bgPaper,
+              backgroundColor: paletteTokens.bgCard,
             }}
           >
             <Box display="flex" alignItems="center" gap={1.5} mb={2}>
               <EventNoteOutlinedIcon sx={{ color: paletteTokens.primary }} />
-              <Typography component="h3" variant="h6" fontWeight={600} color="#fff">
+              <Typography component="h3" variant="h6" fontWeight={600} color="text.primary">
                 {t("upcoming_events_title")}
               </Typography>
             </Box>
@@ -835,17 +815,17 @@ export default function CashFlowForecast() {
                 <Table size="small" stickyHeader>
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ backgroundColor: paletteTokens.elevated, color: paletteTokens.textSecondary }}>{t("col_date")}</TableCell>
-                      <TableCell sx={{ backgroundColor: paletteTokens.elevated, color: paletteTokens.textSecondary }}>
+                      <TableCell sx={{ backgroundColor: paletteTokens.bgCard, color: paletteTokens.textSecondary }}>{t("col_date")}</TableCell>
+                      <TableCell sx={{ backgroundColor: paletteTokens.bgCard, color: paletteTokens.textSecondary }}>
                         {t("col_event_title")}
                       </TableCell>
-                      <TableCell sx={{ backgroundColor: paletteTokens.elevated, color: paletteTokens.textSecondary }}>
+                      <TableCell sx={{ backgroundColor: paletteTokens.bgCard, color: paletteTokens.textSecondary }}>
                         {t("col_event_source")}
                       </TableCell>
-                      <TableCell align="right" sx={{ backgroundColor: paletteTokens.elevated, color: paletteTokens.textSecondary }}>
+                      <TableCell align="right" sx={{ backgroundColor: paletteTokens.bgCard, color: paletteTokens.textSecondary }}>
                         {t("col_value")}
                       </TableCell>
-                      <TableCell align="right" sx={{ backgroundColor: paletteTokens.elevated, color: paletteTokens.textSecondary }}>
+                      <TableCell align="right" sx={{ backgroundColor: paletteTokens.bgCard, color: paletteTokens.textSecondary }}>
                         {t("col_event_balance_after")}
                       </TableCell>
                     </TableRow>

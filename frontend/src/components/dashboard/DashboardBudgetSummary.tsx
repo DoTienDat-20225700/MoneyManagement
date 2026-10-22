@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useBudgets } from "../../hooks/api/useBudgets";
 import { useLanguage } from "../../context/LanguageContext";
-import { darkTheme, paletteTokens, statusColors, BudgetStatus } from "../../theme";
+import { paletteTokens, statusColors, BudgetStatus } from "../../theme";
 import { formatValue } from "../../utils/utils";
 
 export default function DashboardBudgetSummary() {
@@ -45,10 +45,10 @@ export default function DashboardBudgetSummary() {
       <Grid item xs={12}>
         <Box
           border="1px solid"
-          borderColor={darkTheme.palette.background.paper}
+          borderColor={paletteTokens.divider}
           borderRadius={2}
           p={3}
-          sx={{ backgroundColor: "rgba(255, 255, 255, 0.02)" }}
+          sx={{ backgroundColor: paletteTokens.bgCard }}
         >
           <Skeleton variant="text" width={240} height={32} sx={{ mb: 2 }} />
           <Grid container spacing={2}>
@@ -81,12 +81,11 @@ export default function DashboardBudgetSummary() {
     <Grid item xs={12}>
       <Box
         border="1px solid"
-        borderColor={darkTheme.palette.background.paper}
+        borderColor={paletteTokens.divider}
         borderRadius={2}
         p={{ xs: 2.5, sm: 3 }}
         sx={{
-          backgroundColor: "rgba(255, 255, 255, 0.02)",
-          backdropFilter: "blur(10px)",
+          backgroundColor: paletteTokens.bgCard,
         }}
       >
         {/* Header */}
@@ -122,9 +121,9 @@ export default function DashboardBudgetSummary() {
             variant="text"
             endIcon={<ArrowForwardIcon fontSize="small" />}
             sx={{
-              color: "#48cc90",
+              color: paletteTokens.primary,
               fontWeight: 600,
-              "&:hover": { backgroundColor: "rgba(72, 204, 144, 0.1)" },
+              "&:hover": { backgroundColor: "rgba(0, 134, 58, 0.08)" },
             }}
           >
             {t("manage_budgets")}
@@ -163,8 +162,8 @@ export default function DashboardBudgetSummary() {
                 sx={{
                   p: 2.5,
                   borderRadius: 2,
-                  backgroundColor: "rgba(0, 0, 0, 0.2)",
-                  border: "1px solid rgba(255, 255, 255, 0.06)",
+                  backgroundColor: "rgba(255, 255, 255, 0.02)",
+                  border: `1px solid ${paletteTokens.divider}`,
                   height: "100%",
                   display: "flex",
                   flexDirection: "column",
@@ -231,7 +230,7 @@ export default function DashboardBudgetSummary() {
                       <Typography variant="caption" color="text.secondary" display="block">
                         {t("budgeted_spending")}
                       </Typography>
-                      <Typography variant="body2" fontWeight={700} color={paletteTokens.error}>
+                      <Typography variant="body2" fontWeight={700} color="text.primary">
                         {formatValue(budgetedSpent)}
                       </Typography>
                     </Grid>
@@ -242,7 +241,7 @@ export default function DashboardBudgetSummary() {
                       <Typography
                         variant="body2"
                         fontWeight={700}
-                        color={remainingBudget > 0 ? "#48cc90" : paletteTokens.error}
+                        color={remainingBudget > 0 ? paletteTokens.success : paletteTokens.error}
                       >
                         {formatValue(remainingBudget)}
                       </Typography>
@@ -309,8 +308,8 @@ export default function DashboardBudgetSummary() {
                 sx={{
                   p: 2.5,
                   borderRadius: 2,
-                  backgroundColor: "rgba(0, 0, 0, 0.2)",
-                  border: "1px solid rgba(255, 255, 255, 0.06)",
+                  backgroundColor: "rgba(255, 255, 255, 0.02)",
+                  border: `1px solid ${paletteTokens.divider}`,
                   height: "100%",
                   display: "flex",
                   flexDirection: "column",
@@ -341,10 +340,10 @@ export default function DashboardBudgetSummary() {
                             <Stack direction="row" alignItems="center" spacing={1}>
                               <Box
                                 sx={{
-                                  width: 10,
-                                  height: 10,
+                                  width: 8,
+                                  height: 8,
                                   borderRadius: "50%",
-                                  backgroundColor: budget.label.color || "#00863A",
+                                  backgroundColor: budget.label.color || paletteTokens.primary,
                                 }}
                               />
                               <Typography variant="body2" fontWeight={600}>
@@ -352,24 +351,16 @@ export default function DashboardBudgetSummary() {
                               </Typography>
                             </Stack>
 
-                            <Chip
-                              size="small"
-                              icon={
-                                isExceeded ? (
-                                  <ErrorOutlineIcon sx={{ fontSize: "12px !important", color: `${sc.color} !important` }} />
-                                ) : (
-                                  <WarningAmberIcon sx={{ fontSize: "12px !important", color: `${sc.color} !important` }} />
-                                )
-                              }
-                              label={isExceeded ? t("status_exceeded") : t("status_approaching")}
-                              sx={{
-                                height: 20,
-                                fontSize: "11px",
-                                fontWeight: 700,
-                                backgroundColor: sc.bg,
-                                color: sc.color,
-                              }}
-                            />
+                            <Stack direction="row" alignItems="center" spacing={0.5}>
+                              {isExceeded ? (
+                                <ErrorOutlineIcon sx={{ fontSize: 13, color: sc.color }} />
+                              ) : (
+                                <WarningAmberIcon sx={{ fontSize: 13, color: sc.color }} />
+                              )}
+                              <Typography variant="caption" fontWeight={600} sx={{ color: sc.color }}>
+                                {isExceeded ? t("status_exceeded") : t("status_approaching")}
+                              </Typography>
+                            </Stack>
                           </Box>
 
                           <LinearProgress

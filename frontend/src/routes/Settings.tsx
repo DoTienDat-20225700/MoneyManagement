@@ -96,7 +96,7 @@ function Settings() {
           sx={{
             width: { xs: "100%", md: 240 },
             flexShrink: 0,
-            bgcolor: paletteTokens.bgPaper,
+            bgcolor: paletteTokens.bgCard,
             borderRadius: 3,
             p: 1,
             border: `1px solid ${paletteTokens.divider}`,
@@ -376,12 +376,12 @@ function Settings() {
                         justifyContent: "space-between",
                         p: 2,
                         borderRadius: 2,
-                        bgcolor: paletteTokens.bgPaper,
+                        bgcolor: paletteTokens.bgCard,
                         border: `1px solid ${paletteTokens.divider}`,
                         transition: "all 0.2s ease",
                         "&:hover": {
                           borderColor: paletteTokens.controlBorder,
-                          bgcolor: paletteTokens.elevated,
+                          bgcolor: "rgba(255, 255, 255, 0.04)",
                         },
                       }}
                     >
@@ -404,7 +404,7 @@ function Settings() {
                           sx={{
                             height: 22,
                             fontSize: "11px",
-                            bgcolor: paletteTokens.elevated,
+                            bgcolor: "rgba(255, 255, 255, 0.05)",
                             color: paletteTokens.textSecondary,
                             border: `1px solid ${paletteTokens.divider}`,
                             fontFamily: "monospace",

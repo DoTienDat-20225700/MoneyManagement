@@ -38,7 +38,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { useReports } from "../hooks/api/useReports";
 import { useLabels } from "../hooks/api/useLabels";
 import { formatValue } from "../utils/utils";
-import { darkTheme, paletteTokens } from "../theme";
+import { paletteTokens } from "../theme";
 import { CustomLabel } from "../models/CustomLabel";
 import { usePrefersReducedMotion } from "../hooks/usePrefersReducedMotion";
 import LatestTransactions from "../components/LatestTransactions";
@@ -797,7 +797,7 @@ export default function Reports() {
                 <Typography
                   component="p"
                   variant="caption"
-                  color={expenseChangePct > 0 ? "#ff8285" : "#48cc90"}
+                  color={expenseChangePct > 0 ? paletteTokens.error : paletteTokens.success}
                   sx={{ mt: 1 }}
                 >
                   {expenseChangePct > 0 ? `+${expenseChangePct}%` : `${expenseChangePct}%`}{" "}
@@ -998,20 +998,35 @@ export default function Reports() {
                     >
                       <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
                         <Chip
+                          icon={
+                            <Box
+                              component="span"
+                              sx={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: "50%",
+                                backgroundColor: item.label_color || paletteTokens.primary,
+                                ml: "6px !important",
+                                mr: "-2px !important",
+                              }}
+                            />
+                          }
                           label={
                             item.label_name === "Chưa phân loại"
                               ? t("uncategorized")
                               : item.label_name
                           }
-                          variant="outlined"
                           size="small"
-                          style={{
-                            borderColor: item.label_color || darkTheme.palette.primary.main,
+                          sx={{
+                            backgroundColor: "rgba(255, 255, 255, 0.05)",
+                            border: `1px solid ${paletteTokens.divider}`,
+                            color: "text.primary",
+                            fontSize: "12px",
                           }}
                         />
                         <Typography
                           variant="caption"
-                          sx={{ color: "#ff8285", fontWeight: 600 }}
+                          sx={{ color: paletteTokens.error, fontWeight: 600 }}
                         >
                           +{item.increase_percentage}%
                         </Typography>
@@ -1020,7 +1035,7 @@ export default function Reports() {
                         <Typography variant="caption" color="text.secondary">
                           {t("previous_period")}: {formatValue(Number(item.previous_spent))}
                         </Typography>
-                        <Typography variant="body2" fontWeight={600} sx={{ color: "#ff8285" }}>
+                        <Typography variant="body2" fontWeight={600} sx={{ color: paletteTokens.error }}>
                           +{formatValue(Number(item.increase_amount))}
                         </Typography>
                       </Box>
@@ -1030,7 +1045,7 @@ export default function Reports() {
               </Grid>
             ) : (
               <Box display="flex" alignItems="center" gap={1.5} py={1}>
-                <CheckCircleOutlineIcon sx={{ color: "#48cc90", fontSize: 20 }} />
+                <CheckCircleOutlineIcon sx={{ color: "text.secondary", fontSize: 20 }} />
                 <Typography variant="body2" color="text.secondary">
                   {t("no_increases_found")}
                 </Typography>

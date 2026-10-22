@@ -17,7 +17,7 @@ import {
 } from "../../enums/Enums";
 import { useTransactions } from "../../hooks/api/useTransactions";
 import { AggregatedExpense } from "../../models/Transaction";
-import { darkTheme, paletteTokens } from "../../theme";
+import { paletteTokens } from "../../theme";
 import { getStartDate, pieRangeOptionMask, formatValue } from "../../utils/utils";
 import { useLanguage } from "../../context/LanguageContext";
 
@@ -41,27 +41,47 @@ function ProfileChart() {
     queryFn: () => getTransactions(0, 2, startDate, endDate),
   }) as { data: PromiseType<AggregatedExpense[]> };
 
-  const colors = (transactions ?? []).map(
-    (_, i) => paletteTokens.chart.colors[i % paletteTokens.chart.colors.length]
-  );
-  const amounts = transactions
-    ? transactions.map((obj: AggregatedExpense) => obj.value)
-    : [];
-  const labels = transactions
-    ? transactions.map((obj: AggregatedExpense) =>
-        obj.label_name === "Chưa phân loại" ? t("uncategorized") : obj.label_name
-      )
-    : [];
+  const processedData = useMemo(() => {
+    if (!transactions || transactions.length === 0) {
+      return { labels: [], amounts: [], colors: [] };
+    }
+    // Sort descending by value (per Rule 9)
+    const sorted = [...transactions].sort((a, b) => Number(b.value) - Number(a.value));
+
+    const top5 = sorted.slice(0, 5);
+    const rest = sorted.slice(5);
+
+    const finalLabels: string[] = top5.map((obj: AggregatedExpense) =>
+      obj.label_name === "Chưa phân loại" ? t("uncategorized") : obj.label_name
+    );
+    const finalAmounts: number[] = top5.map((obj: AggregatedExpense) => Number(obj.value));
+    const finalColors: string[] = top5.map((_, i) => paletteTokens.chart.colors[i]);
+
+    if (rest.length > 0) {
+      const restSum = rest.reduce((sum, item) => sum + Number(item.value), 0);
+      if (restSum > 0) {
+        finalLabels.push(language === "vi" ? "Khác" : "Other");
+        finalAmounts.push(restSum);
+        finalColors.push(paletteTokens.chart.neutral);
+      }
+    }
+
+    return {
+      labels: finalLabels,
+      amounts: finalAmounts,
+      colors: finalColors,
+    };
+  }, [transactions, t]);
 
   const state = useMemo<{
     series: ApexAxisChartSeries | ApexNonAxisChartSeries;
     options: ApexOptions;
   }>(() => {
     return {
-      series: amounts,
+      series: processedData.amounts,
       options: {
-        labels: labels,
-        colors: colors,
+        labels: processedData.labels,
+        colors: processedData.colors,
         chart: {
           id: "pie",
           toolbar: { show: false },
@@ -96,15 +116,16 @@ function ProfileChart() {
         },
       },
     };
-  }, [transactions]);
+  }, [processedData]);
 
   return (
     <Box
       border="1px solid"
-      borderColor={darkTheme.palette.background.paper}
+      borderColor={paletteTokens.divider}
       borderRadius={2}
       padding={3}
       height={380}
+      sx={{ backgroundColor: paletteTokens.bgCard }}
     >
       <Box
         sx={{

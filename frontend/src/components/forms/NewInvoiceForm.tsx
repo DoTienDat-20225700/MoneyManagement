@@ -33,6 +33,7 @@ import {
   NewInvoiceImportFormData,
   newInvoiceImportSchema,
 } from "../../schemas/invoiceImportSchema";
+import { paletteTokens } from "../../theme";
 import { useLanguage } from "../../context/LanguageContext";
 
 function NewInvoiceForm() {
@@ -306,7 +307,7 @@ function NewInvoiceForm() {
                     </Typography>
                   </Box>
                 ) : (
-                  <Typography variant="caption" sx={{ color: "#facc15", mt: 0.5, display: "block" }}>
+                  <Typography variant="caption" sx={{ color: paletteTokens.warning, mt: 0.5, display: "block" }}>
                     {language === "vi"
                       ? "⚠️ Ảnh mờ hoặc chưa nhận diện rõ chữ số. Hệ thống sẽ tự phân tích lại khi bấm Nhập hoá đơn."
                       : "⚠️ Could not clearly extract fields. System will re-attempt upon submit."}

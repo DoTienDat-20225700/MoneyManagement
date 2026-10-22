@@ -255,23 +255,6 @@ export default function Budgets() {
     return budgets.filter((b) => b.status === statusFilter);
   }, [budgets, statusFilter]);
 
-  // Helper for status chip matching app palette
-  const renderStatusChip = (status: BudgetStatus) => {
-    const sc = statusColors(status);
-    return (
-      <Chip
-        size="small"
-        label={t(`status_${status}`)}
-        sx={{
-          backgroundColor: sc.bg,
-          color: sc.color,
-          fontWeight: 600,
-          fontSize: "12px",
-        }}
-      />
-    );
-  };
-
   // Helper for progress bar color matching app theme
   const getProgressColor = (status: BudgetStatus) => statusColors(status).progressColor;
 
@@ -373,10 +356,11 @@ export default function Budgets() {
         <Grid item xs={12} sm={4} md={4}>
           <Box
             border="1px solid"
-            borderColor={darkTheme.palette.background.paper}
+            borderColor={paletteTokens.divider}
             borderRadius={2}
             padding={3}
             height={"100%"}
+            sx={{ backgroundColor: paletteTokens.bgCard }}
           >
             <Typography component="h2" variant="body1" mb={1}>
               {t("total_budget")}
@@ -396,10 +380,11 @@ export default function Budgets() {
         <Grid item xs={12} sm={4} md={4}>
           <Box
             border="1px solid"
-            borderColor={darkTheme.palette.background.paper}
+            borderColor={paletteTokens.divider}
             borderRadius={2}
             padding={3}
             height={"100%"}
+            sx={{ backgroundColor: paletteTokens.bgCard }}
           >
             <Typography component="h2" variant="body1" mb={1}>
               {t("total_spent")}
@@ -409,7 +394,7 @@ export default function Budgets() {
                 component="span"
                 variant="h5"
                 fontWeight={600}
-                sx={{ color: paletteTokens.error }}
+                sx={{ color: "text.primary" }}
               >
                 -{formatValue(summary?.total_spent ?? 0)}
               </Typography>
@@ -424,10 +409,11 @@ export default function Budgets() {
         <Grid item xs={12} sm={4} md={4}>
           <Box
             border="1px solid"
-            borderColor={darkTheme.palette.background.paper}
+            borderColor={paletteTokens.divider}
             borderRadius={2}
             padding={3}
             height={"100%"}
+            sx={{ backgroundColor: paletteTokens.bgCard }}
           >
             <Typography component="h2" variant="body1" mb={1}>
               {t("total_remaining")}
@@ -438,7 +424,7 @@ export default function Budgets() {
                 variant="h5"
                 fontWeight={600}
                 sx={{
-                  color: Number(summary?.total_remaining || 0) >= 0 ? "#48cc90" : paletteTokens.error,
+                  color: Number(summary?.total_remaining || 0) >= 0 ? paletteTokens.success : paletteTokens.error,
                 }}
               >
                 {formatValue(summary?.total_remaining ?? 0)}
@@ -451,18 +437,23 @@ export default function Budgets() {
         </Grid>
       </Grid>
 
-      {/* Alert banners */}
-      {exceededBudgets.length > 0 && (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          <strong>{exceededBudgets.length} {t("budget_exceeded_alert")}</strong>{" "}
-          ({exceededBudgets.map((b) => b.label.name).join(", ")})
-        </Alert>
-      )}
-
-      {approachingBudgets.length > 0 && (
-        <Alert severity="warning" sx={{ mt: 2 }}>
-          <strong>{approachingBudgets.length} {t("budget_approaching_alert")}</strong>{" "}
-          ({approachingBudgets.map((b) => b.label.name).join(", ")})
+      {/* Merged Alert banner (Rule 6: Gộp các banner cảnh báo trùng thành 1 dòng tóm tắt, màu theo mức cao nhất) */}
+      {(exceededBudgets.length > 0 || approachingBudgets.length > 0) && (
+        <Alert
+          severity={exceededBudgets.length > 0 ? "error" : "warning"}
+          sx={{ mt: 2 }}
+        >
+          {exceededBudgets.length > 0 && (
+            <span>
+              <strong>{exceededBudgets.length} {t("budget_exceeded_alert")}</strong> ({exceededBudgets.map((b) => b.label.name).join(", ")})
+            </span>
+          )}
+          {exceededBudgets.length > 0 && approachingBudgets.length > 0 && " — "}
+          {approachingBudgets.length > 0 && (
+            <span>
+              <strong>{approachingBudgets.length} {t("budget_approaching_alert")}</strong> ({approachingBudgets.map((b) => b.label.name).join(", ")})
+            </span>
+          )}
         </Alert>
       )}
 
@@ -484,29 +475,49 @@ export default function Budgets() {
         >
           <Button
             size="small"
-            variant={statusFilter === "all" ? "contained" : "outlined"}
+            variant="outlined"
             onClick={() => setStatusFilter("all")}
+            sx={{
+              backgroundColor: statusFilter === "all" ? "rgba(255, 255, 255, 0.12)" : "transparent",
+              borderColor: statusFilter === "all" ? paletteTokens.divider : "rgba(255, 255, 255, 0.1)",
+              color: statusFilter === "all" ? "#fff" : "text.secondary",
+            }}
           >
             {t("all")} ({budgets?.length ?? 0})
           </Button>
           <Button
             size="small"
-            variant={statusFilter === "normal" ? "contained" : "outlined"}
+            variant="outlined"
             onClick={() => setStatusFilter("normal")}
+            sx={{
+              backgroundColor: statusFilter === "normal" ? "rgba(255, 255, 255, 0.12)" : "transparent",
+              borderColor: statusFilter === "normal" ? paletteTokens.divider : "rgba(255, 255, 255, 0.1)",
+              color: statusFilter === "normal" ? "#fff" : "text.secondary",
+            }}
           >
             {t("status_normal")} ({normalBudgets.length})
           </Button>
           <Button
             size="small"
-            variant={statusFilter === "approaching" ? "contained" : "outlined"}
+            variant="outlined"
             onClick={() => setStatusFilter("approaching")}
+            sx={{
+              backgroundColor: statusFilter === "approaching" ? "rgba(255, 255, 255, 0.12)" : "transparent",
+              borderColor: statusFilter === "approaching" ? paletteTokens.divider : "rgba(255, 255, 255, 0.1)",
+              color: statusFilter === "approaching" ? "#fff" : "text.secondary",
+            }}
           >
             {t("status_approaching")} ({approachingBudgets.length})
           </Button>
           <Button
             size="small"
-            variant={statusFilter === "exceeded" ? "contained" : "outlined"}
+            variant="outlined"
             onClick={() => setStatusFilter("exceeded")}
+            sx={{
+              backgroundColor: statusFilter === "exceeded" ? "rgba(255, 255, 255, 0.12)" : "transparent",
+              borderColor: statusFilter === "exceeded" ? paletteTokens.divider : "rgba(255, 255, 255, 0.1)",
+              color: statusFilter === "exceeded" ? "#fff" : "text.secondary",
+            }}
           >
             {t("status_exceeded")} ({exceededBudgets.length})
           </Button>
@@ -541,16 +552,17 @@ export default function Budgets() {
                 <Grid item xs={12} sm={6} lg={4} key={budget.id}>
                   <Box
                     border="1px solid"
-                    borderColor={darkTheme.palette.background.paper}
+                    borderColor={paletteTokens.divider}
                     borderRadius={2}
                     padding={3}
                     height="100%"
                     display="flex"
                     flexDirection="column"
                     justifyContent="space-between"
+                    sx={{ backgroundColor: paletteTokens.bgCard }}
                   >
                     <Box>
-                      {/* Header: Label Chip + Status Chip + Actions */}
+                      {/* Header: Label Chip with Dot + Actions (No duplicate status chip) */}
                       <Box
                         sx={{
                           display: "flex",
@@ -560,18 +572,30 @@ export default function Budgets() {
                         }}
                       >
                         <Chip
+                          icon={
+                            <Box
+                              component="span"
+                              sx={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: "50%",
+                                backgroundColor: budget.label.color || paletteTokens.primary,
+                                ml: "6px !important",
+                                mr: "-2px !important",
+                              }}
+                            />
+                          }
                           label={budget.label.name}
-                          variant="outlined"
                           size="small"
-                          style={{
-                            borderColor: budget.label.color || darkTheme.palette.primary.main,
-                            color: budget.label.color || "inherit",
+                          sx={{
+                            backgroundColor: "rgba(255, 255, 255, 0.05)",
+                            border: `1px solid ${paletteTokens.divider}`,
+                            color: "text.primary",
                             fontWeight: 600,
                           }}
                         />
 
                         <Box display="flex" alignItems="center" gap={0.5}>
-                          {renderStatusChip(budget.status)}
                           <Tooltip title={t("edit_budget")}>
                             <IconButton
                               size="small"
@@ -632,7 +656,7 @@ export default function Budgets() {
                       <Grid
                         container
                         spacing={1.5}
-                        sx={{ pt: 1.5, borderTop: `1px solid ${darkTheme.palette.background.paper}` }}
+                        sx={{ pt: 1.5, borderTop: `1px solid ${paletteTokens.divider}` }}
                       >
                         <Grid item xs={4}>
                           <Typography variant="caption" color="text.secondary" display="block">
@@ -650,7 +674,7 @@ export default function Budgets() {
                           <Typography
                             variant="body2"
                             fontWeight={600}
-                            sx={{ color: budget.status === "exceeded" ? paletteTokens.error : "text.primary" }}
+                            sx={{ color: "text.primary" }}
                           >
                             {formatValue(spentNum)}
                           </Typography>
@@ -664,7 +688,7 @@ export default function Budgets() {
                             variant="body2"
                             fontWeight={600}
                             sx={{
-                              color: remainingNum >= 0 ? "#48cc90" : paletteTokens.error,
+                              color: remainingNum >= 0 ? paletteTokens.success : paletteTokens.error,
                             }}
                           >
                             {formatValue(remainingNum)}

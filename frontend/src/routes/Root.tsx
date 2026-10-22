@@ -8,6 +8,7 @@ import AppDrawer, {
 import RequireAuth from "../components/auth/RequireAuth";
 import { useLanguage } from "../context/LanguageContext";
 import { usePrefersReducedMotion } from "../hooks/usePrefersReducedMotion";
+import { paletteTokens } from "../theme";
 
 function Root() {
   const { t } = useLanguage();
@@ -94,7 +95,7 @@ function Root() {
         minHeight: "100vh",
         position: "relative",
         overflowX: "hidden",
-        backgroundColor: "#0d0e12",
+        backgroundColor: paletteTokens.bgDefault,
       }}
     >
       {/* Accessible Skip Link (WCAG 2.4.1 Bypass Blocks) */}
@@ -106,8 +107,8 @@ function Root() {
           top: "-100px",
           left: 16,
           zIndex: 99999,
-          backgroundColor: "#00863A",
-          color: "#ffffff",
+          backgroundColor: paletteTokens.primary,
+          color: paletteTokens.primaryContrastText,
           px: 2.5,
           py: 1.25,
           borderRadius: "8px",
@@ -125,35 +126,6 @@ function Root() {
       >
         {t("skip_to_content")}
       </Box>
-
-      {/* Blurred background image layer after login */}
-      <Box
-        sx={{
-          position: "fixed",
-          inset: "-20px",
-          backgroundImage: "url('/dashboard-bg.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center top",
-          backgroundRepeat: "no-repeat",
-          filter: "blur(12px)",
-          transform: "scale(1.05)",
-          opacity: 0.9,
-          zIndex: 0,
-          pointerEvents: "none",
-        }}
-      />
-
-      {/* Dark gradient overlay for contrast and readability */}
-      <Box
-        sx={{
-          position: "fixed",
-          inset: 0,
-          background:
-            "linear-gradient(180deg, rgba(13, 14, 18, 0.75) 0%, rgba(13, 14, 18, 0.94) 100%)",
-          zIndex: 0,
-          pointerEvents: "none",
-        }}
-      />
 
       {/* Main navigation & content layer */}
       <Box

@@ -22,6 +22,7 @@ import { navigation } from "../navigation";
 import UserDropdown from "./UserDropdown";
 import { useLanguage } from "../context/LanguageContext";
 import { usePrefersReducedMotion } from "../hooks/usePrefersReducedMotion";
+import { paletteTokens } from "../theme";
 
 export const SIDEBAR_WIDTH = 240;
 export const SIDEBAR_COLLAPSED_WIDTH = 72;
@@ -88,7 +89,7 @@ export default function AppDrawer(props: AppDrawerProps) {
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        backgroundColor: "#0d0e12",
+        backgroundColor: paletteTokens.bgCard,
         color: "#fff",
       }}
     >
@@ -147,7 +148,7 @@ export default function AppDrawer(props: AppDrawerProps) {
                   backgroundColor: isActive
                     ? "rgba(0, 134, 58, 0.14)"
                     : "transparent",
-                  color: isActive ? "#48cc90" : "#e0e0e0",
+                  color: isActive ? paletteTokens.success : "#e0e0e0",
                   border: "1px solid transparent",
                   transition: prefersReducedMotion ? "none" : "all 0.2s ease",
                   "&:hover": {
@@ -157,7 +158,7 @@ export default function AppDrawer(props: AppDrawerProps) {
                     color: "#fff",
                   },
                   "&.Mui-focusVisible": {
-                    outline: "2px solid #00863A",
+                    outline: `2px solid ${paletteTokens.primary}`,
                     outlineOffset: 2,
                   },
                 }}
@@ -193,11 +194,11 @@ export default function AppDrawer(props: AppDrawerProps) {
             color: "#fff",
             textTransform: "none",
             "&:hover": {
-              borderColor: "#48cc90",
+              borderColor: paletteTokens.success,
               background: "rgba(72, 204, 144, 0.10)",
             },
             "&.Mui-focusVisible": {
-              outline: "2px solid #00863A",
+              outline: `2px solid ${paletteTokens.primary}`,
               outlineOffset: 2,
             },
           }}
@@ -235,7 +236,7 @@ export default function AppDrawer(props: AppDrawerProps) {
           left: 0,
           width: isCollapsed ? `${SIDEBAR_COLLAPSED_WIDTH}px` : `${SIDEBAR_WIDTH}px`,
           zIndex: 1100,
-          backgroundColor: "#0d0e12",
+          backgroundColor: paletteTokens.bgCard,
           borderRight: "1px solid rgba(255, 255, 255, 0.08)",
           boxShadow: "4px 0 20px rgba(0, 0, 0, 0.35)",
           transition: sidebarTransition,
@@ -295,9 +296,9 @@ export default function AppDrawer(props: AppDrawerProps) {
                       backgroundColor: isActive
                         ? "rgba(0, 134, 58, 0.14)"
                         : "transparent",
-                      color: isActive ? "#48cc90" : "#9e9e9e",
+                      color: isActive ? paletteTokens.success : "#9e9e9e",
                       border: "1px solid transparent",
-                      borderLeft: isActive ? "3px solid #00863A" : "3px solid transparent",
+                      borderLeft: isActive ? `3px solid ${paletteTokens.primary}` : "3px solid transparent",
                       transition: prefersReducedMotion ? "none" : "all 0.2s ease",
                       "&:hover": {
                         backgroundColor: isActive
@@ -305,11 +306,11 @@ export default function AppDrawer(props: AppDrawerProps) {
                           : "rgba(255, 255, 255, 0.06)",
                         color: "#ffffff",
                         "& .MuiListItemIcon-root": {
-                          color: isActive ? "#48cc90" : "#ffffff",
+                          color: isActive ? paletteTokens.success : "#ffffff",
                         },
                       },
                       "&.Mui-focusVisible": {
-                        outline: "2px solid #00863A",
+                        outline: `2px solid ${paletteTokens.primary}`,
                         outlineOffset: 2,
                       },
                     }}
@@ -471,7 +472,7 @@ export default function AppDrawer(props: AppDrawerProps) {
                 py: 0.5,
                 px: 0.5,
                 "&:focus-visible": {
-                  outline: "2px solid #00863A",
+                  outline: `2px solid ${paletteTokens.primary}`,
                   outlineOffset: 2,
                 },
               }}
@@ -519,12 +520,12 @@ export default function AppDrawer(props: AppDrawerProps) {
                 letterSpacing: 0.5,
                 transition: prefersReducedMotion ? "none" : "all 0.2s ease",
                 "&:hover": {
-                  borderColor: "#48cc90",
+                  borderColor: paletteTokens.success,
                   background: "rgba(72, 204, 144, 0.10)",
                   color: "#ffffff",
                 },
                 "&.Mui-focusVisible": {
-                  outline: "2px solid #00863A",
+                  outline: `2px solid ${paletteTokens.primary}`,
                   outlineOffset: 2,
                 },
                 display: "flex",
@@ -557,7 +558,7 @@ export default function AppDrawer(props: AppDrawerProps) {
         }}
         PaperProps={{
           sx: {
-            backgroundColor: "#0d0e12",
+            backgroundColor: paletteTokens.bgCard,
             backgroundImage: "none",
             borderRight: "1px solid rgba(255, 255, 255, 0.08)",
           },
