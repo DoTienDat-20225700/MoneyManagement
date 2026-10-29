@@ -85,6 +85,59 @@ class MyTokenRefreshView(TokenRefreshView):
         return super().finalize_response(request, response, *args, **kwargs)
 
 
+class ProfileAPIView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        user: HubUser = request.user
+        return Response({
+            'id': user.pk,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+        }, status=200)
+
+    def put(self, request):
+        return self._update_profile(request)
+
+    def patch(self, request):
+        return self._update_profile(request)
+
+    def _update_profile(self, request):
+        user: HubUser = request.user
+        data = request.data
+        if not isinstance(data, dict):
+            return custom_user_error_response("Dữ liệu không hợp lệ. Vui lòng gửi một đối tượng JSON.", 400)
+
+        first_name = data.get('first_name') if 'first_name' in data else data.get('firstName')
+        last_name = data.get('last_name') if 'last_name' in data else data.get('lastName')
+
+        if first_name is not None:
+            if not isinstance(first_name, str):
+                return custom_user_error_response("first_name phải là chuỗi ký tự.", 400)
+            first_name = first_name.strip()
+            if len(first_name) > 30:
+                return custom_user_error_response("first_name không được vượt quá 30 ký tự.", 400)
+            user.first_name = first_name
+
+        if last_name is not None:
+            if not isinstance(last_name, str):
+                return custom_user_error_response("last_name phải là chuỗi ký tự.", 400)
+            last_name = last_name.strip()
+            if len(last_name) > 30:
+                return custom_user_error_response("last_name không được vượt quá 30 ký tự.", 400)
+            user.last_name = last_name
+
+        user.save(update_fields=['first_name', 'last_name'])
+
+        return Response({
+            'id': user.pk,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+        }, status=200)
+
+
 class WalletAPIView(APIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = WalletSerializer
@@ -133,7 +186,6 @@ class TransactionAPIView(APIView):
         except PermissionError:
             return custom_user_error_response('Wallet was not found.', 404)
 
-        # TODO: Change response to message string
         return custom_success_response("Transaction created with success!")
 
     def delete(self, request, transaction_pk=None):

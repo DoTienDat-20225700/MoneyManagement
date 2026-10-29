@@ -5,7 +5,13 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
-PYTHON_BIN="/Library/Frameworks/Python.framework/Versions/3.10/bin/python3"
+if [ -f "$SCRIPT_DIR/.venv/bin/python" ]; then
+    PYTHON_BIN="$SCRIPT_DIR/.venv/bin/python"
+elif [ -f "$SCRIPT_DIR/venv/bin/python" ]; then
+    PYTHON_BIN="$SCRIPT_DIR/venv/bin/python"
+else
+    PYTHON_BIN="${PYTHON_BIN:-python3}"
+fi
 LOG_FILE="$SCRIPT_DIR/recurring_transactions.log"
 
 echo "----------------------------------------" | tee -a "$LOG_FILE"

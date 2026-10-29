@@ -4,6 +4,7 @@ from unittest import mock
 from _decimal import Decimal
 from dateutil.relativedelta import relativedelta
 from django.test import TestCase
+from django.utils import timezone
 from rest_framework.test import APIClient
 from .factory import TransactionFactory
 
@@ -85,6 +86,30 @@ class TransactionTestCase(TestCase):
         expected_value = 500
         monthly_earning = self.wallet.get_monthly_expenses()
         self.assertEqual(expected_value, monthly_earning)
+
+    def test_wallet_monthly_totals_exclude_previous_years(self):
+        today = timezone.localdate()
+        last_year_same_month = today - relativedelta(years=1)
+
+        # Transactions in previous year (same month)
+        self.factory.create_transaction_filled(
+            self.wallet, type="EARNING", value=200, date=last_year_same_month
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, type="EXPENSE", value=100, date=last_year_same_month
+        )
+
+        # Transactions in current year (current month)
+        self.factory.create_transaction_filled(
+            self.wallet, type="EARNING", value=300, date=today
+        )
+        self.factory.create_transaction_filled(
+            self.wallet, type="EXPENSE", value=150, date=today
+        )
+
+        # Assert monthly totals only account for the current year
+        self.assertEqual(self.wallet.get_monthly_earnings(), 300)
+        self.assertEqual(self.wallet.get_monthly_expenses(), 150)
 
 
 class TransactionAPIConsistencyTestCase(TestCase):
@@ -1440,6 +1465,7 @@ class AuthenticationAndAuthorizationTestCase(TestCase):
             ('GET', '/api/reports/transactions/'),
             ('POST', '/api/import/'),
             ('POST', '/api/import/preview/'),
+            ('GET', '/api/profile/'),
         ]
         for method, url in endpoints:
             if method == 'GET':
@@ -1451,6 +1477,33 @@ class AuthenticationAndAuthorizationTestCase(TestCase):
                 401,
                 f"Expected 401 Unauthorized for {method} {url}, got {resp.status_code}"
             )
+
+    def test_profile_get_authenticated(self):
+        user = self.factory.create_user(first_name='Nguyen', last_name='An', email='profileget@example.com')
+        self.client.force_authenticate(user=user)
+        response = self.client.get('/api/profile/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['id'], user.pk)
+        self.assertEqual(response.data['email'], 'profileget@example.com')
+        self.assertEqual(response.data['first_name'], 'Nguyen')
+        self.assertEqual(response.data['last_name'], 'An')
+
+    def test_profile_patch_authenticated(self):
+        user = self.factory.create_user(first_name='OldFirst', last_name='OldLast', email='profilepatch@example.com')
+        self.client.force_authenticate(user=user)
+
+        response = self.client.patch('/api/profile/', {'first_name': 'NewFirst', 'last_name': 'NewLast'}, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['first_name'], 'NewFirst')
+        self.assertEqual(response.data['last_name'], 'NewLast')
+
+        user.refresh_from_db()
+        self.assertEqual(user.first_name, 'NewFirst')
+        self.assertEqual(user.last_name, 'NewLast')
+
+        too_long = 'a' * 31
+        bad_res = self.client.patch('/api/profile/', {'first_name': too_long}, format='json')
+        self.assertEqual(bad_res.status_code, 400)
 
 
 class ObjectOwnershipAndAccessControlTestCase(TestCase):

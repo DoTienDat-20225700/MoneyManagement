@@ -5,7 +5,7 @@ from rest_framework_simplejwt.views import (
 
 from .reports_views import ReportSummaryAPIView, ReportTransactionsAPIView, ReportExportCSVAPIView, ReportExportExcelAPIView
 from .views import (MyTokenObtainPairView, MyTokenRefreshView, TransactionAPIView, get_saving_plans, get_transactions,
-                    get_routes, create_user, WalletAPIView, LabelAPIView, ImportInvoicesAPIView, ImportPreviewAPIView, SavingPlanAPIView,
+                    get_routes, create_user, WalletAPIView, ProfileAPIView, LabelAPIView, ImportInvoicesAPIView, ImportPreviewAPIView, SavingPlanAPIView,
                     SavingPlanContributionAPIView, BudgetAPIView, BudgetSummaryAPIView,
                     BudgetCheckImpactAPIView, BudgetRebalanceAPIView, BudgetRebalanceSuggestionsAPIView,
                     DebtAPIView, DebtPaymentAPIView, DebtSummaryAPIView, CashFlowForecastAPIView)
@@ -15,6 +15,8 @@ urlpatterns = [
     path('token/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', MyTokenRefreshView.as_view(), name='token_refresh'),
     path('register/', create_user, name='create_user'),
+    path('profile/', ProfileAPIView.as_view(), name='profile'),
+    path('profile', ProfileAPIView.as_view(), name='profile_no_slash'),
     path('wallet/', WalletAPIView.as_view(), name='wallet'),
     path('labels/', LabelAPIView.as_view(), name='labels'),
     path('label/', LabelAPIView.as_view(), name='label'),

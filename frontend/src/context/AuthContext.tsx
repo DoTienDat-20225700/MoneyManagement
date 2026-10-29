@@ -17,6 +17,7 @@ interface AuthContextData {
   SignOut(): void;
   refresh: () => Promise<void>;
   authTokens: AuthTokens | null;
+  updateUser: (updated: Partial<User>) => void;
 }
 
 interface Props {
@@ -76,6 +77,10 @@ export const AuthProvider = ({ children }: Props) => {
     setLoggedUser(null);
   }
 
+  function updateUser(updated: Partial<User>) {
+    setLoggedUser((prev) => (prev ? { ...prev, ...updated } : prev));
+  }
+
   async function refresh() {
     console.log("old aT: " + authTokens?.access);
     const response = await api.post(
@@ -102,6 +107,7 @@ export const AuthProvider = ({ children }: Props) => {
         SignOut,
         refresh,
         authTokens,
+        updateUser,
       }}
     >
       {children}

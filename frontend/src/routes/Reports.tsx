@@ -592,7 +592,7 @@ export default function Reports() {
           />
           <Tab
             value="forecast"
-            label={language === "vi" ? "Dự báo dòng tiền (F03)" : "Cash Flow Forecast (F03)"}
+            label={language === "vi" ? "Dự báo dòng tiền" : "Cash Flow Forecast"}
             sx={{ textTransform: "none", fontWeight: 600, fontSize: "0.95rem" }}
           />
         </Tabs>

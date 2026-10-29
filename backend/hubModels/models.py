@@ -176,16 +176,16 @@ class Wallet(models.Model):
         """
         Returns the monthly earnings value of a user's Wallet
         """
-        this_month = datetime.now().month
-        return self.transactions.filter(date__month=this_month, type="EARNING") \
+        today = timezone.localdate()
+        return self.transactions.filter(date__year=today.year, date__month=today.month, type="EARNING") \
             .aggregate(Sum('value')).get('value__sum') or 0
 
     def get_monthly_expenses(self):
         """
         Returns the monthly debt value of a user's Wallet
         """
-        this_month = datetime.now().month
-        return self.transactions.filter(date__month=this_month, type="EXPENSE")\
+        today = timezone.localdate()
+        return self.transactions.filter(date__year=today.year, date__month=today.month, type="EXPENSE")\
             .aggregate(Sum('value')).get('value__sum') or 0
 
     def get_saving_plans(self):
@@ -218,7 +218,7 @@ class WalletBasedModel(models.Model):
 
     def is_from_wallet(self, wallet):
         if not isinstance(wallet, Wallet):
-            raise Exception  # TODO: customize exception
+            raise TypeError("Expected a Wallet instance.")
 
         if not self.get_wallet() == wallet:
             return False
