@@ -1,0 +1,85 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: moneymanagement_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: moneymanagement
+      POSTGRES_USER: mm_user
+      POSTGRES_PASSWORD: mm_password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mm_user -d moneymanagement"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: moneymanagement-backend
+    container_name: moneymanagement_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-m0ney-managem3nt-s3cr3t-k3y-hust-20225700}
+      DEBUG: "True"
+      ALLOWED_HOSTS: "*"
+      TEST_DB: postgres
+      TEST_DB_NAME: moneymanagement
+      TEST_DB_USER: mm_user
+      TEST_DB_PASSWORD: mm_password
+      TEST_DB_HOST: db
+      TEST_DB_PORT: 5432
+    ports:
+      - "8008:8008"
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py seed_demo &&
+             gunicorn hubSettings.wsgi:application --bind 0.0.0.0:8008 --workers 3"
+
+  recurring-scheduler:
+    image: moneymanagement-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: moneymanagement_scheduler
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-m0ney-managem3nt-s3cr3t-k3y-hust-20225700}
+      DEBUG: "True"
+      ALLOWED_HOSTS: "*"
+      TEST_DB: postgres
+      TEST_DB_NAME: moneymanagement
+      TEST_DB_USER: mm_user
+      TEST_DB_PASSWORD: mm_password
+      TEST_DB_HOST: db
+      TEST_DB_PORT: 5432
+    command: >
+      sh -c "while true; do
+               echo '[Recurring-Scheduler] Running process_recurring_transactions...';
+               python manage.py process_recurring_transactions;
+               sleep 43200;
+             done"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:8008/api
+    container_name: moneymanagement_frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
