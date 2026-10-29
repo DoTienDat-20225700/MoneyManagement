@@ -29,6 +29,7 @@ services:
       SECRET_KEY: ${SECRET_KEY:-django-insecure-m0ney-managem3nt-s3cr3t-k3y-hust-20225700}
       DEBUG: "True"
       ALLOWED_HOSTS: "*"
+      AUTH_COOKIE_SECURE: "False"
       TEST_DB: postgres
       TEST_DB_NAME: moneymanagement
       TEST_DB_USER: mm_user
@@ -37,10 +38,7 @@ services:
       TEST_DB_PORT: 5432
     ports:
       - "8008:8008"
-    command: >
-      sh -c "python manage.py migrate &&
-             python manage.py seed_demo &&
-             gunicorn hubSettings.wsgi:application --bind 0.0.0.0:8008 --workers 3"
+    command: ["/app/entrypoint.sh"]
 
   recurring-scheduler:
     image: moneymanagement-backend
@@ -55,6 +53,7 @@ services:
       SECRET_KEY: ${SECRET_KEY:-django-insecure-m0ney-managem3nt-s3cr3t-k3y-hust-20225700}
       DEBUG: "True"
       ALLOWED_HOSTS: "*"
+      AUTH_COOKIE_SECURE: "False"
       TEST_DB: postgres
       TEST_DB_NAME: moneymanagement
       TEST_DB_USER: mm_user
@@ -73,7 +72,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: http://localhost:8008/api
+        VITE_API_URL: /api
     container_name: moneymanagement_frontend
     restart: unless-stopped
     ports:

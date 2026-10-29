@@ -92,10 +92,10 @@ SIMPLE_JWT = {
     "AUTH_COOKIE": "refresh_token",  # cookie name
     "AUTH_COOKIE_DOMAIN": None,  # specifies domain for which the cookie will be sent
     # restricts the transmission of the cookie to only occur over secure (HTTPS) connections.
-    "AUTH_COOKIE_SECURE": True,
+    "AUTH_COOKIE_SECURE": config("AUTH_COOKIE_SECURE", default=True, cast=bool),
     "AUTH_COOKIE_HTTP_ONLY": True,  # prevents client-side js from accessing the cookie
     "AUTH_COOKIE_PATH": "/",  # URL path where cookie will be sent
-    "AUTH_COOKIE_SAMESITE": "None",
+    "AUTH_COOKIE_SAMESITE": config("AUTH_COOKIE_SAMESITE", default="Lax"),
 
 }
 
@@ -135,15 +135,16 @@ WSGI_APPLICATION = 'hubSettings.wsgi.application'
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
 TEST_DB = config('TEST_DB', default='').lower()
-if TEST_DB in ('postgres', 'postgresql'):
+DB_ENGINE = config('DB_ENGINE', default='').lower()
+if TEST_DB in ('postgres', 'postgresql') or DB_ENGINE in ('postgres', 'postgresql'):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': config('TEST_DB_NAME', default='moneymanagement_test'),
-            'USER': config('TEST_DB_USER', default='test_user'),
-            'PASSWORD': config('TEST_DB_PASSWORD', default='test_password'),
-            'HOST': config('TEST_DB_HOST', default='127.0.0.1'),
-            'PORT': config('TEST_DB_PORT', default='5433'),
+            'NAME': config('DB_NAME', default=config('TEST_DB_NAME', default='moneymanagement_test')),
+            'USER': config('DB_USER', default=config('TEST_DB_USER', default='test_user')),
+            'PASSWORD': config('DB_PASSWORD', default=config('TEST_DB_PASSWORD', default='test_password')),
+            'HOST': config('DB_HOST', default=config('TEST_DB_HOST', default='127.0.0.1')),
+            'PORT': config('DB_PORT', default=config('TEST_DB_PORT', default='5433')),
         }
     }
 else:
@@ -189,11 +190,18 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+EXTRA_CORS_ORIGINS = config(
+    'EXTRA_CORS_ORIGINS',
+    default='',
+    cast=lambda v: [s.strip() for s in v.split(',') if s.strip()]
+)
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
@@ -229,6 +237,12 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:5177',
     'http://127.0.0.1:3000',
 ]
+
+for origin in EXTRA_CORS_ORIGINS:
+    if origin not in CORS_ALLOWED_ORIGINS:
+        CORS_ALLOWED_ORIGINS.append(origin)
+    if origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(origin)
 
 CORS_ALLOW_METHODS = [
     'DELETE',

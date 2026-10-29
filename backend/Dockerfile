@@ -19,8 +19,9 @@ RUN pip install --no-cache-dir -r requirements.txt gunicorn
 COPY . /app
 
 RUN mkdir -p /app/hubAPI/imported_files
+RUN chmod +x /app/entrypoint.sh
 
 EXPOSE 8008
 
-CMD ["gunicorn", "hubSettings.wsgi:application", "--bind", "0.0.0.0:8008", "--workers", "3"]
+CMD ["/app/entrypoint.sh"]
 

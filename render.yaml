@@ -1,0 +1,53 @@
+databases:
+  - name: moneymanagement-db
+    plan: free
+    databaseName: moneymanagement
+    user: mm_user
+
+services:
+  - type: web
+    name: moneymanagement-backend
+    env: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    envVars:
+      - key: DB_ENGINE
+        value: postgres
+      - key: TEST_DB
+        value: postgres
+      - key: DB_NAME
+        fromDatabase:
+          name: moneymanagement-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: moneymanagement-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: moneymanagement-db
+          property: password
+      - key: DB_HOST
+        fromDatabase:
+          name: moneymanagement-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: moneymanagement-db
+          property: port
+      - key: SECRET_KEY
+        generateCryptoKey: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: .onrender.com,localhost
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: AUTH_COOKIE_SECURE
+        value: "True"
+      - key: AUTH_COOKIE_SAMESITE
+        value: Lax
+      - key: GEMINI_API_KEY
+        sync: false
+

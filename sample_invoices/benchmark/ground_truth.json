@@ -1,0 +1,242 @@
+[
+  {
+    "file_name": "bm_vietcombank_digital.pdf",
+    "expected_value": 500000.0,
+    "expected_date": "2026-10-12",
+    "expected_title_keywords": [
+      "dien luc",
+      "tien dien"
+    ],
+    "condition": "pdf_digital"
+  },
+  {
+    "file_name": "bm_vietcombank_standard.png",
+    "expected_value": 500000.0,
+    "expected_date": "2026-10-12",
+    "expected_title_keywords": [
+      "dien luc",
+      "tien dien"
+    ],
+    "condition": "image_standard"
+  },
+  {
+    "file_name": "bm_vietcombank_small.png",
+    "expected_value": 500000.0,
+    "expected_date": "2026-10-12",
+    "expected_title_keywords": [
+      "dien luc",
+      "tien dien"
+    ],
+    "condition": "image_small_scale"
+  },
+  {
+    "file_name": "bm_vietcombank_low_contrast.png",
+    "expected_value": 500000.0,
+    "expected_date": "2026-10-12",
+    "expected_title_keywords": [
+      "dien luc",
+      "tien dien"
+    ],
+    "condition": "image_low_contrast"
+  },
+  {
+    "file_name": "bm_techcombank_digital.pdf",
+    "expected_value": 1250000.0,
+    "expected_date": "2026-10-14",
+    "expected_title_keywords": [
+      "bach hoa xanh",
+      "thuc pham"
+    ],
+    "condition": "pdf_digital"
+  },
+  {
+    "file_name": "bm_techcombank_standard.png",
+    "expected_value": 1250000.0,
+    "expected_date": "2026-10-14",
+    "expected_title_keywords": [
+      "bach hoa xanh",
+      "thuc pham"
+    ],
+    "condition": "image_standard"
+  },
+  {
+    "file_name": "bm_techcombank_small.png",
+    "expected_value": 1250000.0,
+    "expected_date": "2026-10-14",
+    "expected_title_keywords": [
+      "bach hoa xanh",
+      "thuc pham"
+    ],
+    "condition": "image_small_scale"
+  },
+  {
+    "file_name": "bm_techcombank_low_contrast.png",
+    "expected_value": 1250000.0,
+    "expected_date": "2026-10-14",
+    "expected_title_keywords": [
+      "bach hoa xanh",
+      "thuc pham"
+    ],
+    "condition": "image_low_contrast"
+  },
+  {
+    "file_name": "bm_mbbank_digital.pdf",
+    "expected_value": 2450000.0,
+    "expected_date": "2026-10-15",
+    "expected_title_keywords": [
+      "vietnam airlines",
+      "may bay"
+    ],
+    "condition": "pdf_digital"
+  },
+  {
+    "file_name": "bm_mbbank_standard.png",
+    "expected_value": 2450000.0,
+    "expected_date": "2026-10-15",
+    "expected_title_keywords": [
+      "vietnam airlines",
+      "may bay"
+    ],
+    "condition": "image_standard"
+  },
+  {
+    "file_name": "bm_mbbank_small.png",
+    "expected_value": 2450000.0,
+    "expected_date": "2026-10-15",
+    "expected_title_keywords": [
+      "vietnam airlines",
+      "may bay"
+    ],
+    "condition": "image_small_scale"
+  },
+  {
+    "file_name": "bm_mbbank_low_contrast.png",
+    "expected_value": 2450000.0,
+    "expected_date": "2026-10-15",
+    "expected_title_keywords": [
+      "vietnam airlines",
+      "may bay"
+    ],
+    "condition": "image_low_contrast"
+  },
+  {
+    "file_name": "bm_bidv_digital.pdf",
+    "expected_value": 3800000.0,
+    "expected_date": "2026-10-16",
+    "expected_title_keywords": [
+      "bach khoa",
+      "hoc phi"
+    ],
+    "condition": "pdf_digital"
+  },
+  {
+    "file_name": "bm_bidv_standard.png",
+    "expected_value": 3800000.0,
+    "expected_date": "2026-10-16",
+    "expected_title_keywords": [
+      "bach khoa",
+      "hoc phi"
+    ],
+    "condition": "image_standard"
+  },
+  {
+    "file_name": "bm_bidv_small.png",
+    "expected_value": 3800000.0,
+    "expected_date": "2026-10-16",
+    "expected_title_keywords": [
+      "bach khoa",
+      "hoc phi"
+    ],
+    "condition": "image_small_scale"
+  },
+  {
+    "file_name": "bm_bidv_low_contrast.png",
+    "expected_value": 3800000.0,
+    "expected_date": "2026-10-16",
+    "expected_title_keywords": [
+      "bach khoa",
+      "hoc phi"
+    ],
+    "condition": "image_low_contrast"
+  },
+  {
+    "file_name": "bm_momo_digital.pdf",
+    "expected_value": 85000.0,
+    "expected_date": "2026-10-17",
+    "expected_title_keywords": [
+      "highlands",
+      "ca phe"
+    ],
+    "condition": "pdf_digital"
+  },
+  {
+    "file_name": "bm_momo_standard.png",
+    "expected_value": 85000.0,
+    "expected_date": "2026-10-17",
+    "expected_title_keywords": [
+      "highlands",
+      "ca phe"
+    ],
+    "condition": "image_standard"
+  },
+  {
+    "file_name": "bm_momo_small.png",
+    "expected_value": 85000.0,
+    "expected_date": "2026-10-17",
+    "expected_title_keywords": [
+      "highlands",
+      "ca phe"
+    ],
+    "condition": "image_small_scale"
+  },
+  {
+    "file_name": "bm_momo_low_contrast.png",
+    "expected_value": 85000.0,
+    "expected_date": "2026-10-17",
+    "expected_title_keywords": [
+      "highlands",
+      "ca phe"
+    ],
+    "condition": "image_low_contrast"
+  },
+  {
+    "file_name": "bm_vietqr_digital.pdf",
+    "expected_value": 420000.0,
+    "expected_date": "2026-10-18",
+    "expected_title_keywords": [
+      "pharmacity",
+      "thuoc"
+    ],
+    "condition": "pdf_digital"
+  },
+  {
+    "file_name": "bm_vietqr_standard.png",
+    "expected_value": 420000.0,
+    "expected_date": "2026-10-18",
+    "expected_title_keywords": [
+      "pharmacity",
+      "thuoc"
+    ],
+    "condition": "image_standard"
+  },
+  {
+    "file_name": "bm_vietqr_small.png",
+    "expected_value": 420000.0,
+    "expected_date": "2026-10-18",
+    "expected_title_keywords": [
+      "pharmacity",
+      "thuoc"
+    ],
+    "condition": "image_small_scale"
+  },
+  {
+    "file_name": "bm_vietqr_low_contrast.png",
+    "expected_value": 420000.0,
+    "expected_date": "2026-10-18",
+    "expected_title_keywords": [
+      "pharmacity",
+      "thuoc"
+    ],
+    "condition": "image_low_contrast"
+  }
+]
