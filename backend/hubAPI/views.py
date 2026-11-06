@@ -44,7 +44,7 @@ class MyTokenObtainPairView(TokenObtainPairView):
                 value=response.data['refresh'],
                 # domain=settings.SIMPLE_JWT["AUTH_COOKIE_DOMAIN"],
                 # path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
-                expires=settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"],
+                max_age=settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"],
                 secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
                 httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
                 samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
@@ -64,6 +64,9 @@ class MyTokenRefreshView(TokenRefreshView):
 
         try:
             token = RefreshToken(refresh_token)
+            user_id = token.payload.get('user_id')
+            if not HubUser.objects.filter(id=user_id, is_active=True).exists():
+                return Response({'error': 'User not found or inactive'}, status=401)
             access_token = str(token.access_token)
             return Response({'access_token': access_token, 'refresh_token': refresh_token})
         except Exception:
@@ -76,7 +79,7 @@ class MyTokenRefreshView(TokenRefreshView):
                 value=response.data['refresh'],
                 # domain=settings.SIMPLE_JWT["AUTH_COOKIE_DOMAIN"],
                 # path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
-                expires=settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"],
+                max_age=settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"],
                 secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
                 httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
                 samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],

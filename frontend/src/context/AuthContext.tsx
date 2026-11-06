@@ -15,7 +15,7 @@ interface AuthContextData {
   }): Promise<void>;
   SignUp({ user }: { user: UserInput }): Promise<string | null>;
   SignOut(): void;
-  refresh: () => Promise<void>;
+  refresh: () => Promise<string>;
   authTokens: AuthTokens | null;
   updateUser: (updated: Partial<User>) => void;
 }

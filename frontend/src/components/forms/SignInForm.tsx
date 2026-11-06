@@ -18,6 +18,10 @@ function SignInForm() {
 
   const { handleSubmit, control } = useForm<SignInFormData>({
     resolver: zodResolver(signInFormSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
   });
 
   const { mutate, isPending } = useMutation({
@@ -86,7 +90,6 @@ function SignInForm() {
                     : t("err_email_req")
                   : null
               }
-              defaultValue={""}
               error={!!error}
               onChange={onChange}
               value={value ?? ""}
@@ -104,7 +107,6 @@ function SignInForm() {
               fullWidth
               size="small"
               helperText={error ? t("err_password_req") : null}
-              defaultValue={""}
               error={!!error}
               onChange={onChange}
               value={value ?? ""}
