@@ -2155,13 +2155,15 @@ class DebtManagementTestCase(TestCase):
     def test_01_loan_given_updates_wallet(self):
         """Cho vay 5.000.000đ (update_wallet bật): ví giảm 5.000.000đ."""
         initial_balance = self.wallet.get_current_amount()
+        today_str = datetime.date.today().strftime('%Y-%m-%d')
+        future_due_str = (datetime.date.today() + datetime.timedelta(days=30)).strftime('%Y-%m-%d')
         res = self.client.post('/api/debts/', {
             'person_name': 'Nguyen Van A',
             'type': 'LOAN_GIVEN',
             'principal_amount': '5000000.00',
             'update_wallet': True,
-            'start_date': '2026-10-01',
-            'due_date': '2026-11-01',
+            'start_date': today_str,
+            'due_date': future_due_str,
         }, format='json')
         self.assertEqual(res.status_code, 201)
         self.wallet.refresh_from_db()

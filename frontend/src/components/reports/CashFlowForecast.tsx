@@ -58,6 +58,7 @@ export default function CashFlowForecast() {
 
   // Control state
   const [days, setDays] = useState<30 | 60 | 90>(30);
+  const [viewRange, setViewRange] = useState<number>(30);
   const [bufferInput, setBufferInput] = useState<string>("0");
   const [safetyBuffer, setSafetyBuffer] = useState<number>(0);
   const [bufferError, setBufferError] = useState<string>("");
@@ -77,6 +78,40 @@ export default function CashFlowForecast() {
       setSafetyBuffer(num);
     }
   };
+
+  const handleDaysChange = (newDays: 30 | 60 | 90) => {
+    const oldDays = days;
+    setDays(newDays);
+    if (viewRange === oldDays) {
+      setViewRange(newDays);
+    }
+  };
+
+  const getSourceLabel = (src: string): string => {
+    if (src === "RECURRING") return t("source_recurring");
+    if (src === "DEBT") return t("source_debt");
+    if (src === "INSTALLMENT") return t("source_installment");
+    return src;
+  };
+
+  const getSourceChipColor = (_src: string) => {
+    return paletteTokens.controlBorder;
+  };
+
+  const viewRangeOptions = useMemo(() => {
+    const list: { label: string; value: number }[] = [
+      { label: language === "vi" ? "7 ngày" : "7d", value: 7 },
+      { label: language === "vi" ? "14 ngày" : "14d", value: 14 },
+      { label: language === "vi" ? "30 ngày" : "30d", value: 30 },
+    ];
+    if (days > 30) {
+      list.push({
+        label: language === "vi" ? `Toàn bộ (${days}d)` : `All (${days}d)`,
+        value: days,
+      });
+    }
+    return list;
+  }, [days, language]);
 
   // Fetch forecast data
   const {
@@ -110,13 +145,22 @@ export default function CashFlowForecast() {
     return list;
   }, [forecast?.daily_timeline]);
 
+  // Active slice of timeline for display and chart
+  const activeTimeline = useMemo(() => {
+    if (!forecast?.daily_timeline || forecast.daily_timeline.length === 0) return [];
+    const count = Math.min(viewRange, forecast.daily_timeline.length);
+    return forecast.daily_timeline.slice(0, count);
+  }, [forecast?.daily_timeline, viewRange]);
+
   // ApexCharts Configuration
   const chartConfig = useMemo<{ series: ApexAxisChartSeries; options: ApexOptions }>(() => {
     if (!forecast?.daily_timeline || forecast.daily_timeline.length === 0) {
       return { series: [], options: {} };
     }
 
-    const timeline = forecast.daily_timeline;
+    const fullTimeline = forecast.daily_timeline;
+    const effectiveRange = Math.min(viewRange, fullTimeline.length);
+    const timeline = fullTimeline.slice(0, effectiveRange);
     const categories = timeline.map((pt) => dayjs(pt.date).format("DD/MM"));
     const balanceData = timeline.map((pt) => Number(pt.balance));
 
@@ -159,69 +203,99 @@ export default function CashFlowForecast() {
       });
     }
 
-    // Point annotations for days with fixed commitments
-    const pointAnnotations = timeline
-      .map((pt, idx) => {
-        if (!pt.fixed_events || pt.fixed_events.length === 0) return null;
+    // Point annotations: clean markers only, NO text badges to eliminate overlap clutter
+    const pointAnnotations: any[] = [];
+    const lowestDate = forecast.lowest_balance_date;
+
+    timeline.forEach((pt, idx) => {
+      const hasEvents = pt.fixed_events && pt.fixed_events.length > 0;
+      const isLowest = pt.date === lowestDate;
+
+      if (!hasEvents && !isLowest) return;
+
+      if (hasEvents) {
         const totalFixed = pt.fixed_events.reduce((acc, e) => acc + Number(e.amount), 0);
-        const isNegative = totalFixed < 0;
-        const mainTitle = pt.fixed_events[0].title;
-        return {
+        const isIncome = totalFixed >= 0;
+        const markerColor = isLowest
+          ? paletteTokens.warning
+          : isIncome
+          ? paletteTokens.income
+          : paletteTokens.expense;
+
+        pointAnnotations.push({
+          x: categories[idx],
+          y: Number(pt.balance),
+          marker: {
+            size: isLowest ? 7 : 5,
+            fillColor: markerColor,
+            strokeColor: "#ffffff",
+            strokeWidth: 2,
+            shape: "circle",
+            radius: 2,
+          },
+        });
+      } else if (isLowest) {
+        pointAnnotations.push({
           x: categories[idx],
           y: Number(pt.balance),
           marker: {
             size: 6,
-            fillColor: isNegative ? paletteTokens.error : paletteTokens.textPrimary,
+            fillColor: paletteTokens.warning,
             strokeColor: "#ffffff",
             strokeWidth: 2,
-            radius: 3,
+            shape: "circle",
+            radius: 2,
           },
-          label: {
-            borderColor: isNegative ? paletteTokens.error : paletteTokens.divider,
-            offsetY: isNegative ? 24 : -12,
-            style: {
-              color: "#ffffff",
-              background: isNegative ? paletteTokens.error : paletteTokens.bgCard,
-              fontSize: "10px",
-              fontFamily: "Inter",
-              fontWeight: 600,
-            },
-            text: `${mainTitle} (${formatValue(totalFixed)})`,
-          },
-        };
-      })
-      .filter(Boolean) as any[];
+        });
+      }
+    });
 
     const options: ApexOptions = {
+      theme: {
+        mode: "dark",
+      },
       chart: {
         id: "cashflow-forecast-line",
         type: "area",
-        toolbar: { show: false },
-        animations: { enabled: !prefersReducedMotion, speed: 600 },
+        toolbar: {
+          show: false,
+        },
+        zoom: {
+          enabled: false,
+        },
+        animations: { enabled: !prefersReducedMotion, speed: 400 },
         background: "transparent",
       },
       colors: [paletteTokens.textPrimary],
       stroke: {
         curve: "smooth",
-        width: 3,
+        width: 2.5,
       },
       fill: {
-        type: "solid",
-        opacity: 0,
+        type: "gradient",
+        gradient: {
+          shadeIntensity: 1,
+          opacityFrom: 0.28,
+          opacityTo: 0.02,
+          stops: [0, 90, 100],
+        },
       },
       dataLabels: { enabled: false },
       xaxis: {
         categories,
+        tickAmount: timeline.length <= 14 ? undefined : 8,
         labels: {
           style: { colors: paletteTokens.textSecondary, fontSize: "11px", fontFamily: "Inter" },
-          rotate: -45,
-          rotateAlways: timeline.length > 45,
+          rotate: 0,
+          rotateAlways: false,
+          hideOverlappingLabels: true,
         },
         axisBorder: { show: true, color: paletteTokens.divider },
-        axisTicks: { show: true, color: paletteTokens.divider },
+        axisTicks: { show: false },
+        tooltip: { enabled: false },
       },
       yaxis: {
-        tickAmount: 6,
+        tickAmount: 5,
         labels: {
           style: { colors: paletteTokens.textSecondary, fontFamily: "Inter" },
           formatter: (val: number) => formatValue(val),
@@ -231,39 +305,78 @@ export default function CashFlowForecast() {
         show: true,
         borderColor: paletteTokens.divider,
         strokeDashArray: 3,
+        xaxis: { lines: { show: false } },
       },
       tooltip: {
         theme: "dark",
+        shared: false,
+        intersect: false,
         custom: function ({ dataPointIndex }) {
           const pt = timeline[dataPointIndex];
           if (!pt) return "";
           const bal = Number(pt.balance);
           const dateStr = dayjs(pt.date).format(dateFormat);
+          const isLowest = pt.date === forecast.lowest_balance_date;
+          const isNegative = bal < 0;
+          const isBelowBuffer = safetyBuffer > 0 && bal < safetyBuffer;
+          const balColor = isNegative
+            ? paletteTokens.error
+            : isBelowBuffer
+            ? paletteTokens.warning
+            : paletteTokens.income;
+
           let eventsHtml = "";
           if (pt.fixed_events && pt.fixed_events.length > 0) {
             eventsHtml = `
-              <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.15);">
-                <div style="font-size: 11px; color: ${paletteTokens.textSecondary}; margin-bottom: 4px;">${t("upcoming_events_title")}:</div>
-                ${pt.fixed_events
-                  .map((e) => {
-                    const amt = Number(e.amount);
-                    const color = amt >= 0 ? paletteTokens.primary : paletteTokens.error;
-                    const sign = amt >= 0 ? "+" : "";
-                    return `<div style="font-size: 11px; display: flex; justify-content: space-between; gap: 12px;">
-                      <span>${e.title}</span>
-                      <strong style="color: ${color};">${sign}${formatValue(amt)}</strong>
-                    </div>`;
-                  })
-                  .join("")}
+              <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.12);">
+                <div style="font-size: 11px; font-weight: 600; color: ${paletteTokens.textSecondary}; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+                  ${t("upcoming_events_title")} (${pt.fixed_events.length})
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                  ${pt.fixed_events
+                    .map((e) => {
+                      const amt = Number(e.amount);
+                      const isInc = amt >= 0;
+                      const amtColor = isInc ? paletteTokens.income : paletteTokens.expense;
+                      const sign = isInc ? "+" : "";
+                      const sourceName = getSourceLabel(e.source);
+                      return `
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 11px;">
+                          <div style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
+                            <span style="display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 9px; font-weight: 600; background: rgba(255,255,255,0.08); color: ${paletteTokens.textSecondary}; border: 1px solid rgba(255,255,255,0.12); flex-shrink: 0;">
+                              ${sourceName}
+                            </span>
+                            <span style="color: #e2e8f0; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 170px;">
+                              ${e.title}
+                            </span>
+                          </div>
+                          <strong style="color: ${amtColor}; flex-shrink: 0; font-family: monospace;">
+                            ${sign}${formatValue(amt)}
+                          </strong>
+                        </div>
+                      `;
+                    })
+                    .join("")}
+                </div>
               </div>
             `;
           }
 
           return `
-            <div style="padding: 10px 14px; background: ${paletteTokens.bgCard}; border: 1px solid ${paletteTokens.divider}; border-radius: 6px; font-family: Inter, sans-serif;">
-              <div style="font-size: 11px; color: ${paletteTokens.textSecondary};">${dateStr}</div>
-              <div style="font-size: 14px; font-weight: 600; color: ${bal >= 0 ? paletteTokens.textPrimary : paletteTokens.error}; margin-top: 2px;">
-                ${t("balance")}: ${formatValue(bal)}
+            <div style="padding: 12px 14px; background: #18181b; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.6); font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; min-width: 220px; max-width: 320px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span style="font-size: 11px; color: ${paletteTokens.textSecondary}; font-weight: 500;">${dateStr}</span>
+                ${
+                  isLowest
+                    ? `<span style="font-size: 10px; padding: 1px 6px; border-radius: 4px; background: rgba(250,173,20,0.15); color: ${paletteTokens.warning}; border: 1px solid ${paletteTokens.warning}; font-weight: 600;">${
+                        language === "vi" ? "Đáy kỳ" : "Lowest"
+                      }</span>`
+                    : ""
+                }
+              </div>
+              <div style="font-size: 11px; color: ${paletteTokens.textSecondary}; margin-top: 2px;">${t("balance")}</div>
+              <div style="font-size: 16px; font-weight: 700; color: ${balColor}; letter-spacing: -0.3px;">
+                ${formatValue(bal)}
               </div>
               ${eventsHtml}
             </div>
@@ -285,7 +398,7 @@ export default function CashFlowForecast() {
       ],
       options,
     };
-  }, [forecast?.daily_timeline, safetyBuffer, language, dateFormat, t, prefersReducedMotion]);
+  }, [forecast?.daily_timeline, forecast?.lowest_balance_date, viewRange, safetyBuffer, language, dateFormat, t, prefersReducedMotion]);
 
   // Translate Recommendation item
   const renderRecommendationText = (rec: RecommendationItem): string => {
@@ -318,17 +431,6 @@ export default function CashFlowForecast() {
       default:
         return "";
     }
-  };
-
-  const getSourceLabel = (src: string): string => {
-    if (src === "RECURRING") return t("source_recurring");
-    if (src === "DEBT") return t("source_debt");
-    if (src === "INSTALLMENT") return t("source_installment");
-    return src;
-  };
-
-  const getSourceChipColor = (_src: string) => {
-    return paletteTokens.controlBorder;
   };
 
   return (
@@ -373,7 +475,7 @@ export default function CashFlowForecast() {
                 </Typography>
                 <ButtonGroup variant="outlined" size="small" sx={{ borderColor: paletteTokens.divider }}>
                   <Button
-                    onClick={() => setDays(30)}
+                    onClick={() => handleDaysChange(30)}
                     variant="outlined"
                     sx={{
                       backgroundColor: days === 30 ? "rgba(255, 255, 255, 0.12)" : "transparent",
@@ -384,7 +486,7 @@ export default function CashFlowForecast() {
                     30d
                   </Button>
                   <Button
-                    onClick={() => setDays(60)}
+                    onClick={() => handleDaysChange(60)}
                     variant="outlined"
                     sx={{
                       backgroundColor: days === 60 ? "rgba(255, 255, 255, 0.12)" : "transparent",
@@ -395,7 +497,7 @@ export default function CashFlowForecast() {
                     60d
                   </Button>
                   <Button
-                    onClick={() => setDays(90)}
+                    onClick={() => handleDaysChange(90)}
                     variant="outlined"
                     sx={{
                       backgroundColor: days === 90 ? "rgba(255, 255, 255, 0.12)" : "transparent",
@@ -688,24 +790,151 @@ export default function CashFlowForecast() {
           backgroundColor: paletteTokens.bgCard,
         }}
       >
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems={{ xs: "flex-start", sm: "center" }}
+          flexDirection={{ xs: "column", sm: "row" }}
+          gap={1.5}
+          mb={2}
+        >
           <Box>
             <Typography component="h3" variant="h6" fontWeight={600} color="#fff">
               {t("chart_cashflow_title")}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {language === "vi"
+              {activeTimeline.length > 0
+                ? language === "vi"
+                  ? `Mô phỏng quỹ tiền: ${activeTimeline.length} ngày (từ ${dayjs(activeTimeline[0].date).format(dateFormat)} đến ${dayjs(activeTimeline[activeTimeline.length - 1].date).format(dateFormat)})`
+                  : `Cash balance simulation: ${activeTimeline.length} days (from ${dayjs(activeTimeline[0].date).format(dateFormat)} to ${dayjs(activeTimeline[activeTimeline.length - 1].date).format(dateFormat)})`
+                : language === "vi"
                 ? `Mô phỏng quỹ tiền từ ${dayjs().format(dateFormat)} đến ${dayjs().add(days, "day").format(dateFormat)}`
                 : `Balance simulation from ${dayjs().format(dateFormat)} to ${dayjs().add(days, "day").format(dateFormat)}`}
             </Typography>
           </Box>
+
+          {/* Quick Horizon Pills (7d, 14d, 30d, all) */}
+          <ButtonGroup size="small" variant="outlined" sx={{ borderRadius: 1.5, overflow: "hidden" }}>
+            {viewRangeOptions.map((opt) => {
+              const isSelected = viewRange === opt.value;
+              return (
+                <Button
+                  key={String(opt.value)}
+                  onClick={() => setViewRange(opt.value)}
+                  sx={{
+                    backgroundColor: isSelected ? "rgba(255, 255, 255, 0.16)" : "transparent",
+                    color: isSelected ? "#ffffff" : "text.secondary",
+                    borderColor: paletteTokens.divider,
+                    fontWeight: isSelected ? 600 : 400,
+                    fontSize: "12px",
+                    textTransform: "none",
+                    px: 1.5,
+                    py: 0.5,
+                    "&:hover": {
+                      backgroundColor: isSelected ? "rgba(255, 255, 255, 0.22)" : "rgba(255, 255, 255, 0.05)",
+                      borderColor: paletteTokens.divider,
+                    },
+                  }}
+                >
+                  {opt.label}
+                </Button>
+              );
+            })}
+          </ButtonGroup>
+        </Box>
+
+        {/* Visual Legend */}
+        <Box
+          display="flex"
+          alignItems="center"
+          flexWrap="wrap"
+          gap={2.5}
+          sx={{
+            pt: 1,
+            pb: 1.5,
+            mb: 2,
+            borderTop: `1px solid ${paletteTokens.divider}`,
+            borderBottom: `1px solid ${paletteTokens.divider}`,
+            fontSize: "12px",
+            color: "text.secondary",
+          }}
+        >
+          {/* 🟢 Thu nhập / Lương */}
+          <Box display="flex" alignItems="center" gap={0.8}>
+            <Box
+              sx={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                backgroundColor: paletteTokens.income,
+                border: "1.5px solid #ffffff",
+              }}
+            />
+            <span>{language === "vi" ? "Thu nhập / Lương" : "Income / Inflow"}</span>
+          </Box>
+
+          {/* 🔴 Chi cố định / Trả nợ */}
+          <Box display="flex" alignItems="center" gap={0.8}>
+            <Box
+              sx={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                backgroundColor: paletteTokens.expense,
+                border: "1.5px solid #ffffff",
+              }}
+            />
+            <span>{language === "vi" ? "Chi cố định / Trả nợ" : "Fixed Expense / Debt"}</span>
+          </Box>
+
+          {/* 🟡 Điểm thấp nhất */}
+          <Box display="flex" alignItems="center" gap={0.8}>
+            <Box
+              sx={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                backgroundColor: paletteTokens.warning,
+                border: "1.5px solid #ffffff",
+              }}
+            />
+            <span>{language === "vi" ? "Điểm thấp nhất kỳ" : "Lowest Balance Point"}</span>
+          </Box>
+
+          {/* --- Đường 0đ --- */}
+          <Box display="flex" alignItems="center" gap={0.8}>
+            <Box
+              sx={{
+                width: 16,
+                height: 0,
+                borderTop: `2px dashed ${paletteTokens.error}`,
+              }}
+            />
+            <span>{language === "vi" ? "Mức 0đ (Nguy cơ cạn quỹ)" : "0 VND (Danger Line)"}</span>
+          </Box>
+
+          {/* --- Ngưỡng an toàn --- */}
+          {safetyBuffer > 0 && (
+            <Box display="flex" alignItems="center" gap={0.8}>
+              <Box
+                sx={{
+                  width: 16,
+                  height: 0,
+                  borderTop: `2px dashed ${paletteTokens.warning}`,
+                }}
+              />
+              <span>
+                {t("safety_buffer")} ({formatValue(safetyBuffer)})
+              </span>
+            </Box>
+          )}
         </Box>
 
         {isLoading ? (
           <Skeleton variant="rectangular" width="100%" height={360} sx={{ borderRadius: 2 }} />
         ) : chartConfig.series.length > 0 ? (
           <Box sx={{ minHeight: 360, width: "100%", position: "relative" }}>
-            <Chart options={chartConfig.options} series={chartConfig.series} type="area" height={360} />
+            <Chart key={`chart-${viewRange}-${days}`} options={chartConfig.options} series={chartConfig.series} type="area" height={360} />
             <Box
               component="div"
               sx={{

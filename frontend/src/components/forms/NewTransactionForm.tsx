@@ -545,7 +545,7 @@ function NewTransactionForm({ isEdit = false }: NewTransactionFormProps = {}) {
         disabled={isSubmitting || isPending}
         startIcon={isSubmitting || isPending ? <CircularProgress size={16} color="inherit" /> : null}
       >
-        {isSubmitting || isPending ? t("loading") : t("add")}
+        {isSubmitting || isPending ? t("loading") : t("add_transaction")}
       </Button>
 
       {savedOverspentData && (

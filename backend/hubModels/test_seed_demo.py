@@ -16,7 +16,9 @@ from hubModels.demo_seed import (
     DemoDataSeeder,
     get_demo_password,
     verify_demo_data,
+    calculate_expected_wallet_balance,
 )
+from hubModels.services import CashFlowForecastService
 from hubModels.models import (
     CategoryBudget,
     CustomLabel,
@@ -251,3 +253,80 @@ class SeedDemoCommandTestCase(TestCase):
             with self.assertRaises(CommandError) as ctx:
                 call_command('seed_demo', '--reset', '--yes', stdout=self.out)
             self.assertIn("Dữ liệu demo không vượt qua kiểm chứng", str(ctx.exception))
+
+    def test_12_calibration_preserves_wallet_integrity_and_forecast_consistency(self):
+        """
+        Xác nhận sau khi hiệu chuẩn số dư đầu kỳ:
+        1. Tài khoản rủi ro luôn đạt dự báo 30 ngày CRITICAL, có cảnh báo WARNING, và số dư thấp nhất âm.
+        2. Tài khoản an toàn luôn đạt dự báo 30 ngày SAFE.
+        3. verify_demo_data của cả hai tài khoản đạt 0 lỗi.
+        4. Tính toàn vẹn số dư ví: current_amount luôn khớp chính xác tổng các giao dịch.
+        Kiểm tra trên các mốc ngày giả lập: ngày 1, 8, 15, 16, 31.
+        """
+        test_days = [1, 8, 15, 16, 31]
+        for d in test_days:
+            sim_date = date(2026, 12, d)
+            with mock.patch('django.utils.timezone.localdate', return_value=sim_date):
+                seeder = DemoDataSeeder(seed=2026, as_of_date=sim_date)
+                u_risk, u_safe = seeder.seed_all()
+
+                w_risk = u_risk.get_wallet()
+                w_safe = u_safe.get_wallet()
+
+                # 1. Kiểm tra tính toàn vẹn của ví (wallet integrity)
+                expected_risk_balance = calculate_expected_wallet_balance(w_risk)
+                self.assertEqual(
+                    w_risk.current_amount,
+                    expected_risk_balance,
+                    f"Ngày {d}: Số dư ví tài khoản rủi ro ({w_risk.current_amount}) không khớp tổng giao dịch ({expected_risk_balance})"
+                )
+
+                expected_safe_balance = calculate_expected_wallet_balance(w_safe)
+                self.assertEqual(
+                    w_safe.current_amount,
+                    expected_safe_balance,
+                    f"Ngày {d}: Số dư ví tài khoản an toàn ({w_safe.current_amount}) không khớp tổng giao dịch ({expected_safe_balance})"
+                )
+
+                # 2. Kiểm tra dự báo dòng tiền 30 ngày
+                fc_risk = CashFlowForecastService.forecast(
+                    wallet=w_risk,
+                    days=30,
+                    safety_buffer=Decimal('1000000.00'),
+                )
+                self.assertEqual(
+                    fc_risk.risk_level,
+                    'CRITICAL',
+                    f"Ngày {d}: Tài khoản rủi ro dự báo không đạt CRITICAL (hiện là {fc_risk.risk_level})"
+                )
+                self.assertIsNotNone(
+                    fc_risk.first_warning_date,
+                    f"Ngày {d}: Tài khoản rủi ro thiếu cảnh báo WARNING"
+                )
+                self.assertTrue(
+                    Decimal('-2000000.00') <= fc_risk.lowest_balance <= Decimal('-500000.00'),
+                    f"Ngày {d}: Số dư thấp nhất ({fc_risk.lowest_balance}) nằm ngoài khoảng thiếu hụt [-2.0M, -0.5M]"
+                )
+
+                fc_safe = CashFlowForecastService.forecast(
+                    wallet=w_safe,
+                    days=30,
+                    safety_buffer=Decimal('1000000.00'),
+                )
+                self.assertEqual(
+                    fc_safe.risk_level,
+                    'SAFE',
+                    f"Ngày {d}: Tài khoản an toàn dự báo không đạt SAFE (hiện là {fc_safe.risk_level})"
+                )
+
+                # 3. Kiểm tra verify_demo_data
+                self.assertEqual(
+                    verify_demo_data(u_risk, as_of_date=sim_date),
+                    [],
+                    f"Ngày {d}: verify_demo_data tài khoản rủi ro có lỗi vi phạm"
+                )
+                self.assertEqual(
+                    verify_demo_data(u_safe, as_of_date=sim_date),
+                    [],
+                    f"Ngày {d}: verify_demo_data tài khoản an toàn có lỗi vi phạm"
+                )

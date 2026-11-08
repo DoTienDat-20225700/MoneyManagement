@@ -346,16 +346,9 @@ class DemoDataSeeder:
 
         # -------------------------------------------------------------
         # 1. Opening Balance Transaction (Day -180)
-        # We will calibrate opening balance to precisely hit target today balance
-        # Target today balance ~ 14.200.000đ
-        # Let's seed opening balance as 22.000.000đ
         # -------------------------------------------------------------
         opening_date = today - timedelta(days=180)
-        # Calibrate opening balance based on day of month to maintain consistent 18-26d critical cashflow dip
-        if today.day <= 15:
-            opening_amt = Decimal("39540000.00") - Decimal(str((today.day - 5) * 420000))
-        else:
-            opening_amt = Decimal("24700000.00") - Decimal(str((today.day - 17) * 420000))
+        opening_amt = Decimal("25000000.00")
         tx_opening = Transaction(
             wallet=wallet,
             title="Số dư đầu kỳ",
@@ -835,6 +828,24 @@ class DemoDataSeeder:
                 'update_wallet': True,
                 'note': f'Thanh toán trả góp kỳ {k}/6',
             })
+
+        # -------------------------------------------------------------
+        # 7. Exact Calibration for F03 Cashflow Deficit Consistency
+        # Calibrate opening balance so that 30-day forecast lowest balance
+        # hits target (~ -1.25M, shortfall 0.5M - 2.0M) across all 1..31 days!
+        # -------------------------------------------------------------
+        wallet.refresh_from_db()
+        fc = CashFlowForecastService.forecast(
+            wallet=wallet,
+            days=30,
+            safety_buffer=Decimal("1000000.00"),
+        )
+        target_lowest = Decimal("-1500000.00")
+        diff = fc.lowest_balance - target_lowest
+        tx_opening.value -= diff
+        tx_opening.save(update_fields=['value'])
+        wallet.current_amount -= diff
+        wallet.save(update_fields=['current_amount'])
 
         return user
 

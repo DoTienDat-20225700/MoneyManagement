@@ -203,3 +203,30 @@ frontend/node_modules
 .agent/
 .agent
 backend/hubAPI/imported_files/
+
+# Playwright & Browser MCP artifacts
+.playwright-mcp/
+playwright-report/
+**/playwright-report/
+test-results/
+**/test-results/
+blob-report/
+playwright/.cache/
+.auth/
+**/e2e/.auth/
+
+# Database E2E & Runtime SQLite journals
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
+db_e2e.sqlite3*
+backend/db_e2e.sqlite3*
+
+# Environment & Local overrides
+.env.local
+.env.*.local
+.env.e2e
+
+# CodeGraph & Local Agent index
+.codegraph/
+
