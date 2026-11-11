@@ -42,6 +42,9 @@ class ForecastResult:
     history_days_used: int
     daily_timeline: List[Dict[str, Any]]
     recommendations: List[Dict[str, Any]]
+    selected_alpha: Optional[Decimal] = None
+    selected_estimator: Optional[str] = None
+    alpha_fallback: bool = False
 
     def __getitem__(self, item: str) -> Any:
         return getattr(self, item)
@@ -51,7 +54,7 @@ class ForecastResult:
         Converts the forecast result into an API-ready serializable dictionary
         with currency values formatted to 2 decimal places and ISO dates.
         """
-        return {
+        result = {
             'horizon_days': self.horizon_days,
             'current_balance': f"{self.current_balance:.2f}",
             'projected_end_balance': f"{self.projected_end_balance:.2f}",
@@ -82,6 +85,93 @@ class ForecastResult:
             ],
             'recommendations': self.recommendations,
         }
+        if self.selected_estimator is not None:
+            result.update(selected_alpha=str(self.selected_alpha) if self.selected_alpha is not None else None,
+                          selected_estimator=self.selected_estimator, alpha_fallback=self.alpha_fallback)
+        return result
+
+
+ADAPTIVE_ALPHA_GRID = tuple(Decimal(value) for value in ('0.02', '0.05', '0.1', '0.2', '0.3', '0.4', '0.5', '0.6'))
+ADAPTIVE_MIN_HISTORY_DAYS = 30
+ADAPTIVE_WARMUP_DAYS = 21
+
+
+@dataclass(frozen=True)
+class AlphaSelection:
+    alpha: Optional[Decimal]
+    estimator: str
+    fallback: bool
+    validation_mae: Optional[Decimal] = None
+
+
+def _adaptive_history(daily_history, today):
+    dated = {}
+    for i, item in enumerate(daily_history):
+        if isinstance(item, tuple):
+            day, amount = item
+        else:
+            day, amount = today - timedelta(days=len(daily_history) - 1 - i), item
+        if day > today:
+            continue
+        value = Decimal(str(amount))
+        if not value.is_finite() or value < 0:
+            raise ValueError('Adaptive spending must be finite and non-negative.')
+        dated[day] = dated.get(day, Decimal('0')) + value
+    if not dated:
+        return []
+    first, last = min(dated), max(dated)
+    return [(first + timedelta(days=i), dated.get(first + timedelta(days=i), Decimal('0')))
+            for i in range((last - first).days + 1)]
+
+
+def _winsorized_values(values):
+    n = len(values)
+    mean = sum(values) / Decimal(n)
+    variance = sum((x - mean) ** 2 for x in values) / Decimal(n)
+    threshold = mean + Decimal('3') * Decimal(str(math.sqrt(float(variance))))
+    return [min(x, threshold) for x in values]
+
+
+def select_alpha(daily_history, today, alpha_grid=ADAPTIVE_ALPHA_GRID,
+                 min_history_days=ADAPTIVE_MIN_HISTORY_DAYS) -> AlphaSelection:
+    """Past-only expanding walk-forward one-step MAE, with fold-local winsorization.
+
+    Mean is always a candidate alongside the numeric grid. Validation starts after
+    21 warm-up days; targets remain raw spending (never winsorized). Minimum
+    history gates selection, not the warm-up. Ties prefer the candidate nearest
+    0.2; mean has alpha=None and tie distance 0.2. Numeric ties then use lower alpha.
+    """
+    if min_history_days < ADAPTIVE_WARMUP_DAYS + 1:
+        raise ValueError('min_history_days must exceed the 21-day warm-up.')
+    candidates = {None}
+    for value in alpha_grid:
+        if value == 'mean':
+            continue
+        candidate = Decimal(str(value))
+        if not candidate.is_finite() or not 0 < candidate <= 1:
+            raise ValueError('Alpha must be in (0, 1].')
+        candidates.add(candidate)
+    history = _adaptive_history(daily_history, today)
+    if len(history) < min_history_days:
+        return AlphaSelection(Decimal('0.2'), 'ewma', True)
+    values = [value for _, value in history]
+    losses = {candidate: Decimal('0') for candidate in candidates}
+    for stop in range(ADAPTIVE_WARMUP_DAYS, len(values)):
+        prefix = _winsorized_values(values[:stop])
+        initial = sum(prefix[:7]) / Decimal(7)
+        for candidate in candidates:
+            prediction = sum(prefix) / Decimal(stop) if candidate is None else initial
+            if candidate is not None:
+                for value in prefix[7:]:
+                    prediction = candidate * value + (Decimal('1') - candidate) * prediction
+            prediction = prediction.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            losses[candidate] += abs(prediction - values[stop])
+    chosen = min(candidates, key=lambda candidate: (
+        losses[candidate], abs((candidate or Decimal('0')) - Decimal('0.2')),
+        candidate or Decimal('0'),
+    ))
+    return AlphaSelection(chosen, 'mean' if chosen is None else 'ewma', False,
+                          losses[chosen] / Decimal(len(values) - ADAPTIVE_WARMUP_DAYS))
 
 
 def calculate_daily_burn_rate(
@@ -95,7 +185,7 @@ def calculate_daily_burn_rate(
     Estimates daily variable spending burn rate (D_variable) using Winsorized EWMA or Simple Mean.
 
     Parameters:
-    - estimator: "ewma" (default) or "mean" (simple average across historical series).
+    - estimator: "ewma" (default), "mean", or "ewma_adaptive" (past-only mean/alpha selection).
     - winsorize: True (default) caps extreme outliers at mu + 3 * sigma; False keeps original values.
     - alpha: EWMA smoothing factor (default 0.2).
 
@@ -116,6 +206,11 @@ def calculate_daily_burn_rate(
     Returns:
         (D_variable, low_confidence, history_days_used)
     """
+    if estimator == 'ewma_adaptive':
+        daily_history = _adaptive_history(daily_history, today)
+        selection = select_alpha(daily_history, today)
+        alpha = selection.alpha or Decimal('0.2')
+        estimator = selection.estimator
     if not daily_history:
         return Decimal('0.00'), True, 0
 
@@ -152,11 +247,7 @@ def calculate_daily_burn_rate(
 
     # Outlier handling: Winsorization or Raw values
     if winsorize:
-        mean_val = sum(values) / Decimal(n)
-        variance = sum((x - mean_val) ** 2 for x in values) / Decimal(n)
-        std_dev = Decimal(str(math.sqrt(float(variance))))
-        upper_threshold = mean_val + Decimal('3') * std_dev
-        processed_values = [min(x, upper_threshold) for x in values]
+        processed_values = _winsorized_values(values)
     else:
         processed_values = list(values)
 
@@ -171,7 +262,7 @@ def calculate_daily_burn_rate(
             ewma = alpha * x + (Decimal('1') - alpha) * ewma
         d_val = ewma
     else:
-        raise ValueError(f"Unknown estimator: {estimator}. Supported options are 'ewma' and 'mean'.")
+        raise ValueError(f"Unknown estimator: {estimator}. Supported options are 'ewma', 'mean', and 'ewma_adaptive'.")
 
     d_variable = d_val.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
     return d_variable, low_confidence, history_days_used
@@ -219,6 +310,13 @@ def simulate_cashflow(
         current_balance = Decimal(str(current_balance))
     if not isinstance(safety_buffer, Decimal):
         safety_buffer = Decimal(str(safety_buffer))
+
+    selection = None
+    if estimator == 'ewma_adaptive':
+        daily_history = _adaptive_history(daily_history, today)
+        selection = select_alpha(daily_history, today)
+        estimator = selection.estimator
+        alpha = selection.alpha or Decimal('0.2')
 
     d_variable, low_confidence, history_days_used = calculate_daily_burn_rate(
         daily_history=daily_history,
@@ -389,6 +487,9 @@ def simulate_cashflow(
         history_days_used=history_days_used,
         daily_timeline=daily_timeline,
         recommendations=recommendations,
+        selected_alpha=selection.alpha if selection else None,
+        selected_estimator=selection.estimator if selection else None,
+        alpha_fallback=selection.fallback if selection else False,
     )
 
 

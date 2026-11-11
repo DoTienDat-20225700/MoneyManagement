@@ -12,11 +12,19 @@ Kiểm tra tính nghiêm ngặt về phương pháp luận của hệ thống ba
 """
 
 import copy
+import csv
 import datetime
 from decimal import Decimal
 import math
+import re
+import tempfile
+from pathlib import Path
+from io import StringIO
 from unittest import TestCase
+from unittest.mock import patch
 
+from django.core.management.base import CommandError
+from hubModels.management.commands import forecast_backtest as backtest
 from hubModels.management.commands.forecast_backtest import Command, compute_bootstrap_ci
 from hubModels.services.forecasting import FixedEvent, simulate_cashflow
 
@@ -25,6 +33,95 @@ class ForecastBacktestEngineTestCase(TestCase):
     def setUp(self):
         self.cmd = Command()
         self.start_date = datetime.date(2026, 1, 1)
+
+    def _evaluate_with_timeline(self, sim_data, origin_idx, horizon=30):
+        forecasts = []
+
+        def record_forecast(*args, **kwargs):
+            forecast = simulate_cashflow(*args, **kwargs)
+            forecasts.append(forecast)
+            return forecast
+
+        with patch(
+            'hubModels.management.commands.forecast_backtest.simulate_cashflow',
+            side_effect=record_forecast,
+        ):
+            metrics = self.cmd.evaluate_single_origin(
+                sim_data=sim_data,
+                origin_idx=origin_idx,
+                horizon=horizon,
+                scenario='stable_noise',
+                seed=42,
+                arm='arm_D',
+                estimator='ewma',
+                winsorize=True,
+                alpha=Decimal('0.2'),
+            )
+
+        self.assertEqual(len(forecasts), 1)
+        return metrics, forecasts[0]
+
+    def test_salary_origin_starts_at_observed_end_of_day_balance(self):
+        data = self.cmd.generate_simulation_data(
+            'stable_noise', self.start_date, total_days=365, seed=42,
+        )
+        origin_idx = (datetime.date(2026, 10, 5) - self.start_date).days
+        _, forecast = self._evaluate_with_timeline(data, origin_idx)
+
+        self.assertEqual(
+            forecast.daily_timeline[0]['balance'], data[origin_idx]['balance'],
+        )
+
+    def test_expense_and_event_free_origins_start_at_observed_balance(self):
+        data = self.cmd.generate_simulation_data(
+            'stable_noise', self.start_date, total_days=365, seed=42,
+        )
+        for day in (10, 20, 21):
+            with self.subTest(day=day):
+                origin_idx = (datetime.date(2026, 10, day) - self.start_date).days
+                _, forecast = self._evaluate_with_timeline(data, origin_idx)
+                self.assertEqual(
+                    forecast.daily_timeline[0]['balance'], data[origin_idx]['balance'],
+                )
+
+    def test_future_events_are_applied_once_on_the_matching_day(self):
+        data = self.cmd.generate_simulation_data(
+            'stable_noise', self.start_date, total_days=365, seed=42,
+        )
+        for day in (4, 9, 19):
+            with self.subTest(day=day):
+                origin_idx = (datetime.date(2026, 10, day) - self.start_date).days
+                _, forecast = self._evaluate_with_timeline(data, origin_idx)
+                expected_balance = data[origin_idx]['balance']
+                self.assertTrue(data[origin_idx + 1]['fixed_events'])
+                for step in range(1, 31):
+                    actual_day = data[origin_idx + step]
+                    fixed_sum = sum(
+                        (event.amount for event in actual_day['fixed_events']),
+                        Decimal('0.00'),
+                    )
+                    expected_balance += fixed_sum - forecast.daily_burn_rate
+                    self.assertEqual(forecast.daily_timeline[step]['date'], actual_day['date'])
+                    self.assertEqual(forecast.daily_timeline[step]['balance'], expected_balance)
+
+    def test_daily_metrics_use_only_the_horizon_future_points(self):
+        data = self.cmd.generate_simulation_data(
+            'stable_noise', self.start_date, total_days=365, seed=42,
+        )
+        origin_idx = (datetime.date(2026, 10, 21) - self.start_date).days
+        metrics, forecast = self._evaluate_with_timeline(data, origin_idx)
+        errors = [
+            float(forecast.daily_timeline[step]['balance'] - data[origin_idx + step]['balance'])
+            for step in range(1, 31)
+        ]
+
+        self.assertGreater(sum(abs(error) for error in errors), 0)
+        self.assertAlmostEqual(metrics['MAE_daily'], sum(abs(error) for error in errors) / 30)
+        self.assertAlmostEqual(
+            metrics['RMSE_daily'], math.sqrt(sum(error ** 2 for error in errors) / 30),
+        )
+        self.assertEqual(metrics['abs_err_end'], abs(errors[-1]))
+        self.assertEqual(metrics['signed_err_end'], errors[-1])
 
     def test_reproducibility_same_seed_gives_identical_results(self):
         """Cùng seed và cấu hình sinh chuỗi dữ liệu mô phỏng và kết quả giống hệt nhau."""
@@ -205,3 +302,310 @@ class ForecastBacktestEngineTestCase(TestCase):
         self.assertEqual(h1, h2)
         self.assertLessEqual(l1, m1)
         self.assertGreaterEqual(h1, m1)
+
+
+class ForecastBacktestReportTestCase(TestCase):
+    def _render_report(self, baseline=100.0, proposed=60.0, ci=(-45.0, -35.0),
+                       n_seeds=7, scenario='stable_noise', alpha_rows=None):
+        metrics = ('MAE_daily', 'MAE_end', 'RMSE_daily', 'Bias_end')
+        summary = []
+        for arm in 'ABCD':
+            row = {
+                'scenario': scenario, 'scenario_label': 'Kịch bản kiểm thử',
+                'arm': f'arm_{arm}', 'arm_label': f'{arm}: Test', 'n_seeds': n_seeds,
+            }
+            for metric in metrics:
+                row[f'{metric}_mean'] = proposed if arm == 'D' else baseline
+                row[f'{metric}_std'] = 1.0
+            summary.append(row)
+        paired = [
+            {
+                'scenario': scenario, 'scenario_label': 'Kịch bản kiểm thử',
+                'comparison': f'D vs {arm} (Test)', 'metric': metric,
+                'mean_diff': proposed - baseline,
+                'ci_95_lower': ci[0], 'ci_95_upper': ci[1],
+                'win_rate_pct': 42.9, 'n_seeds': n_seeds,
+            }
+            for arm in 'ABC' for metric in metrics
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'report.md'
+            Command().generate_markdown_report(
+                str(path), n_seeds, 120, summary, paired, alpha_rows or [],
+            )
+            return path.read_text()
+
+    def test_conclusion_percentages_match_the_same_reports_summary_table(self):
+        for baseline, proposed in ((100.0, 60.0), (100.0, 125.0), (3.21, 2.34)):
+            with self.subTest(baseline=baseline, proposed=proposed):
+                report = self._render_report(baseline=baseline, proposed=proposed)
+                table = report.split('## 3.')[1].split('## 4.')[0]
+                amounts = dict(re.findall(
+                    r'^\| Kịch bản kiểm thử \| ([ABCD]): Test \| ([\d,.]+) ±',
+                    table, re.MULTILINE,
+                ))
+                expected = (float(amounts['A'].replace(',', ''))
+                            - float(amounts['D'].replace(',', '')))
+                expected = expected / float(amounts['A'].replace(',', '')) * 100
+                conclusions = report.split('### 6.1.')[1].split('### 6.2.')[0]
+                percentages = re.findall(r'Cải thiện: (-?\d+\.\d+)%', conclusions)
+                self.assertEqual(len(percentages), 9)
+                self.assertEqual(percentages, [f'{expected:.2f}'] * 9)
+                all_percentages = re.findall(r'(-?\d+(?:\.\d+)?)%', conclusions)
+                self.assertCountEqual(
+                    all_percentages, [f'{expected:.2f}', '42.9', '95'] * 9,
+                )
+                self.assertNotIn('trên 40%', report)
+                self.assertNotIn('p < 0.05', report)
+
+    def test_conclusions_follow_ci_sign_and_actual_seed_count(self):
+        for ci, verdict in (
+            ((-45.0, -35.0), 'tốt hơn có ý nghĩa'),
+            ((5.0, 15.0), 'kém hơn'),
+            ((-5.0, 15.0), 'chưa kết luận được'),
+            ((-5.0, 0.0), 'chưa kết luận được'),
+            ((0.0, 5.0), 'chưa kết luận được'),
+        ):
+            with self.subTest(ci=ci):
+                report = self._render_report(ci=ci)
+                conclusions = report.split('### 6.1.')[1].split('### 6.2.')[0]
+                self.assertEqual(conclusions.count(f'Kết luận: {verdict}'), 9)
+                self.assertEqual(conclusions.count('Win Rate: 42.9% (7 seed)'), 9)
+                self.assertIn(f'[{ci[0]:,.2f}, {ci[1]:,.2f}]', conclusions)
+                self.assertNotIn('30 seeds', conclusions)
+
+    def test_zero_baseline_has_no_undefined_percentage(self):
+        report = self._render_report(baseline=0.0, proposed=1.0)
+        conclusions = report.split('### 6.1.')[1].split('### 6.2.')[0]
+        self.assertIn('Cải thiện: không xác định (tham chiếu bằng 0)', conclusions)
+        self.assertNotRegex(conclusions, r'Cải thiện: -?\d+\.\d+%')
+
+    def test_single_seed_does_not_support_a_significance_claim(self):
+        report = self._render_report(n_seeds=1, scenario='real_data')
+        conclusions = report.split('### 6.1.')[1].split('### 6.2.')[0]
+        self.assertEqual(conclusions.count('Kết luận: chưa kết luận được'), 9)
+        self.assertIn('không đủ seed độc lập', report)
+        self.assertNotIn('Chỉ có dữ liệu mô phỏng', report)
+
+    def test_methodology_and_limitations_reflect_the_run(self):
+        report = self._render_report()
+        self.assertIn('cửa sổ chồng lấn', report)
+        self.assertIn('mỗi seed là một đơn vị lấy mẫu độc lập', report)
+        self.assertIn('không lấy mẫu riêng từng cửa sổ hoặc từng ngày', report)
+        self.assertNotIn('mốc dự báo độc lập', report)
+        self.assertIn('5 cửa sổ', report)
+        self.assertNotIn('~12 tháng', report)
+        limits = report.split('### 6.2.')[1]
+        self.assertIn('Chỉ có dữ liệu mô phỏng', limits)
+        self.assertIn('1 kịch bản mô phỏng', limits)
+        self.assertNotIn('cố định trên 3 kịch bản', limits)
+        self.assertIn('chưa có kết quả phân tích độ nhạy alpha', limits)
+        report_with_alpha = self._render_report(alpha_rows=[{
+            'scenario': 'stable_noise', 'scenario_label': 'Kịch bản kiểm thử',
+            'alpha': 0.1, 'MAE_daily_mean': 10.0, 'MAE_daily_std': 1.0,
+            'MAE_end_mean': 20.0, 'MAE_end_std': 2.0,
+        }])
+        self.assertNotIn('chưa có kết quả phân tích độ nhạy alpha', report_with_alpha)
+
+
+class RealCsvDailySpendTestCase(TestCase):
+    def _load_rows(self, rows, initial_balance=None):
+        output = StringIO()
+        command = Command(stdout=output)
+        if initial_balance is not None:
+            command.initial_balance = initial_balance
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'spend.csv'
+            with path.open('w', newline='', encoding='utf-8') as stream:
+                writer = csv.DictWriter(stream, fieldnames=['date', 'amount', 'type'])
+                writer.writeheader()
+                writer.writerows(rows)
+            result = command.load_real_csv_data(str(path))
+        return result, output.getvalue()
+
+    def test_normalization_groups_sorts_and_fills_calendar_dates_without_mutation(self):
+        rows = [
+            {'date': '03/01/2026', 'amount': '12.50'},
+            {'date': '2026-01-01', 'amount': '10.25', 'type': 'EXPENSE'},
+            {'date': '2026-01-01', 'amount': '20.50', 'type': ' expense '},
+        ]
+        original = copy.deepcopy(rows)
+        daily, stats = backtest.normalize_daily_spend(rows)
+        self.assertEqual(daily, [
+            (datetime.date(2026, 1, 1), Decimal('30.75')),
+            (datetime.date(2026, 1, 2), Decimal('0')),
+            (datetime.date(2026, 1, 3), Decimal('12.50')),
+        ])
+        self.assertEqual(stats['rows_read'], 3)
+        self.assertEqual(stats['rows_excluded'], 0)
+        self.assertEqual(stats['zero_filled_days'], 1)
+        self.assertEqual(rows, original)
+
+    def test_invalid_rows_and_non_expenses_are_excluded_and_counted(self):
+        rows = [
+            {'date': '2026-01-01', 'amount': '10'},
+            {'amount': '10'},
+            {'date': '2026-01-02', 'amount': ''},
+            {'date': '31/02/2026', 'amount': '10'},
+            {'date': '2026-01-02', 'amount': 'abc'},
+            {'date': '2026-01-02', 'amount': 'NaN'},
+            {'date': '2026-01-02', 'amount': 'Infinity'},
+            {'date': '2026-01-02', 'amount': '-10'},
+            {'date': '2026-01-02', 'amount': '10', 'type': 'EARNING'},
+            {'date': '2026-01-02', 'amount': '10', 'type': 'income'},
+            {'date': '2026-01-02', 'amount': '10', 'type': 'TRANSFER'},
+            {'date': '2026-01-02', 'amount': '10', 'type': 'unknown'},
+        ]
+        daily, stats = backtest.normalize_daily_spend(rows)
+        self.assertEqual(daily, [(datetime.date(2026, 1, 1), Decimal('10'))])
+        self.assertEqual(stats['rows_read'], 12)
+        self.assertEqual(stats['rows_excluded'], 11)
+        self.assertEqual(stats['missing_date'], 1)
+        self.assertEqual(stats['missing_amount'], 1)
+        self.assertEqual(stats['invalid_date'], 1)
+        self.assertEqual(stats['invalid_amount'], 3)
+        self.assertEqual(stats['wrong_sign'], 1)
+        self.assertEqual(stats['excluded_type'], 4)
+
+    def test_alias_columns_zero_spend_and_empty_input(self):
+        daily, stats = backtest.normalize_daily_spend([
+            {'Ngày': '01/01/2026', 'Số tiền': '0'},
+            {'Ngày': '03/01/2026', 'value': '100'},
+        ])
+        self.assertEqual([amount for _, amount in daily], [Decimal('0'), Decimal('0'), Decimal('100')])
+        self.assertEqual(stats['zero_filled_days'], 1)
+        daily, stats = backtest.normalize_daily_spend([])
+        self.assertEqual(daily, [])
+        self.assertEqual(stats['rows_read'], 0)
+
+    def test_more_than_90_rows_with_fewer_than_90_calendar_days_is_rejected(self):
+        rows = [{'date': '2026-01-01', 'amount': '10'}] * 100
+        with self.assertRaisesRegex(CommandError, '1 ngày lịch; cần tối thiểu 90'):
+            self._load_rows(rows)
+
+    def test_exactly_90_calendar_days_is_accepted_and_balance_behavior_is_preserved(self):
+        data, output = self._load_rows([
+            {'date': '2026-03-31', 'amount': '40'},
+            {'date': '01/01/2026', 'amount': '10'},
+            {'date': '2026-01-01', 'amount': '20'},
+        ], initial_balance=Decimal('123456.78'))
+        self.assertEqual(len(data), 90)
+        self.assertEqual(data[0]['var_expense'], Decimal('30'))
+        self.assertEqual(data[0]['balance'], Decimal('123456.78'))
+        self.assertEqual(data[-1]['balance'], Decimal('123416.78'))
+        for idx, item in enumerate(data):
+            self.assertEqual(item['date'], datetime.date(2026, 1, 1) + datetime.timedelta(days=idx))
+            self.assertEqual(item['day_idx'], idx)
+            self.assertEqual(item['fixed_events'], [])
+        self.assertIn('Đã đọc: 3 dòng', output)
+        self.assertIn('Đã loại: 0 dòng', output)
+        self.assertIn('Điền 0: 88 ngày', output)
+
+    def test_loader_reports_rejection_reasons_and_uses_default_balance(self):
+        data, output = self._load_rows([
+            {'date': '2026-01-01', 'amount': '10'},
+            {'date': '2026-03-31', 'amount': '20'},
+            {'date': '', 'amount': '10'},
+            {'date': 'bad', 'amount': '10'},
+            {'date': '2026-02-01', 'amount': '-1'},
+            {'date': '2026-02-01', 'amount': '10', 'type': 'TRANSFER'},
+        ])
+        self.assertEqual(data[0]['balance'], Decimal('20000000'))
+        for text in ('Đã đọc: 6 dòng', 'Đã loại: 4 dòng', 'thiếu ngày: 1',
+                     'ngày sai định dạng: 1', 'sai dấu: 1', 'loại giao dịch không phải chi tiêu: 1'):
+            self.assertIn(text, output)
+
+    def test_empty_or_unreadable_csv_is_an_explicit_error(self):
+        with self.assertRaises(CommandError):
+            self._load_rows([])
+        with self.assertRaisesRegex(CommandError, 'Không thể đọc CSV'):
+            Command().load_real_csv_data('/nonexistent/money-backtest.csv')
+
+    def test_cli_initial_balance_default_and_custom_value(self):
+        command = Command()
+        parser = command.create_parser('manage.py', 'forecast_backtest')
+        self.assertEqual(parser.parse_args([]).initial_balance, '20000000')
+        self.assertEqual(parser.parse_args(['--initial-balance', '123456.78']).initial_balance,
+                         '123456.78')
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.object(command, 'load_real_csv_data', side_effect=RuntimeError('stop after load')):
+                with self.assertRaisesRegex(RuntimeError, 'stop after load'):
+                    command.handle(seeds=2, days=100, real_csv=__file__,
+                                   initial_balance=Decimal('123456.78'), output_dir=directory)
+        self.assertEqual(command.initial_balance, Decimal('123456.78'))
+
+    def test_invalid_initial_balance_is_rejected(self):
+        for balance in ('NaN', 'Infinity', 'bad'):
+            with self.subTest(balance=balance), tempfile.TemporaryDirectory() as directory:
+                with self.assertRaisesRegex(CommandError, 'initial-balance'):
+                    Command(stdout=StringIO()).handle(
+                        seeds=2, days=100, real_csv=None,
+                        initial_balance=balance, output_dir=directory,
+                    )
+
+    def test_exactly_90_days_can_complete_the_backtest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'real.csv'
+            path.write_text('date,amount\n2026-01-01,10\n2026-03-31,20\n')
+            output_dir = Path(directory) / 'results'
+            Command(stdout=StringIO()).handle(
+                seeds=2, days=100, real_csv=str(path),
+                initial_balance=Decimal('123456.78'), output_dir=str(output_dir),
+            )
+            with (output_dir / 'forecast_backtest_points_v2.csv').open() as stream:
+                real_points = [row for row in csv.DictReader(stream) if row['scenario'] == 'real_data']
+        self.assertEqual(len(real_points), 5)
+        self.assertEqual({row['origin_date'] for row in real_points}, {'2026-03-01'})
+
+
+class AdaptiveBacktestTestCase(TestCase):
+    def test_shortfall_confusion_and_timing(self):
+        today = datetime.date(2026, 1, 1)
+        def timeline(values):
+            return [{'date': today + datetime.timedelta(days=i), 'balance': Decimal(value)}
+                    for i, value in enumerate(values)]
+        metrics = backtest.shortfall_metrics(timeline([10, -1, -2]), timeline([10, 1, -2]), today)
+        self.assertEqual(metrics['tp'], 1)
+        self.assertEqual(metrics['timing_days'], -1)
+        self.assertEqual(metrics['lead_days'], 2)
+        self.assertEqual(backtest.shortfall_metrics(timeline([10, 1, 2]), timeline([10, 1, -2]), today)['fn'], 1)
+        self.assertEqual(backtest.shortfall_metrics(timeline([10, 1, -2]), timeline([10, 1, 2]), today)['fp'], 1)
+        self.assertEqual(backtest.shortfall_metrics(timeline([10, 1, 2]), timeline([10, 1, 2]), today)['tn'], 1)
+
+    def test_adaptive_origin_does_not_leak_future_spend_or_balance(self):
+        command = Command()
+        data = command.generate_simulation_data('upward_trend', datetime.date(2026, 1, 1), 150, 1000)
+        original = command.evaluate_single_origin(data, 70, 30, 'upward_trend', 1000,
+                                                  'arm_E', 'ewma_adaptive', True, Decimal('0.2'))
+        changed = copy.deepcopy(data)
+        for item in changed[71:]:
+            item['var_expense'] *= 100
+            item['balance'] = Decimal('-99999999')
+        modified = command.evaluate_single_origin(changed, 70, 30, 'upward_trend', 1000,
+                                                  'arm_E', 'ewma_adaptive', True, Decimal('0.2'))
+        self.assertEqual(original['selected_alpha'], modified['selected_alpha'])
+        self.assertEqual(original['selected_estimator'], modified['selected_estimator'])
+
+    def test_new_scenarios_and_test_seeds_are_exported_with_adaptive_arm(self):
+        with tempfile.TemporaryDirectory() as directory:
+            command = Command(stdout=StringIO())
+            command.handle(seeds=2, days=100, real_csv=None, output_dir=directory, split='test')
+            with (Path(directory) / 'forecast_backtest_points_v2.csv').open() as stream:
+                points = list(csv.DictReader(stream))
+            self.assertEqual({int(row['seed']) for row in points}, {0, 1})
+            self.assertEqual({row['arm'] for row in points}, {f'arm_{arm}' for arm in 'ABCDE'})
+            self.assertEqual(len({row['scenario'] for row in points}), 6)
+            with (Path(directory) / 'forecast_backtest_paired_v2.csv').open() as stream:
+                comparisons = {row['comparison'].split(' (')[0] for row in csv.DictReader(stream)}
+            self.assertTrue({'E vs A', 'E vs D'}.issubset(comparisons))
+            report = (Path(directory) / 'forecast_backtest_report_v2.md').read_text()
+            self.assertIn('1000–1009', report)
+            self.assertIn('Precision', report)
+            self.assertIn('E vs A', report)
+
+    def test_development_and_test_seed_sets_are_disjoint(self):
+        command = Command(stdout=StringIO())
+        with tempfile.TemporaryDirectory() as directory:
+            command.handle(seeds=2, days=100, real_csv=None, output_dir=directory, split='development')
+            with (Path(directory) / 'forecast_backtest_per_seed_v2.csv').open() as stream:
+                self.assertEqual({int(row['seed']) for row in csv.DictReader(stream)}, {1000, 1001})

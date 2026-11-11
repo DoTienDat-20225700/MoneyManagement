@@ -544,3 +544,72 @@ class ForecastingServiceIntegrationTestCase(TestCase):
 
         with self.assertNumQueries(5):
             CashFlowForecastService.forecast(self.wallet, days=30)
+
+
+class AdaptiveAlphaTestCase(UnitTestCase):
+    def _history(self, seed=1000, drift=0):
+        import random
+        rng = random.Random(seed)
+        start = datetime.date(2026, 1, 1)
+        return [(start + datetime.timedelta(days=i),
+                 Decimal(str(round(max(0, 150000 + i * drift + rng.gauss(0, 25000)), 2))))
+                for i in range(60)]
+
+    def test_selection_ignores_future_and_is_deterministic(self):
+        from hubModels.services.forecasting import select_alpha
+        history = self._history()
+        today = history[-1][0]
+        expected = select_alpha(history, today)
+        future = [(today + datetime.timedelta(days=i), Decimal('999999999')) for i in range(1, 31)]
+        self.assertEqual(select_alpha(history + future, today), expected)
+        self.assertEqual(select_alpha(list(reversed(history)) + future, today), expected)
+
+    def test_short_history_falls_back_and_ties_choose_point_two(self):
+        from hubModels.services.forecasting import select_alpha
+        history = self._history()
+        result = select_alpha(history[:29], history[28][0])
+        self.assertEqual(result.alpha, Decimal('0.2'))
+        self.assertTrue(result.fallback)
+        constant = [(day, Decimal('100')) for day, _ in history]
+        self.assertEqual(select_alpha(constant, constant[-1][0]).alpha, Decimal('0.2'))
+
+    def test_drift_selects_at_least_as_responsive_a_candidate_as_stationary(self):
+        from hubModels.services.forecasting import select_alpha
+        stationary, drift = self._history(), self._history(drift=15000)
+        a = select_alpha(stationary, stationary[-1][0])
+        b = select_alpha(drift, drift[-1][0])
+        self.assertGreaterEqual(b.alpha or Decimal('0'), a.alpha or Decimal('0'))
+
+    def test_stationary_gaussian_adaptive_approaches_mean_on_development_seeds(self):
+        from hubModels.services.forecasting import select_alpha
+        adaptive_error = fixed_error = mean_error = Decimal('0')
+        for seed in range(1000, 1010):
+            history = self._history(seed)
+            today = history[-1][0]
+            adaptive = simulate_cashflow(Decimal('10000000'), [], history, today, 30,
+                                         estimator='ewma_adaptive')
+            mean, _, _ = calculate_daily_burn_rate(history, today, estimator='mean', winsorize=False)
+            fixed, _, _ = calculate_daily_burn_rate(history, today)
+            adaptive_error += abs(adaptive.daily_burn_rate - Decimal('150000'))
+            mean_error += abs(mean - Decimal('150000'))
+            fixed_error += abs(fixed - Decimal('150000'))
+            selected = select_alpha(history, today)
+            self.assertEqual(adaptive.selected_alpha, selected.alpha)
+            self.assertEqual(adaptive.selected_estimator, selected.estimator)
+            self.assertFalse(adaptive.alpha_fallback)
+        self.assertLess(adaptive_error, fixed_error)
+        self.assertLessEqual(adaptive_error, mean_error * Decimal('1.35'))
+
+    def test_mean_candidate_and_legacy_tuple_and_default_are_preserved(self):
+        from hubModels.services.forecasting import select_alpha
+        history = self._history()
+        today = history[-1][0]
+        selected = select_alpha(history, today, alpha_grid=['mean'])
+        self.assertEqual(selected.estimator, 'mean')
+        self.assertIsNone(selected.alpha)
+        self.assertEqual(len(calculate_daily_burn_rate(history, today, estimator='ewma_adaptive')), 3)
+        default = simulate_cashflow(Decimal('10000000'), [], history, today, 30)
+        explicit = simulate_cashflow(Decimal('10000000'), [], history, today, 30,
+                                     estimator='ewma', alpha=Decimal('0.2'))
+        self.assertEqual(default.to_dict(), explicit.to_dict())
+        self.assertNotIn('selected_alpha', default.to_dict())
