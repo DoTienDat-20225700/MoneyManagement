@@ -1,5 +1,6 @@
 import { jwtDecode } from "jwt-decode";
-import { createContext, useState } from "react";
+import { createContext, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/services/Api";
 import { User } from "../models/User";
 import { UserInput } from "../routes/SignUp";
@@ -26,13 +27,14 @@ interface Props {
 
 interface AuthTokens {
   access: string;
-  refresh: string;
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 export const AuthProvider = ({ children }: Props) => {
   const [authTokens, setAuthTokens] = useState<AuthTokens | null>(null);
   const [loggedUser, setLoggedUser] = useState<User | null>(null);
+  const queryClient = useQueryClient();
+  const sessionVersion = useRef(0);
 
   async function SignIn({
     email,
@@ -64,8 +66,7 @@ export const AuthProvider = ({ children }: Props) => {
   async function SignUp({ user }: { user: UserInput }) {
     try {
       const response = await api.post("/register/", user);
-      if (response.status !== 200) throw new Error("Registration failed");
-      return (await response.data) as string;
+      return typeof response.data === "string" ? response.data : response.data?.message ?? null;
     } catch (error) {
       console.log(error);
       throw error;
@@ -73,8 +74,15 @@ export const AuthProvider = ({ children }: Props) => {
   }
 
   function SignOut() {
-    setAuthTokens(null);
-    setLoggedUser(null);
+    sessionVersion.current += 1;
+    void api.post("/logout/", {}, { withCredentials: true })
+      .catch(() => undefined)
+      .finally(() => {
+        setAuthTokens(null);
+        setLoggedUser(null);
+        void queryClient.cancelQueries();
+        queryClient.clear();
+      });
   }
 
   function updateUser(updated: Partial<User>) {
@@ -82,17 +90,19 @@ export const AuthProvider = ({ children }: Props) => {
   }
 
   async function refresh() {
-    console.log("old aT: " + authTokens?.access);
+    const version = sessionVersion.current;
     const response = await api.post(
       "/token/refresh/",
-      { refresh: authTokens?.refresh },
+      {},
       {
         withCredentials: true,
       }
     );
+    if (version !== sessionVersion.current) {
+      throw new Error("Session changed while refreshing");
+    }
     setAuthTokens({
       access: response.data.access_token,
-      refresh: response.data.refresh_token,
     });
     setLoggedUser(jwtDecode(response.data.access_token));
     return response.data.access_token;

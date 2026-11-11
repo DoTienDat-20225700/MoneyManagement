@@ -38,9 +38,11 @@ function SignUpForm() {
       navigate("/auth/sign-in");
     },
     onError: (err: any) => {
+      const data = err?.response?.data;
+      const serverMessage = typeof data === "string" ? data : data?.message ?? data?.detail ?? data?.error;
       const errorMsg = !err?.response
         ? t("no_server_response")
-        : t("err_register_failed");
+        : typeof serverMessage === "string" ? serverMessage : t("err_register_failed");
       enqueueSnackbar(errorMsg, {
         variant: "error",
         autoHideDuration: 3500,

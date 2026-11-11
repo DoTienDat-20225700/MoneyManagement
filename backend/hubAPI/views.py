@@ -21,6 +21,8 @@ from hubModels.serializers import (SavingPlanSerializer, WalletSerializer, Trans
                                   CategoryBudgetSerializer, SavingPlanContributionSerializer,
                                   DebtLoanSerializer, DebtPaymentSerializer)
 
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from datetime import date
@@ -34,58 +36,69 @@ from django.db.models.functions import TruncDate
 
 
 
+def _set_refresh_cookie(response, token):
+    response.set_cookie(
+        key=settings.SIMPLE_JWT["AUTH_COOKIE"],
+        value=token,
+        domain=settings.SIMPLE_JWT["AUTH_COOKIE_DOMAIN"],
+        path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
+        max_age=settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"],
+        secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
+        httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
+        samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
+    )
+
+
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
     def finalize_response(self, request, response, *args, **kwargs):
         if response.data.get('refresh'):
-            response.set_cookie(
-                key=settings.SIMPLE_JWT["AUTH_COOKIE"],
-                value=response.data['refresh'],
-                # domain=settings.SIMPLE_JWT["AUTH_COOKIE_DOMAIN"],
-                # path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
-                max_age=settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"],
-                secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
-                httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
-                samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
-            )
-            del response.data['refresh']
+            _set_refresh_cookie(response, response.data.pop('refresh'))
         return super().finalize_response(request, response, *args, **kwargs)
 
 
 class MyTokenRefreshView(TokenRefreshView):
-    serializer_class = MyTokenRefreshSerializer
+    serializer_class = TokenRefreshSerializer
 
     def post(self, request):
-        refresh_token = request.COOKIES.get('refresh_token')
-
+        refresh_token = request.COOKIES.get(settings.SIMPLE_JWT["AUTH_COOKIE"])
         if not refresh_token:
             return Response({'error': 'Refresh token is required'}, status=403)
-
         try:
             token = RefreshToken(refresh_token)
-            user_id = token.payload.get('user_id')
-            if not HubUser.objects.filter(id=user_id, is_active=True).exists():
+            if not HubUser.objects.filter(id=token.payload.get('user_id'), is_active=True).exists():
                 return Response({'error': 'User not found or inactive'}, status=401)
-            access_token = str(token.access_token)
-            return Response({'access_token': access_token, 'refresh_token': refresh_token})
-        except Exception:
+            serializer = self.get_serializer(data={'refresh': refresh_token})
+            serializer.is_valid(raise_exception=True)
+        except TokenError:
             return Response({'error': 'Invalid refresh token'}, status=403)
 
-    def finalize_response(self, request, response, *args, **kwargs):
-        if response.data.get('refresh'):
-            response.set_cookie(
-                key=settings.SIMPLE_JWT["AUTH_COOKIE"],
-                value=response.data['refresh'],
-                # domain=settings.SIMPLE_JWT["AUTH_COOKIE_DOMAIN"],
-                # path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
-                max_age=settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"],
-                secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
-                httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
-                samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
-            )
-            del response.data['refresh']
-        return super().finalize_response(request, response, *args, **kwargs)
+        response = Response({'access_token': serializer.validated_data['access']})
+        _set_refresh_cookie(response, serializer.validated_data.get('refresh', refresh_token))
+        return response
+
+
+class LogoutAPIView(APIView):
+    authentication_classes = ()
+    permission_classes = (AllowAny,)
+
+    def post(self, request):
+        refresh_token = request.COOKIES.get(settings.SIMPLE_JWT["AUTH_COOKIE"])
+        if refresh_token:
+            try:
+                RefreshToken(refresh_token).blacklist()
+            except TokenError:
+                # Missing, expired, malformed or already revoked sessions can still log out.
+                pass
+        response = Response(status=204)
+        response.delete_cookie(
+            key=settings.SIMPLE_JWT["AUTH_COOKIE"],
+            path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
+            domain=settings.SIMPLE_JWT["AUTH_COOKIE_DOMAIN"],
+            samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
+        )
+        return response
 
 
 class ProfileAPIView(APIView):
