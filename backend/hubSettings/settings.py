@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 from decouple import config
+from hubSettings.env import parse_bool
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,7 +26,7 @@ SECRET_KEY = config('SECRET_KEY')
 GEMINI_API_KEY = config('GEMINI_API_KEY', default='')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = config('DEBUG', default=False, cast=parse_bool)
 
 ALLOWED_HOSTS = config(
     'ALLOWED_HOSTS',
@@ -92,7 +93,8 @@ SIMPLE_JWT = {
     "AUTH_COOKIE": "refresh_token",  # cookie name
     "AUTH_COOKIE_DOMAIN": None,  # specifies domain for which the cookie will be sent
     # restricts the transmission of the cookie to only occur over secure (HTTPS) connections.
-    "AUTH_COOKIE_SECURE": config("AUTH_COOKIE_SECURE", default=not DEBUG, cast=bool),
+    "AUTH_COOKIE_SECURE": config("AUTH_COOKIE_SECURE", default=not DEBUG,
+                                 cast=lambda value: parse_bool(value, 'AUTH_COOKIE_SECURE')),
     "AUTH_COOKIE_HTTP_ONLY": True,  # prevents client-side js from accessing the cookie
     "AUTH_COOKIE_PATH": "/",  # URL path where cookie will be sent
     "AUTH_COOKIE_SAMESITE": config("AUTH_COOKIE_SAMESITE", default="Lax"),

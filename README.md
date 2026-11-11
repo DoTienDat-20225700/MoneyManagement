@@ -52,6 +52,10 @@ cd MoneyManagement
 
 ```bash
 cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+cp .env.example .env
+# Điền SECRET_KEY; chạy dev HTTP thì đặt DEBUG=true và AUTH_COOKIE_SECURE=false trong .env.
 pip install -r requirements.txt
 python3 manage.py migrate
 python3 manage.py runserver
@@ -79,6 +83,8 @@ docker compose -f docker-compose.test.yml up -d
 TEST_DB=postgres python manage.py test hubModels.test_concurrency_postgres
 ```
 
+`docker-compose.test.yml` chỉ khởi động PostgreSQL cho kiểm thử; không có service Django cần đặt DEBUG.
+
 ### 5. Chạy Kiểm Thử End-to-End (E2E Tests với Playwright) 🎭
 
 Dự án cung cấp bộ kiểm thử End-to-End toàn diện bao phủ các kịch bản RỦI RO (Stressed) và AN TOÀN (Safe) của ứng dụng.
@@ -93,6 +99,13 @@ npx playwright install chromium
 ```bash
 cd frontend
 npm run test:e2e
+```
+
+Kiểm tra TypeScript cho toàn bộ E2E và cấu hình Playwright:
+
+```bash
+cd frontend
+npm run typecheck:e2e
 ```
 
 #### Chạy E2E với giao diện trực quan (Playwright UI Mode):
@@ -112,6 +125,84 @@ npm run test:e2e:ui
 
 
 ---
+
+## Chạy demo (có seed dữ liệu)
+
+Tại thư mục gốc repository:
+
+```bash
+docker compose up --build
+```
+
+Mở `http://localhost:5173`; backend tại `http://localhost:8008`.
+`docker-compose.yml` dành cho demo/dev: backend đặt rõ `DEBUG=True`,
+`AUTH_COOKIE_SECURE=False`, `SEED_DEMO=true`, `SEED_DEMO_FORCE=false`.
+Compose có sẵn thông tin PostgreSQL và SECRET_KEY dự phòng chỉ dành cho demo;
+có thể truyền SECRET_KEY riêng bằng biến môi trường hoặc tệp `.env` ở thư mục gốc.
+Không dùng cấu hình Compose này cho production.
+Scheduler và frontend chờ healthcheck backend đạt, tức migration và seed đã hoàn tất.
+
+Entrypoint luôn chạy migration trước, nhưng chỉ gọi `seed_demo` khi biến môi trường
+`SEED_DEMO` bằng chính xác `true`. Chỉ thêm `--force` khi đồng thời
+`SEED_DEMO_FORCE=true`; bật force riêng không làm chạy seed. Các tài khoản demo đã
+có sẽ không tự bị reset. Không đặt hai biến này thì mặc định không seed.
+
+Nếu chạy trực tiếp bằng Python, sao chép `backend/.env.example` thành `backend/.env`,
+điền SECRET_KEY mới, đặt `DEBUG=true`, `AUTH_COOKIE_SECURE=false` cho HTTP local,
+chạy migration và chủ động tạo dữ liệu demo:
+
+```bash
+cd backend
+python manage.py migrate
+python manage.py seed_demo
+python manage.py runserver
+```
+
+Hai tài khoản và mật khẩu demo nằm trong phần E2E phía trên. `GEMINI_API_KEY` là tùy
+chọn, cần nếu muốn dùng nhánh đọc hóa đơn qua Gemini. Các khóa API thực chỉ đặt ở
+môi trường chạy; không đưa vào repository hoặc image.
+
+## Chạy production (không seed)
+
+Tạo cấu hình riêng từ `backend/.env.example`, thay toàn bộ giá trị placeholder.
+Các biến cần đặt cho production:
+
+| Biến | Giá trị/yêu cầu |
+|---|---|
+| `SECRET_KEY` | Khóa bí mật ngẫu nhiên riêng; bắt buộc để Django khởi động |
+| `DEBUG` | `false`; khi không đặt cũng mặc định false |
+| `ALLOWED_HOSTS` | Các hostname thật, phân cách bằng dấu phẩy |
+| `DB_ENGINE` | `postgres` |
+| `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT` | Thông tin PostgreSQL thật; hostname phải truy cập được từ container |
+| `AUTH_COOKIE_SECURE` | `true` khi phục vụ bằng HTTPS; mặc định là `not DEBUG` |
+| `AUTH_COOKIE_SAMESITE` | `Lax` cho triển khai cùng site; cấu hình theo kiến trúc frontend/backend thực tế |
+| `SEED_DEMO`, `SEED_DEMO_FORCE` | `false` hoặc không đặt |
+| `EXTRA_CORS_ORIGINS` | Đặt origin frontend HTTPS nếu frontend chạy khác origin |
+| `GEMINI_API_KEY` | Tùy chọn, cần cho nhánh xử lý hóa đơn qua Gemini |
+| `VITE_API_URL` | Đặt lúc build frontend, trỏ đến API production; dùng `/api` khi có reverse proxy cùng origin |
+
+Ví dụ build và chạy backend tại thư mục gốc sau khi đã điền cấu hình, chuẩn bị
+PostgreSQL và HTTPS/reverse proxy:
+
+```bash
+docker build -t moneymanagement-backend ./backend
+docker run --env-file backend/.env -p 8008:8008 moneymanagement-backend
+```
+
+`backend/.env.example` không chứa bí mật thật. `.dockerignore` loại các tệp `.env`,
+SQLite, cache, `evaluation_results` và `node_modules`; Dockerfile chỉ sao chép
+`manage.py`, entrypoint và ba package runtime `hubAPI`, `hubModels`, `hubSettings`.
+Image không nhúng cấu hình môi trường; truyền biến khi chạy container.
+
+Parser DEBUG và AUTH_COOKIE_SECURE nhận `true/false/1/0/yes/no`, không phân biệt
+hoa thường và bỏ khoảng trắng đầu/cuối. Giá trị khác, kể cả `release` hoặc chuỗi
+rỗng, làm khởi động thất bại với thông báo rõ tên biến; không tự chuyển thành false.
+
+**Render:** `render.yaml` đặt `DEBUG=False`, cookie secure và hai biến seed bằng
+false. Deploy không tự tạo tài khoản/dữ liệu demo. Nếu muốn chạy demo trên Render,
+cần quyết định riêng; seed trong chế độ DEBUG=false cần chủ động bật cả
+`SEED_DEMO=true` và `SEED_DEMO_FORCE=true` để vượt chặn của lệnh seed.
+Thay đổi này không triển khai hay bật demo trên Render.
 
 ## 🧑‍💻 Thông Tin Tác Giả (Author)
 

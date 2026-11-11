@@ -1,7 +1,6 @@
 import { test as base, expect, Page } from '@playwright/test';
 import { RISK_USER, SAFE_USER } from './constants';
 
-type WorkerFixtures = {};
 type TestFixtures = {
   riskPage: Page;
   safePage: Page;
@@ -15,7 +14,7 @@ type TestFixtures = {
  * Fixtures `riskPage` và `safePage` tự động thực hiện đăng nhập nhanh trước mỗi test,
  * đảm bảo trạng thái xác thực 100% tin cậy và độc lập cho từng kịch bản.
  */
-export const test = base.extend<TestFixtures, WorkerFixtures>({
+export const test = base.extend<TestFixtures>({
   riskPage: async ({ page }, use) => {
     // Điều hướng đến trang đăng nhập
     await page.goto('/auth/sign-in');

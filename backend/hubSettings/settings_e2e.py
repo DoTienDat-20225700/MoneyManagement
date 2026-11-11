@@ -8,6 +8,7 @@ from .settings import *
 
 # Đảm bảo môi trường E2E luôn bật DEBUG để seed_demo hoạt động
 DEBUG = True
+SIMPLE_JWT = {**SIMPLE_JWT, 'AUTH_COOKIE_SECURE': False}
 
 # Database riêng biệt cho E2E
 test_db_type = os.environ.get('TEST_DB', '').lower()

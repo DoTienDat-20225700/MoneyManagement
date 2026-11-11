@@ -4,8 +4,14 @@ set -e
 echo "[MoneyManagement] Applying database migrations..."
 python manage.py migrate --noinput
 
-echo "[MoneyManagement] Seeding demo data..."
-python manage.py seed_demo --force
+if [ "${SEED_DEMO:-false}" = "true" ]; then
+    echo "[MoneyManagement] Seeding demo data..."
+    if [ "${SEED_DEMO_FORCE:-false}" = "true" ]; then
+        python manage.py seed_demo --force
+    else
+        python manage.py seed_demo
+    fi
+fi
 
 PORT="${PORT:-8008}"
 echo "[MoneyManagement] Starting Gunicorn on port ${PORT}..."

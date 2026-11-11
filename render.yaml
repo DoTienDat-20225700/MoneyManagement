@@ -37,9 +37,14 @@ services:
           name: moneymanagement-db
           property: port
       - key: SECRET_KEY
-        generateCryptoKey: true
+        generateValue: true
       - key: DEBUG
         value: "False"
+      # Production default: demo seeding requires a separate explicit decision.
+      - key: SEED_DEMO
+        value: "false"
+      - key: SEED_DEMO_FORCE
+        value: "false"
       - key: ALLOWED_HOSTS
         value: .onrender.com,localhost
       - key: PYTHONUNBUFFERED

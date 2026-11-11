@@ -16,7 +16,11 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt gunicorn
 
-COPY . /app
+# Copy only runtime code; .dockerignore also excludes env files and databases.
+COPY manage.py entrypoint.sh /app/
+COPY hubAPI /app/hubAPI
+COPY hubModels /app/hubModels
+COPY hubSettings /app/hubSettings
 
 RUN mkdir -p /app/hubAPI/imported_files
 RUN chmod +x /app/entrypoint.sh
