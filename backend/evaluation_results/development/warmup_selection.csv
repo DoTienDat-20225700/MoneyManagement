@@ -1,0 +1,5 @@
+warmup_days,development_seed_start,development_seed_end,stationary_burn_rate_mae,mean_burn_rate_mae,ratio_to_mean,selected
+7,1000,1009,3946.263,2773.161,1.423019795821447,False
+14,1000,1009,5372.778,2773.161,1.93742014978575,False
+21,1000,1009,3579.63,2773.161,1.290812181478104,True
+29,1000,1009,5230.492,2773.161,1.8861119134446216,False

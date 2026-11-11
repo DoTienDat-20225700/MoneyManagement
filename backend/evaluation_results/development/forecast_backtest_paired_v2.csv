@@ -1,0 +1,121 @@
+scenario,scenario_label,comparison,metric,mean_diff,ci_95_lower,ci_95_upper,win_rate_pct,n_seeds
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs A (Proposed vs Baseline),MAE_daily,36260.46,25271.57,46382.54,0.0,10
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs A (Proposed vs Baseline),MAE_end,79755.0,60159.59,99630.94,0.0,10
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs A (Proposed vs Baseline),RMSE_daily,55846.07,45097.17,66870.1,0.0,10
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs A (Proposed vs Baseline),Bias_end,-3878.88,-17412.83,12034.05,40.0,10
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs B (Effect of EWMA with Winsorize),MAE_daily,36268.27,25306.4,46381.41,0.0,10
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs B (Effect of EWMA with Winsorize),MAE_end,79771.44,60185.99,99628.69,0.0,10
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs B (Effect of EWMA with Winsorize),RMSE_daily,55857.88,45124.23,66865.15,0.0,10
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs B (Effect of EWMA with Winsorize),Bias_end,-4063.92,-17686.59,11824.37,30.0,10
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs C (Effect of Winsorize with EWMA),MAE_daily,-133.38,-399.38,0.07,30.0,10
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs C (Effect of Winsorize with EWMA),MAE_end,-259.43,-776.84,0.14,30.0,10
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs C (Effect of Winsorize with EWMA),RMSE_daily,-303.56,-909.62,0.08,30.0,10
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),D vs C (Effect of Winsorize with EWMA),Bias_end,260.78,0.04,780.2,40.0,10
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),E vs A (Adaptive vs Mean),MAE_daily,12789.7,8000.0,18069.05,0.0,10
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),E vs A (Adaptive vs Mean),MAE_end,28425.55,18720.86,39305.37,0.0,10
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),E vs A (Adaptive vs Mean),RMSE_daily,21705.87,13251.02,32101.09,0.0,10
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),E vs A (Adaptive vs Mean),Bias_end,-7174.74,-18787.64,4799.85,40.0,10
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),E vs D (Adaptive vs Fixed EWMA),MAE_daily,-23470.76,-32228.44,-15157.39,90.0,10
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),E vs D (Adaptive vs Fixed EWMA),MAE_end,-51329.45,-69146.82,-34209.03,100.0,10
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),E vs D (Adaptive vs Fixed EWMA),RMSE_daily,-34140.2,-44417.61,-25643.73,100.0,10
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),E vs D (Adaptive vs Fixed EWMA),Bias_end,-3295.87,-17340.15,12955.04,60.0,10
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs A (Proposed vs Baseline),MAE_daily,-139188.83,-144263.5,-134548.66,100.0,10
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs A (Proposed vs Baseline),MAE_end,-306748.97,-316097.22,-298002.79,100.0,10
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs A (Proposed vs Baseline),RMSE_daily,-148370.44,-153962.38,-141287.61,100.0,10
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs A (Proposed vs Baseline),Bias_end,-338052.0,-348805.28,-325379.83,100.0,10
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs B (Effect of EWMA with Winsorize),MAE_daily,-139274.44,-144335.53,-134636.2,100.0,10
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs B (Effect of EWMA with Winsorize),MAE_end,-306922.83,-316178.78,-298185.34,100.0,10
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs B (Effect of EWMA with Winsorize),RMSE_daily,-148447.44,-154043.39,-141383.97,100.0,10
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs B (Effect of EWMA with Winsorize),Bias_end,-338225.86,-348940.69,-325469.81,100.0,10
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs C (Effect of Winsorize with EWMA),MAE_daily,-132.86,-393.26,73.63,50.0,10
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs C (Effect of Winsorize with EWMA),MAE_end,-165.91,-657.11,242.91,40.0,10
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs C (Effect of Winsorize with EWMA),RMSE_daily,-119.56,-442.15,96.89,50.0,10
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),D vs C (Effect of Winsorize with EWMA),Bias_end,602.29,202.78,1204.61,0.0,10
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),E vs A (Adaptive vs Mean),MAE_daily,-114103.95,-120924.52,-106473.45,100.0,10
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),E vs A (Adaptive vs Mean),MAE_end,-247493.02,-263677.66,-229029.78,100.0,10
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),E vs A (Adaptive vs Mean),RMSE_daily,-120545.01,-128511.91,-111688.37,100.0,10
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),E vs A (Adaptive vs Mean),Bias_end,-276108.03,-296341.12,-252026.31,100.0,10
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),E vs D (Adaptive vs Fixed EWMA),MAE_daily,25084.88,20296.07,30884.3,0.0,10
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),E vs D (Adaptive vs Fixed EWMA),MAE_end,59255.95,48580.76,72279.68,0.0,10
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),E vs D (Adaptive vs Fixed EWMA),RMSE_daily,27825.42,22989.01,33946.59,0.0,10
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),E vs D (Adaptive vs Fixed EWMA),Bias_end,61943.97,46685.65,79882.89,0.0,10
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs A (Proposed vs Baseline),MAE_daily,-371152.06,-387571.16,-353973.22,100.0,10
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs A (Proposed vs Baseline),MAE_end,-559395.57,-587469.24,-530621.12,100.0,10
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs A (Proposed vs Baseline),RMSE_daily,359865.99,337892.97,382763.5,0.0,10
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs A (Proposed vs Baseline),Bias_end,1101620.15,1082138.69,1122627.14,0.0,10
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs B (Effect of EWMA with Winsorize),MAE_daily,221694.97,205567.39,238371.3,0.0,10
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs B (Effect of EWMA with Winsorize),MAE_end,468155.84,440571.01,497123.81,0.0,10
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs B (Effect of EWMA with Winsorize),RMSE_daily,660603.69,638613.53,683339.63,0.0,10
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs B (Effect of EWMA with Winsorize),Bias_end,-173501.97,-192405.17,-152060.65,100.0,10
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs C (Effect of Winsorize with EWMA),MAE_daily,-777167.86,-780556.55,-773849.09,100.0,10
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs C (Effect of Winsorize with EWMA),MAE_end,-1505478.87,-1512902.78,-1498183.86,100.0,10
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs C (Effect of Winsorize with EWMA),RMSE_daily,-2212681.35,-2223303.92,-2201982.31,100.0,10
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),D vs C (Effect of Winsorize with EWMA),Bias_end,1523771.49,1518930.86,1528282.95,100.0,10
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),E vs A (Adaptive vs Mean),MAE_daily,-678326.92,-703694.81,-650632.62,100.0,10
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),E vs A (Adaptive vs Mean),MAE_end,-1148548.85,-1193501.65,-1096974.42,100.0,10
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),E vs A (Adaptive vs Mean),RMSE_daily,-241012.6,-283575.28,-173698.24,90.0,10
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),E vs A (Adaptive vs Mean),Bias_end,1626963.74,1554595.74,1682323.92,0.0,10
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),E vs D (Adaptive vs Fixed EWMA),MAE_daily,-307174.86,-334683.94,-274260.56,100.0,10
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),E vs D (Adaptive vs Fixed EWMA),MAE_end,-589153.27,-637183.88,-531890.01,100.0,10
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),E vs D (Adaptive vs Fixed EWMA),RMSE_daily,-600878.59,-651295.94,-523825.99,100.0,10
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),E vs D (Adaptive vs Fixed EWMA),Bias_end,525343.59,452138.88,585439.31,0.0,10
+weekend_spending,4. Chi nhiều cuối tuần,D vs A (Proposed vs Baseline),MAE_daily,177608.32,170801.17,184514.19,0.0,10
+weekend_spending,4. Chi nhiều cuối tuần,D vs A (Proposed vs Baseline),MAE_end,372151.16,358148.74,386691.75,0.0,10
+weekend_spending,4. Chi nhiều cuối tuần,D vs A (Proposed vs Baseline),RMSE_daily,208467.3,201130.89,215620.37,0.0,10
+weekend_spending,4. Chi nhiều cuối tuần,D vs A (Proposed vs Baseline),Bias_end,-390697.52,-404338.05,-374838.23,0.0,10
+weekend_spending,4. Chi nhiều cuối tuần,D vs B (Effect of EWMA with Winsorize),MAE_daily,177608.32,170801.17,184514.19,0.0,10
+weekend_spending,4. Chi nhiều cuối tuần,D vs B (Effect of EWMA with Winsorize),MAE_end,372151.16,358148.74,386691.75,0.0,10
+weekend_spending,4. Chi nhiều cuối tuần,D vs B (Effect of EWMA with Winsorize),RMSE_daily,208467.3,201130.89,215620.37,0.0,10
+weekend_spending,4. Chi nhiều cuối tuần,D vs B (Effect of EWMA with Winsorize),Bias_end,-390697.52,-404338.05,-374838.23,0.0,10
+weekend_spending,4. Chi nhiều cuối tuần,D vs C (Effect of Winsorize with EWMA),MAE_daily,0.0,0.0,0.0,0.0,10
+weekend_spending,4. Chi nhiều cuối tuần,D vs C (Effect of Winsorize with EWMA),MAE_end,0.0,0.0,0.0,0.0,10
+weekend_spending,4. Chi nhiều cuối tuần,D vs C (Effect of Winsorize with EWMA),RMSE_daily,0.0,0.0,0.0,0.0,10
+weekend_spending,4. Chi nhiều cuối tuần,D vs C (Effect of Winsorize with EWMA),Bias_end,0.0,0.0,0.0,0.0,10
+weekend_spending,4. Chi nhiều cuối tuần,E vs A (Adaptive vs Mean),MAE_daily,11444.26,3032.42,20329.59,30.0,10
+weekend_spending,4. Chi nhiều cuối tuần,E vs A (Adaptive vs Mean),MAE_end,19681.84,2920.34,36634.47,30.0,10
+weekend_spending,4. Chi nhiều cuối tuần,E vs A (Adaptive vs Mean),RMSE_daily,29809.64,12893.87,47176.1,20.0,10
+weekend_spending,4. Chi nhiều cuối tuần,E vs A (Adaptive vs Mean),Bias_end,4261.14,-10448.85,18332.35,50.0,10
+weekend_spending,4. Chi nhiều cuối tuần,E vs D (Adaptive vs Fixed EWMA),MAE_daily,-166164.07,-175128.3,-157529.78,100.0,10
+weekend_spending,4. Chi nhiều cuối tuần,E vs D (Adaptive vs Fixed EWMA),MAE_end,-352469.32,-371621.24,-331850.34,100.0,10
+weekend_spending,4. Chi nhiều cuối tuần,E vs D (Adaptive vs Fixed EWMA),RMSE_daily,-178657.66,-194261.32,-162837.09,100.0,10
+weekend_spending,4. Chi nhiều cuối tuần,E vs D (Adaptive vs Fixed EWMA),Bias_end,394958.66,371712.94,415579.6,100.0,10
+habit_shift,5. Thay đổi thói quen giữa chừng,D vs A (Proposed vs Baseline),MAE_daily,-301826.71,-312727.12,-290230.1,100.0,10
+habit_shift,5. Thay đổi thói quen giữa chừng,D vs A (Proposed vs Baseline),MAE_end,-580006.84,-600939.55,-555150.44,100.0,10
+habit_shift,5. Thay đổi thói quen giữa chừng,D vs A (Proposed vs Baseline),RMSE_daily,-541187.64,-555955.45,-526121.82,100.0,10
+habit_shift,5. Thay đổi thói quen giữa chừng,D vs A (Proposed vs Baseline),Bias_end,-681330.41,-694656.38,-666027.22,100.0,10
+habit_shift,5. Thay đổi thói quen giữa chừng,D vs B (Effect of EWMA with Winsorize),MAE_daily,-302279.44,-313126.41,-290664.04,100.0,10
+habit_shift,5. Thay đổi thói quen giữa chừng,D vs B (Effect of EWMA with Winsorize),MAE_end,-580881.76,-601773.0,-556115.73,100.0,10
+habit_shift,5. Thay đổi thói quen giữa chừng,D vs B (Effect of EWMA with Winsorize),RMSE_daily,-542725.16,-557333.22,-527783.66,100.0,10
+habit_shift,5. Thay đổi thói quen giữa chừng,D vs B (Effect of EWMA with Winsorize),Bias_end,-682406.82,-695677.25,-667027.93,100.0,10
+habit_shift,5. Thay đổi thói quen giữa chừng,D vs C (Effect of Winsorize with EWMA),MAE_daily,3640.64,2908.63,4386.42,0.0,10
+habit_shift,5. Thay đổi thói quen giữa chừng,D vs C (Effect of Winsorize with EWMA),MAE_end,7045.12,5625.77,8489.84,0.0,10
+habit_shift,5. Thay đổi thói quen giữa chừng,D vs C (Effect of Winsorize with EWMA),RMSE_daily,7914.22,6597.01,9180.15,0.0,10
+habit_shift,5. Thay đổi thói quen giữa chừng,D vs C (Effect of Winsorize with EWMA),Bias_end,7565.34,6246.05,8871.95,0.0,10
+habit_shift,5. Thay đổi thói quen giữa chừng,E vs A (Adaptive vs Mean),MAE_daily,-339265.74,-349591.17,-327297.14,100.0,10
+habit_shift,5. Thay đổi thói quen giữa chừng,E vs A (Adaptive vs Mean),MAE_end,-657573.07,-678855.21,-633122.1,100.0,10
+habit_shift,5. Thay đổi thói quen giữa chừng,E vs A (Adaptive vs Mean),RMSE_daily,-588490.95,-601019.06,-575675.43,100.0,10
+habit_shift,5. Thay đổi thói quen giữa chừng,E vs A (Adaptive vs Mean),Bias_end,-754447.41,-775001.74,-732893.96,100.0,10
+habit_shift,5. Thay đổi thói quen giữa chừng,E vs D (Adaptive vs Fixed EWMA),MAE_daily,-37439.03,-48015.94,-26888.24,100.0,10
+habit_shift,5. Thay đổi thói quen giữa chừng,E vs D (Adaptive vs Fixed EWMA),MAE_end,-77566.23,-100537.46,-56318.3,100.0,10
+habit_shift,5. Thay đổi thói quen giữa chừng,E vs D (Adaptive vs Fixed EWMA),RMSE_daily,-47303.3,-54321.0,-41125.6,100.0,10
+habit_shift,5. Thay đổi thói quen giữa chừng,E vs D (Adaptive vs Fixed EWMA),Bias_end,-73116.99,-97595.71,-48854.07,100.0,10
+sparse_spending,6. Chi tiêu thưa,D vs A (Proposed vs Baseline),MAE_daily,249086.58,186116.51,313700.86,0.0,10
+sparse_spending,6. Chi tiêu thưa,D vs A (Proposed vs Baseline),MAE_end,546559.6,406981.55,689578.3,0.0,10
+sparse_spending,6. Chi tiêu thưa,D vs A (Proposed vs Baseline),RMSE_daily,356371.77,270380.65,443268.84,0.0,10
+sparse_spending,6. Chi tiêu thưa,D vs A (Proposed vs Baseline),Bias_end,40679.3,-57029.31,138125.6,20.0,10
+sparse_spending,6. Chi tiêu thưa,D vs B (Effect of EWMA with Winsorize),MAE_daily,246062.77,180982.28,312025.53,0.0,10
+sparse_spending,6. Chi tiêu thưa,D vs B (Effect of EWMA with Winsorize),MAE_end,540030.19,395318.63,684963.75,0.0,10
+sparse_spending,6. Chi tiêu thưa,D vs B (Effect of EWMA with Winsorize),RMSE_daily,352015.0,264635.41,439599.87,0.0,10
+sparse_spending,6. Chi tiêu thưa,D vs B (Effect of EWMA with Winsorize),Bias_end,32777.78,-64382.81,130774.79,20.0,10
+sparse_spending,6. Chi tiêu thưa,D vs C (Effect of Winsorize with EWMA),MAE_daily,339.46,-1166.97,1660.76,30.0,10
+sparse_spending,6. Chi tiêu thưa,D vs C (Effect of Winsorize with EWMA),MAE_end,2974.74,519.08,5918.52,20.0,10
+sparse_spending,6. Chi tiêu thưa,D vs C (Effect of Winsorize with EWMA),RMSE_daily,204.95,-1171.12,1677.52,30.0,10
+sparse_spending,6. Chi tiêu thưa,D vs C (Effect of Winsorize with EWMA),Bias_end,8505.69,2452.58,17415.51,50.0,10
+sparse_spending,6. Chi tiêu thưa,E vs A (Adaptive vs Mean),MAE_daily,225671.94,170911.2,280861.54,0.0,10
+sparse_spending,6. Chi tiêu thưa,E vs A (Adaptive vs Mean),MAE_end,497232.19,384923.06,602448.04,0.0,10
+sparse_spending,6. Chi tiêu thưa,E vs A (Adaptive vs Mean),RMSE_daily,438981.01,306345.07,587771.03,0.0,10
+sparse_spending,6. Chi tiêu thưa,E vs A (Adaptive vs Mean),Bias_end,238315.57,78128.31,389084.36,10.0,10
+sparse_spending,6. Chi tiêu thưa,E vs D (Adaptive vs Fixed EWMA),MAE_daily,-23414.64,-84112.83,38686.2,70.0,10
+sparse_spending,6. Chi tiêu thưa,E vs D (Adaptive vs Fixed EWMA),MAE_end,-49327.41,-176243.43,72703.45,60.0,10
+sparse_spending,6. Chi tiêu thưa,E vs D (Adaptive vs Fixed EWMA),RMSE_daily,82609.24,-57252.41,222815.02,50.0,10
+sparse_spending,6. Chi tiêu thưa,E vs D (Adaptive vs Fixed EWMA),Bias_end,197636.27,90440.81,289497.21,20.0,10

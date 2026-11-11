@@ -1,0 +1,301 @@
+scenario,scenario_label,seed,arm,arm_label,MAE_daily,RMSE_daily,MAE_end,Bias_end
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1000,arm_A,A: Mean (Raw) - Baseline,87810.38982499999,113756.16609626092,119932.99749999998,3148.749000000002
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1000,arm_B,B: Mean (Winsorized),87812.18395,113757.20982878475,119936.47,3159.3615000000036
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1000,arm_C,C: EWMA (Raw),136059.43034166662,186606.99797606896,227170.33599999995,53693.799
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1000,arm_D,D: EWMA (Winsorized) - Fixed,136051.14946666663,186595.39788396723,227154.30849999996,53712.871499999994
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1000,arm_E,E: Adaptive Mean/EWMA (Winsorized),98516.50605833334,130151.16807452575,140429.76650000003,21718.659000000007
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1001,arm_A,A: Mean (Raw) - Baseline,105057.40735833335,139086.06477887733,182742.33575000006,-22405.23924999999
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1001,arm_B,B: Mean (Winsorized),105089.28785833332,139110.83801427702,182807.60075000004,-22339.974249999992
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1001,arm_C,C: EWMA (Raw),145950.4678083333,193918.40553645274,262933.52975000005,-27912.504250000005
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1001,arm_D,D: EWMA (Winsorized) - Fixed,145950.46948333332,193918.4082774625,262933.53725,-27912.481750000006
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1001,arm_E,E: Adaptive Mean/EWMA (Winsorized),122801.43742500004,165054.7019597022,219429.89074999996,-22007.004250000005
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1002,arm_A,A: Mean (Raw) - Baseline,97682.86604166667,131401.19805696257,151397.10275000002,-12784.63575
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1002,arm_B,B: Mean (Winsorized),97687.57804166667,131407.79650999882,151406.22275000002,-12775.515750000002
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1002,arm_C,C: EWMA (Raw),145818.82341666665,202002.835862617,271094.10175000003,-44468.07825
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1002,arm_D,D: EWMA (Winsorized) - Fixed,145819.15666666668,202003.22962563895,271094.74675000005,-44467.43325
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1002,arm_E,E: Adaptive Mean/EWMA (Winsorized),120690.15595833333,172466.3844918974,206728.33075000005,7900.109250000003
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1003,arm_A,A: Mean (Raw) - Baseline,112511.50658333332,146894.71872986204,198937.14125000004,-16325.843249999994
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1003,arm_B,B: Mean (Winsorized),112363.1976583333,146699.2788260599,198639.09875000006,-14768.715750000008
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1003,arm_C,C: EWMA (Raw),114428.85967500003,176567.19218347326,225090.50074999998,-18877.50075
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1003,arm_D,D: EWMA (Winsorized) - Fixed,113102.97150000003,173542.70061796164,222511.46824999998,-16289.573249999996
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1003,arm_E,E: Adaptive Mean/EWMA (Winsorized),116268.72627499998,156158.48838483007,215622.44124999997,-3427.2157500000076
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1004,arm_A,A: Mean (Raw) - Baseline,60168.91648333332,77681.44403270088,86852.75324999998,7500.814749999998
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1004,arm_B,B: Mean (Winsorized),60169.09085833332,77681.83734647489,86853.09074999997,7501.152249999997
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1004,arm_C,C: EWMA (Raw),106530.58108333332,151325.4121799753,182152.66974999994,4811.179750000001
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1004,arm_D,D: EWMA (Winsorized) - Fixed,106530.63920833333,151325.48395733093,182152.78224999996,4811.292250000001
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1004,arm_E,E: Adaptive Mean/EWMA (Winsorized),82669.32839999998,130383.36034187273,136655.09825000004,-6982.930250000005
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1005,arm_A,A: Mean (Raw) - Baseline,95477.62675833332,124896.28939868251,162192.91950000002,-9401.282999999996
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1005,arm_B,B: Mean (Winsorized),95477.62675833332,124896.28939868251,162192.91950000002,-9401.282999999996
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1005,arm_C,C: EWMA (Raw),117204.6221916667,162749.50692044068,211174.38650000002,-7340.477999999997
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1005,arm_D,D: EWMA (Winsorized) - Fixed,117204.6221916667,162749.50692044068,211174.38650000002,-7340.477999999997
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1005,arm_E,E: Adaptive Mean/EWMA (Winsorized),100398.61245833334,136234.44080725987,167118.52699999997,-25145.613
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1006,arm_A,A: Mean (Raw) - Baseline,114844.8965833333,152321.3635727921,195076.72775000002,4392.8082499999955
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1006,arm_B,B: Mean (Winsorized),114876.5199333333,152365.90172653733,195132.18275000004,4600.723249999997
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1006,arm_C,C: EWMA (Raw),137868.0528333333,189983.54624126627,233195.84225,-19495.471749999997
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1006,arm_D,D: EWMA (Winsorized) - Fixed,137868.04461666665,189983.5337075286,233195.82725,-19495.411749999992
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1006,arm_E,E: Adaptive Mean/EWMA (Winsorized),123551.36543333335,164341.79326510962,217721.33224999998,-25549.95175
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1007,arm_A,A: Mean (Raw) - Baseline,110872.32793333332,145702.50595184416,197514.10949999996,-34074.909
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1007,arm_B,B: Mean (Winsorized),110872.32793333332,145702.50595184416,197514.10949999996,-34074.909
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1007,arm_C,C: EWMA (Raw),134277.0616166667,186115.6340716465,258257.0455,-73911.219
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1007,arm_D,D: EWMA (Winsorized) - Fixed,134277.0616166667,186115.6340716465,258257.0455,-73911.219
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1007,arm_E,E: Adaptive Mean/EWMA (Winsorized),116963.33135833332,155648.89685636922,219151.89500000002,-63608.37150000001
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1008,arm_A,A: Mean (Raw) - Baseline,77732.06790833334,106463.09054510386,118679.76275000002,-23899.795749999997
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1008,arm_B,B: Mean (Winsorized),77732.06790833334,106463.09054510386,118679.76275000002,-23899.795749999997
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1008,arm_C,C: EWMA (Raw),129162.3569083333,173159.37804685163,226469.86724999998,-14756.56075
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1008,arm_D,D: EWMA (Winsorized) - Fixed,129162.3569083333,173159.37804685163,226469.86724999998,-14756.56075
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1008,arm_E,E: Adaptive Mean/EWMA (Winsorized),102981.78761666667,137538.23691995037,165378.98674999998,-51921.903249999996
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1009,arm_A,A: Mean (Raw) - Baseline,57802.52912499998,72653.47538028477,82049.085,2744.046000000002
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1009,arm_B,B: Mean (Winsorized),57802.52912499998,72653.47538028477,82049.085,2744.046000000002
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1009,arm_C,C: EWMA (Raw),116598.64944999998,149923.77447586638,197980.96850000002,5754.928500000007
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1009,arm_D,D: EWMA (Winsorized) - Fixed,116598.64944999998,149923.77447586638,197980.96850000002,5754.928500000007
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),1009,arm_E,E: Adaptive Mean/EWMA (Winsorized),63016.269241666654,79937.5457308749,91394.12999999999,-3828.5040000000035
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1000,arm_A,A: Mean (Raw) - Baseline,273715.1108083334,333978.5911282831,594299.8157500001,594299.8157500001
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1000,arm_B,B: Mean (Winsorized),273786.7466,334061.40079160716,594468.82825,594468.82825
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1000,arm_C,C: EWMA (Raw),143318.48228333332,208856.07378260756,308267.88425000006,299393.31325
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1000,arm_D,D: EWMA (Winsorized) - Fixed,143244.21949999998,208853.414009685,308722.35425000003,299847.78325
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1000,arm_E,E: Adaptive Mean/EWMA (Winsorized),176645.75873333326,240399.22410144864,384745.8352500001,381675.13825000013
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1001,arm_A,A: Mean (Raw) - Baseline,267657.7086583334,334556.99753045297,573856.64675,573856.64675
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1001,arm_B,B: Mean (Winsorized),267691.8840333334,334589.5830714998,573925.8642499999,573925.8642499999
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1001,arm_C,C: EWMA (Raw),140977.0961583333,193356.10173635534,286399.0732500001,234108.25174999997
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1001,arm_D,D: EWMA (Winsorized) - Fixed,141031.89984166666,193426.25314548294,286617.11325000005,234326.29175
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1001,arm_E,E: Adaptive Mean/EWMA (Winsorized),168366.2448416667,220676.4516650123,363585.35025,326455.96174999996
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1002,arm_A,A: Mean (Raw) - Baseline,270291.5686416667,335258.82493385114,581553.1099999996,581553.1099999996
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1002,arm_B,B: Mean (Winsorized),270381.76324166666,335372.30022241554,581728.2349999998,581728.2349999998
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1002,arm_C,C: EWMA (Raw),135110.8280583333,192604.90939167276,272004.21549999993,220863.83000000002
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1002,arm_D,D: EWMA (Winsorized) - Fixed,135504.5320833333,192977.45472715716,272824.54299999995,221684.15750000003
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1002,arm_E,E: Adaptive Mean/EWMA (Winsorized),155212.6979666667,218008.51843756606,320293.83999999997,278600.6225000001
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1003,arm_A,A: Mean (Raw) - Baseline,264948.32985833334,336105.6009583935,578720.1355000001,578720.1355000001
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1003,arm_B,B: Mean (Winsorized),265508.08771666663,336561.04783404205,579847.318,579847.318
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1003,arm_C,C: EWMA (Raw),124648.35650000002,183246.5842759776,277256.90800000005,241336.25800000006
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1003,arm_D,D: EWMA (Winsorized) - Fixed,123545.80550833335,181848.31215136684,275305.95550000004,244373.37550000008
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1003,arm_E,E: Adaptive Mean/EWMA (Winsorized),169196.62410833337,232535.57576549522,378813.9085,363087.7555
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1004,arm_A,A: Mean (Raw) - Baseline,275341.2604249999,332128.91020312865,597781.4562500002,597781.4562500002
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1004,arm_B,B: Mean (Winsorized),275359.5155499999,332155.22588870075,597816.7887500001,597816.7887500001
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1004,arm_C,C: EWMA (Raw),120320.81711666666,176168.7052562578,265564.53325000004,260287.20875000005
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1004,arm_D,D: EWMA (Winsorized) - Fixed,120377.24294999999,176251.64558205954,265675.98325000005,260398.65875000003
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1004,arm_E,E: Adaptive Mean/EWMA (Winsorized),148894.20416666666,204889.36065913574,318744.26975000004,292849.43374999997
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1005,arm_A,A: Mean (Raw) - Baseline,271075.7949583333,334505.0549051121,584259.8045,584259.8045
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1005,arm_B,B: Mean (Winsorized),271098.3469166666,334534.74203509523,584303.642,584303.642
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1005,arm_C,C: EWMA (Raw),130447.36385000001,179092.45140554738,272454.79649999994,250565.91199999995
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1005,arm_D,D: EWMA (Winsorized) - Fixed,130175.598475,179001.18357334236,271928.79899999994,251091.90949999998
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1005,arm_E,E: Adaptive Mean/EWMA (Winsorized),149622.43124166667,203120.34044698052,325825.6614999999,307548.30949999986
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1006,arm_A,A: Mean (Raw) - Baseline,279089.6506583333,349227.3629597486,595295.0647499999,595295.0647499999
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1006,arm_B,B: Mean (Winsorized),279120.1210416666,349240.7094672033,595357.3597499998,595357.3597499998
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1006,arm_C,C: EWMA (Raw),140965.30190833335,192824.8469138766,286432.44025000004,240841.88474999997
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1006,arm_D,D: EWMA (Winsorized) - Fixed,140885.811875,192759.12706338492,286325.55025000003,241017.87975
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1006,arm_E,E: Adaptive Mean/EWMA (Winsorized),156502.49636666663,212033.47585761707,324321.76074999996,280613.85225
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1007,arm_A,A: Mean (Raw) - Baseline,261762.12232500006,330742.2734098013,564520.9200000002,564520.9200000002
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1007,arm_B,B: Mean (Winsorized),261791.12690833342,330758.65265498497,564577.5450000002,564577.5450000002
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1007,arm_C,C: EWMA (Raw),120633.29939166666,173351.28752786218,254132.33299999993,197309.29499999995
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1007,arm_D,D: EWMA (Winsorized) - Fixed,120327.87214166667,173187.99759970367,253452.8179999999,197988.80999999997
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1007,arm_E,E: Adaptive Mean/EWMA (Winsorized),141244.9678333333,204158.64201401814,304286.54149999993,258150.17250000002
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1008,arm_A,A: Mean (Raw) - Baseline,268335.3580583333,326397.4648763984,572661.0007499999,572661.0007499999
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1008,arm_B,B: Mean (Winsorized),268335.3580583333,326397.4648763984,572661.0007499999,572661.0007499999
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1008,arm_C,C: EWMA (Raw),134181.14071666665,184611.45443073535,280094.38675,244632.99825
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1008,arm_D,D: EWMA (Winsorized) - Fixed,134181.14071666665,184611.45443073535,280094.38675,244632.99825
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1008,arm_E,E: Adaptive Mean/EWMA (Winsorized),153697.13032499998,208674.60142249466,323144.53974999994,284323.36575
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1009,arm_A,A: Mean (Raw) - Baseline,274556.8452750001,329635.4122592584,593976.07525,593976.07525
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1009,arm_B,B: Mean (Winsorized),274556.8452750001,329635.4122592584,593976.07525,593976.07525
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1009,arm_C,C: EWMA (Raw),125611.29094166667,175915.2971424429,268486.83425,261042.19524999996
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1009,arm_D,D: EWMA (Winsorized) - Fixed,125611.29094166667,175915.2971424429,268486.83425,261042.19524999996
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),1009,arm_E,E: Adaptive Mean/EWMA (Winsorized),146351.68915000002,192590.19193643046,318232.13425,302539.10274999996
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1000,arm_A,A: Mean (Raw) - Baseline,1774652.7247500003,2383188.965144334,3315627.516250001,-476841.7852499999
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1000,arm_B,B: Mean (Winsorized),1184231.7441416662,2087166.142624677,2291788.9787500002,794454.7222500003
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1000,arm_C,C: EWMA (Raw),2208961.048225,4961912.442643644,4320654.305249998,-822438.9577499998
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1000,arm_D,D: EWMA (Winsorized) - Fixed,1435509.3698166665,2762917.870897771,2823032.06775,695752.3897500001
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1000,arm_E,E: Adaptive Mean/EWMA (Winsorized),1097382.0690083334,2149935.2227677875,2188903.1157499994,1188781.35225
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1001,arm_A,A: Mean (Raw) - Baseline,1769156.499583333,2378926.7954731886,3322794.0732500004,-512617.33225
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1001,arm_B,B: Mean (Winsorized),1181405.6998083338,2080113.7323741068,2304768.2007499994,752573.74025
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1001,arm_C,C: EWMA (Raw),2201137.753866668,4948096.266117775,4297697.135250002,-936687.7922500002
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1001,arm_D,D: EWMA (Winsorized) - Fixed,1427880.1586666666,2757169.7178261788,2803368.399250001,573991.7127500002
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1001,arm_E,E: Adaptive Mean/EWMA (Winsorized),1085766.9019249994,2115089.7743061497,2162570.55175,1147562.17025
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1002,arm_A,A: Mean (Raw) - Baseline,1792974.4918583333,2405949.394962696,3373529.8807500005,-499148.4672499999
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1002,arm_B,B: Mean (Winsorized),1204707.625866666,2103670.950053358,2353965.9232500005,765944.7002500006
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1002,arm_C,C: EWMA (Raw),2179925.5432249997,4912937.244091403,4287014.48675,-959865.5322499998
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1002,arm_D,D: EWMA (Winsorized) - Fixed,1407303.4589666664,2710524.3894681544,2786583.5922499998,552186.60025
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1002,arm_E,E: Adaptive Mean/EWMA (Winsorized),1064125.800058333,2086515.5675771579,2141576.6412499994,1239913.86775
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1003,arm_A,A: Mean (Raw) - Baseline,1761849.825308333,2357277.139186661,3233442.1517499993,-504106.19425000006
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1003,arm_B,B: Mean (Winsorized),1168139.6532416665,2051835.1644328688,2205922.5017500008,773915.3007499998
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1003,arm_C,C: EWMA (Raw),2138081.1081083333,4949060.075124278,4136949.27025,-924038.7842499999
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1003,arm_D,D: EWMA (Winsorized) - Fixed,1362647.9450750002,2712805.2662836844,2636550.66825,600156.78575
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1003,arm_E,E: Adaptive Mean/EWMA (Winsorized),1109432.0102583333,2087902.239099261,2125690.1472500004,1087284.5907499997
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1004,arm_A,A: Mean (Raw) - Baseline,1816149.5576083332,2445718.661290369,3401941.0699999994,-470748.8615
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1004,arm_B,B: Mean (Winsorized),1222603.8489333333,2146060.666560145,2374086.7925,806960.4759999999
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1004,arm_C,C: EWMA (Raw),2207453.946783333,4984665.949213408,4342862.364499998,-890874.5839999998
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1004,arm_D,D: EWMA (Winsorized) - Fixed,1425019.7095083331,2772872.22611059,2827008.8080000007,635253.6985000002
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1004,arm_E,E: Adaptive Mean/EWMA (Winsorized),1226370.9426083337,2460624.4658849086,2428404.4245,896121.5935000001
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1005,arm_A,A: Mean (Raw) - Baseline,1820932.849716667,2444139.2715062923,3416641.7472500005,-494411.79624999996
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1005,arm_B,B: Mean (Winsorized),1225570.4183166667,2136632.5300109074,2383750.16225,784518.6987500004
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1005,arm_C,C: EWMA (Raw),2186814.3208916667,4988708.974605682,4292420.65625,-907886.8787500004
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1005,arm_D,D: EWMA (Winsorized) - Fixed,1405032.352575,2765545.6136621586,2777477.833749999,622311.06125
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1005,arm_E,E: Adaptive Mean/EWMA (Winsorized),1065253.9764333335,2131583.786252691,2133020.15125,1248972.3087499996
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1006,arm_A,A: Mean (Raw) - Baseline,1850035.3875833333,2498882.480353856,3510769.1809999994,-475100.05999999994
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1006,arm_B,B: Mean (Winsorized),1256970.527483333,2204248.151735865,2481063.5359999994,799964.8150000001
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1006,arm_C,C: EWMA (Raw),2245353.804091667,5013477.734623111,4417640.9355,-924903.8975
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1006,arm_D,D: EWMA (Winsorized) - Fixed,1460744.5679666663,2824264.4667000016,2892901.1049999995,601984.345
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1006,arm_E,E: Adaptive Mean/EWMA (Winsorized),1201524.7070916663,2276388.9399220236,2387997.2654999997,1096519.2625000002
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1007,arm_A,A: Mean (Raw) - Baseline,1740966.6648833328,2328984.812424578,3211637.1610000003,-528781.9025
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1007,arm_B,B: Mean (Winsorized),1145145.2001583334,2025054.4495658968,2179037.3634999995,751720.4799999996
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1007,arm_C,C: EWMA (Raw),2147091.7958166664,4971431.285043999,4172183.8564999998,-1000868.6374999998
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1007,arm_D,D: EWMA (Winsorized) - Fixed,1378796.723975,2733246.7993624993,2688687.8659999995,529085.9949999999
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1007,arm_E,E: Adaptive Mean/EWMA (Winsorized),1064428.7062000004,2098296.7262713932,2089779.8919999998,1090127.6875000002
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1008,arm_A,A: Mean (Raw) - Baseline,1775430.8378333333,2383596.524603202,3319733.3384999996,-514709.7155000001
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1008,arm_B,B: Mean (Winsorized),1182134.6013416667,2083930.3236931814,2291855.481,761219.9170000002
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1008,arm_C,C: EWMA (Raw),2217638.3914916664,4998124.709657645,4314747.380999999,-918269.4380000001
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1008,arm_D,D: EWMA (Winsorized) - Fixed,1442774.8822499998,2791641.7313679303,2809889.1415000004,605816.3694999998
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1008,arm_E,E: Adaptive Mean/EWMA (Winsorized),1090926.2827666665,2097656.552786273,2116646.1290000007,1120951.7095
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1009,arm_A,A: Mean (Raw) - Baseline,1795488.4718166676,2422518.098118714,3369563.2415,-477408.3544999999
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1009,arm_B,B: Mean (Winsorized),1198257.6381416668,2123093.070157473,2333926.2590000005,806073.9430000001
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1009,arm_C,C: EWMA (Raw),2225337.5435583326,5046240.831091715,4354341.99,-889553.3719999999
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1009,arm_D,D: EWMA (Winsorized) - Fixed,1440407.50915,2816853.959831283,2836224.1575000007,645788.1054999998
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),1009,arm_E,E: Adaptive Mean/EWMA (Winsorized),1109156.6807916667,2135062.8396287635,2215602.5785000008,1199528.413
+weekend_spending,4. Chi nhiều cuối tuần,1000,arm_A,A: Mean (Raw) - Baseline,155399.05364166663,193557.91128045745,203716.62049999993,-196851.25099999996
+weekend_spending,4. Chi nhiều cuối tuần,1000,arm_B,B: Mean (Winsorized),155399.05364166663,193557.91128045745,203716.62049999993,-196851.25099999996
+weekend_spending,4. Chi nhiều cuối tuần,1000,arm_C,C: EWMA (Raw),314440.8169916667,383681.16155722685,534734.044,-532864.0760000001
+weekend_spending,4. Chi nhiều cuối tuần,1000,arm_D,D: EWMA (Winsorized) - Fixed,314440.8169916667,383681.16155722685,534734.044,-532864.0760000001
+weekend_spending,4. Chi nhiều cuối tuần,1000,arm_E,E: Adaptive Mean/EWMA (Winsorized),174441.22755,240019.79809702528,246995.575,-204797.26849999995
+weekend_spending,4. Chi nhiều cuối tuần,1001,arm_A,A: Mean (Raw) - Baseline,172144.11982500003,214831.52110745,256138.33925000002,-222405.23925000004
+weekend_spending,4. Chi nhiều cuối tuần,1001,arm_B,B: Mean (Winsorized),172144.11982500003,214831.52110745,256138.33925000002,-222405.23925000004
+weekend_spending,4. Chi nhiều cuối tuần,1001,arm_C,C: EWMA (Raw),345402.81005000003,422811.065196377,614470.3717499997,-614470.3717499997
+weekend_spending,4. Chi nhiều cuối tuần,1001,arm_D,D: EWMA (Winsorized) - Fixed,345402.81005000003,422811.065196377,614470.3717499997,-614470.3717499997
+weekend_spending,4. Chi nhiều cuối tuần,1001,arm_E,E: Adaptive Mean/EWMA (Winsorized),177098.03556666663,229121.04931154146,265067.81625000003,-197946.99675000002
+weekend_spending,4. Chi nhiều cuối tuần,1002,arm_A,A: Mean (Raw) - Baseline,164796.39799166666,209817.62970129977,229779.22825000001,-212784.63575
+weekend_spending,4. Chi nhiều cuối tuần,1002,arm_B,B: Mean (Winsorized),164796.39799166666,209817.62970129977,229779.22825000001,-212784.63575
+weekend_spending,4. Chi nhiều cuối tuần,1002,arm_C,C: EWMA (Raw),358315.22908333334,437290.2939407371,640471.6937499999,-631025.9082499997
+weekend_spending,4. Chi nhiều cuối tuần,1002,arm_D,D: EWMA (Winsorized) - Fixed,358315.22908333334,437290.2939407371,640471.6937499999,-631025.9082499997
+weekend_spending,4. Chi nhiều cuối tuần,1002,arm_E,E: Adaptive Mean/EWMA (Winsorized),200395.56905833335,281771.04491795116,298186.73125,-236677.88075
+weekend_spending,4. Chi nhiều cuối tuần,1003,arm_A,A: Mean (Raw) - Baseline,181666.59835,223400.31302214408,263377.4827500001,-216325.84324999998
+weekend_spending,4. Chi nhiều cuối tuần,1003,arm_B,B: Mean (Winsorized),181666.59835,223400.31302214408,263377.4827500001,-216325.84324999998
+weekend_spending,4. Chi nhiều cuối tuần,1003,arm_C,C: EWMA (Raw),349580.85670833325,416105.7718813685,617768.70325,-605435.39075
+weekend_spending,4. Chi nhiều cuối tuần,1003,arm_D,D: EWMA (Winsorized) - Fixed,349580.85670833325,416105.7718813685,617768.70325,-605435.39075
+weekend_spending,4. Chi nhiều cuối tuần,1003,arm_E,E: Adaptive Mean/EWMA (Winsorized),195913.29739999998,259875.22854402562,287117.72225000005,-236487.04324999993
+weekend_spending,4. Chi nhiều cuối tuần,1004,arm_A,A: Mean (Raw) - Baseline,143794.40554999997,174908.14856948674,196302.71075000003,-192499.18524999998
+weekend_spending,4. Chi nhiều cuối tuần,1004,arm_B,B: Mean (Winsorized),143794.40554999997,174908.14856948674,196302.71075000003,-192499.18524999998
+weekend_spending,4. Chi nhiều cuối tuần,1004,arm_C,C: EWMA (Raw),336456.91026666656,393241.1663274492,593494.5932499999,-581746.6352499999
+weekend_spending,4. Chi nhiều cuối tuần,1004,arm_D,D: EWMA (Winsorized) - Fixed,336456.91026666656,393241.1663274492,593494.5932499999,-581746.6352499999
+weekend_spending,4. Chi nhiều cuối tuần,1004,arm_E,E: Adaptive Mean/EWMA (Winsorized),170979.27646666666,240740.2265203771,239971.26375,-225592.95025
+weekend_spending,4. Chi nhiều cuối tuần,1005,arm_A,A: Mean (Raw) - Baseline,164095.82069166668,203592.91347087565,230521.847,-209401.283
+weekend_spending,4. Chi nhiều cuối tuần,1005,arm_B,B: Mean (Winsorized),164095.82069166668,203592.91347087565,230521.847,-209401.283
+weekend_spending,4. Chi nhiều cuối tuần,1005,arm_C,C: EWMA (Raw),334861.4826249999,401838.69048920966,593898.3230000001,-593898.3230000001
+weekend_spending,4. Chi nhiều cuối tuần,1005,arm_D,D: EWMA (Winsorized) - Fixed,334861.4826249999,401838.69048920966,593898.3230000001,-593898.3230000001
+weekend_spending,4. Chi nhiều cuối tuần,1005,arm_E,E: Adaptive Mean/EWMA (Winsorized),160070.69948333336,198083.37284390596,229675.357,-176759.8655
+weekend_spending,4. Chi nhiều cuối tuần,1006,arm_A,A: Mean (Raw) - Baseline,170233.91035000002,216164.35237647622,247334.38724999997,-195607.19174999997
+weekend_spending,4. Chi nhiều cuối tuần,1006,arm_B,B: Mean (Winsorized),170233.91035000002,216164.35237647622,247334.38724999997,-195607.19174999997
+weekend_spending,4. Chi nhiều cuối tuần,1006,arm_C,C: EWMA (Raw),341543.8163499999,418206.4673698185,606053.33175,-606053.33175
+weekend_spending,4. Chi nhiều cuối tuần,1006,arm_D,D: EWMA (Winsorized) - Fixed,341543.8163499999,418206.4673698185,606053.33175,-606053.33175
+weekend_spending,4. Chi nhiều cuối tuần,1006,arm_E,E: Adaptive Mean/EWMA (Winsorized),182108.35677499993,233278.65719870685,267475.60624999995,-169878.10425
+weekend_spending,4. Chi nhiều cuối tuần,1007,arm_A,A: Mean (Raw) - Baseline,179901.0809,224689.16558506744,264011.96849999996,-234074.90899999999
+weekend_spending,4. Chi nhiều cuối tuần,1007,arm_B,B: Mean (Winsorized),179901.0809,224689.16558506744,264011.96849999996,-234074.90899999999
+weekend_spending,4. Chi nhiều cuối tuần,1007,arm_C,C: EWMA (Raw),367760.83051666664,442530.42377928604,661166.6314999999,-660469.0789999999
+weekend_spending,4. Chi nhiều cuối tuần,1007,arm_D,D: EWMA (Winsorized) - Fixed,367760.83051666664,442530.42377928604,661166.6314999999,-660469.0789999999
+weekend_spending,4. Chi nhiều cuối tuần,1007,arm_E,E: Adaptive Mean/EWMA (Winsorized),173797.94147500006,231340.41511496002,248575.27899999995,-214010.55650000004
+weekend_spending,4. Chi nhiều cuối tuần,1008,arm_A,A: Mean (Raw) - Baseline,161043.08350833334,194300.80048063362,234224.88974999994,-223899.79575000005
+weekend_spending,4. Chi nhiều cuối tuần,1008,arm_B,B: Mean (Winsorized),161043.08350833334,194300.80048063362,234224.88974999994,-223899.79575000005
+weekend_spending,4. Chi nhiều cuối tuần,1008,arm_C,C: EWMA (Raw),335603.01844166673,406033.79892879986,601314.4357499998,-601314.4357499998
+weekend_spending,4. Chi nhiều cuối tuần,1008,arm_D,D: EWMA (Winsorized) - Fixed,335603.01844166673,406033.79892879986,601314.4357499998,-601314.4357499998
+weekend_spending,4. Chi nhiều cuối tuần,1008,arm_E,E: Adaptive Mean/EWMA (Winsorized),152120.78295,184959.9739249661,209366.65725,-194176.41825000002
+weekend_spending,4. Chi nhiều cuối tuần,1009,arm_A,A: Mean (Raw) - Baseline,144163.4552083333,172747.93107444243,197255.95400000006,-197255.95400000006
+weekend_spending,4. Chi nhiều cuối tuần,1009,arm_B,B: Mean (Winsorized),144163.4552083333,172747.93107444243,197255.95400000006,-197255.95400000006
+weekend_spending,4. Chi nhiều cuối tuần,1009,arm_C,C: EWMA (Raw),329355.38275833335,390944.8919910798,580802.924,-580802.924
+weekend_spending,4. Chi nhiều cuối tuần,1009,arm_D,D: EWMA (Winsorized) - Fixed,329355.38275833335,390944.8919910798,580802.924,-580802.924
+weekend_spending,4. Chi nhiều cuối tuần,1009,arm_E,E: Adaptive Mean/EWMA (Winsorized),164755.30185833335,226917.33564449826,227049.84250000003,-202166.80399999997
+habit_shift,5. Thay đổi thói quen giữa chừng,1000,arm_A,A: Mean (Raw) - Baseline,600022.0896166668,1353875.415377135,1250470.1084999996,1203148.7514999998
+habit_shift,5. Thay đổi thói quen giữa chừng,1000,arm_B,B: Mean (Winsorized),600338.4523666666,1354909.5473245163,1251082.4234999996,1203768.2064999999
+habit_shift,5. Thay đổi thói quen giữa chừng,1000,arm_C,C: EWMA (Raw),322226.4272666666,833543.1661814348,715241.7380000004,568937.7115
+habit_shift,5. Thay đổi thói quen giữa chừng,1000,arm_D,D: EWMA (Winsorized) - Fixed,324452.2040166666,838292.9314137707,719549.6930000003,573280.7665
+habit_shift,5. Thay đổi thói quen giữa chừng,1000,arm_E,E: Adaptive Mean/EWMA (Winsorized),250535.82844166667,768427.7825675071,558255.701,471546.289
+habit_shift,5. Thay đổi thói quen giữa chừng,1001,arm_A,A: Mean (Raw) - Baseline,648021.8726999998,1454369.6784848555,1358793.78375,1177594.7632499996
+habit_shift,5. Thay đổi thói quen giữa chừng,1001,arm_B,B: Mean (Winsorized),648494.3329499997,1455852.1280805436,1359711.78375,1178512.76325
+habit_shift,5. Thay đổi thói quen giữa chừng,1001,arm_C,C: EWMA (Raw),335532.14340000006,876239.021389219,742643.5202499998,487331.4082500003
+habit_shift,5. Thay đổi thói quen giữa chừng,1001,arm_D,D: EWMA (Winsorized) - Fixed,339138.28595000005,885160.2835880822,749623.1552500001,494311.05825000035
+habit_shift,5. Thay đổi thói quen giữa chừng,1001,arm_E,E: Adaptive Mean/EWMA (Winsorized),300943.6007499999,830933.0557139844,684688.8297499999,432386.3482500001
+habit_shift,5. Thay đổi thói quen giữa chừng,1002,arm_A,A: Mean (Raw) - Baseline,608135.5150916667,1387183.921970578,1271550.82675,1187215.3742499999
+habit_shift,5. Thay đổi thói quen giữa chừng,1002,arm_B,B: Mean (Winsorized),608768.5505916666,1389304.4265228237,1272776.05675,1188440.6042499999
+habit_shift,5. Thay đổi thói quen giữa chừng,1002,arm_C,C: EWMA (Raw),330948.399725,851525.6722328985,754998.6262499999,470775.8342500002
+habit_shift,5. Thay đổi thói quen giữa chừng,1002,arm_D,D: EWMA (Winsorized) - Fixed,335494.90235000005,861607.2442079749,763798.3087499999,479575.51675000024
+habit_shift,5. Thay đổi thói quen giữa chừng,1002,arm_E,E: Adaptive Mean/EWMA (Winsorized),301960.7772333334,817675.450670426,689238.3507500001,476500.51675000007
+habit_shift,5. Thay đổi thói quen giữa chừng,1003,arm_A,A: Mean (Raw) - Baseline,632628.8764250001,1358853.607071188,1330294.03475,1183674.1592499998
+habit_shift,5. Thay đổi thói quen giữa chừng,1003,arm_B,B: Mean (Winsorized),632920.9341250003,1360281.6017382026,1330848.3147500004,1186083.60925
+habit_shift,5. Thay đổi thói quen giữa chừng,1003,arm_C,C: EWMA (Raw),301932.04498333344,826867.8177652917,704032.53575,496366.4117500001
+habit_shift,5. Thay đổi thói quen giữa chừng,1003,arm_D,D: EWMA (Winsorized) - Fixed,304040.6196833334,832994.1733661125,708100.8507500001,505601.68675000005
+habit_shift,5. Thay đổi thói quen giữa chừng,1003,arm_E,E: Adaptive Mean/EWMA (Winsorized),293082.35180000006,795108.1709487623,673766.1082500003,484248.43675
+habit_shift,5. Thay đổi thói quen giữa chừng,1004,arm_A,A: Mean (Raw) - Baseline,595662.0150249997,1395486.9296597189,1262420.3262499997,1207500.8172499998
+habit_shift,5. Thay đổi thói quen giữa chừng,1004,arm_B,B: Mean (Winsorized),596154.8685249997,1397168.7772731646,1263374.2362499998,1208454.72725
+habit_shift,5. Thay đổi thói quen giữa chừng,1004,arm_C,C: EWMA (Raw),291935.3568416667,848340.168836446,670254.24775,520055.09225000005
+habit_shift,5. Thay đổi thói quen giữa chừng,1004,arm_D,D: EWMA (Winsorized) - Fixed,295942.16884166666,857653.3921831362,678009.36775,527810.2122500001
+habit_shift,5. Thay đổi thói quen giữa chừng,1004,arm_E,E: Adaptive Mean/EWMA (Winsorized),280854.19600000005,818995.5957845901,651768.3067500001,405446.05475000007
+habit_shift,5. Thay đổi thói quen giữa chừng,1005,arm_A,A: Mean (Raw) - Baseline,637204.2268916669,1428761.0717658484,1337165.6849999998,1190598.7269999997
+habit_shift,5. Thay đổi thói quen giữa chừng,1005,arm_B,B: Mean (Winsorized),637552.3685166669,1429899.91970761,1337839.5074999998,1191272.5494999997
+habit_shift,5. Thay đổi thói quen giữa chừng,1005,arm_C,C: EWMA (Raw),308480.01149166666,837221.5760023663,709189.9180000002,507903.427
+habit_shift,5. Thay đổi thói quen giữa chừng,1005,arm_D,D: EWMA (Winsorized) - Fixed,310753.36549166666,842137.9302422636,713589.9580000002,512303.46700000006
+habit_shift,5. Thay đổi thói quen giữa chừng,1005,arm_E,E: Adaptive Mean/EWMA (Winsorized),273242.3758416668,807463.2728021535,624334.7380000001,453238.4319999999
+habit_shift,5. Thay đổi thói quen giữa chừng,1006,arm_A,A: Mean (Raw) - Baseline,644513.7309416669,1449836.612261076,1340522.3272499999,1204392.8107500002
+habit_shift,5. Thay đổi thói quen giữa chừng,1006,arm_B,B: Mean (Winsorized),645169.9577916668,1451942.7529700364,1341786.6922499998,1205809.6357500001
+habit_shift,5. Thay đổi thói quen giữa chừng,1006,arm_C,C: EWMA (Raw),328694.31323333335,909127.3306692714,729639.1862499999,495748.4482499999
+habit_shift,5. Thay đổi thói quen giữa chừng,1006,arm_D,D: EWMA (Winsorized) - Fixed,333923.70664166665,918911.7738791225,739760.5937499999,505869.93074999994
+habit_shift,5. Thay đổi thói quen giữa chừng,1006,arm_E,E: Adaptive Mean/EWMA (Winsorized),297949.5244166666,865968.271176998,681219.62975,432627.3982500002
+habit_shift,5. Thay đổi thói quen giữa chừng,1007,arm_A,A: Mean (Raw) - Baseline,628341.7254583335,1382651.0796992402,1322839.5869999998,1165925.0784999998
+habit_shift,5. Thay đổi thói quen giữa chừng,1007,arm_B,B: Mean (Winsorized),628617.7339583334,1383551.5067075042,1323373.7969999998,1166459.2884999998
+habit_shift,5. Thay đổi thói quen giữa chừng,1007,arm_C,C: EWMA (Raw),310481.86055,805066.1319179571,722756.0134999999,441332.7010000002
+habit_shift,5. Thay đổi thói quen giữa chừng,1007,arm_D,D: EWMA (Winsorized) - Fixed,313135.518675,811053.6343053285,727892.1259999999,446468.81350000016
+habit_shift,5. Thay đổi thói quen giữa chừng,1007,arm_E,E: Adaptive Mean/EWMA (Winsorized),271414.97001666663,770379.5846203252,639500.0349999999,392765.5960000001
+habit_shift,5. Thay đổi thói quen giữa chừng,1008,arm_A,A: Mean (Raw) - Baseline,604039.6605916666,1367308.7881365367,1266542.4572499997,1176100.2142500002
+habit_shift,5. Thay đổi thói quen giữa chừng,1008,arm_B,B: Mean (Winsorized),604570.3612166666,1369103.1828673314,1267569.6197499998,1177127.3767500003
+habit_shift,5. Thay đổi thói quen giữa chừng,1008,arm_C,C: EWMA (Raw),313408.4593916667,851292.2586322004,703858.07825,500487.35925000004
+habit_shift,5. Thay đổi thói quen giữa chừng,1008,arm_D,D: EWMA (Winsorized) - Fixed,317922.5980166667,860956.432829508,712595.12075,509224.40175
+habit_shift,5. Thay đổi thói quen giữa chừng,1008,arm_E,E: Adaptive Mean/EWMA (Winsorized),285888.4692416667,801711.4533697655,639410.8027499998,379421.93925000017
+habit_shift,5. Thay đổi thói quen giữa chừng,1009,arm_A,A: Mean (Raw) - Baseline,605313.0130333335,1409681.226991856,1273594.8894999998,1202744.0485
+habit_shift,5. Thay đổi thói quen giữa chừng,1009,arm_B,B: Mean (Winsorized),605822.4205333333,1411369.632056691,1274580.8394999998,1203729.9985000002
+habit_shift,5. Thay đổi thói quen giữa chừng,1009,arm_C,C: EWMA (Raw),305570.19821666664,857766.5144591606,691060.546,520998.84849999985
+habit_shift,5. Thay đổi thói quen giữa chừng,1009,arm_D,D: EWMA (Winsorized) - Fixed,310812.2478416667,867364.0980505305,701206.4485,531144.7509999999
+habit_shift,5. Thay đổi thói quen giữa chừng,1009,arm_E,E: Adaptive Mean/EWMA (Winsorized),255353.26333333328,826436.206908047,596280.8165,426239.67850000004
+sparse_spending,6. Chi tiêu thưa,1000,arm_A,A: Mean (Raw) - Baseline,565344.0206416666,835192.9288532607,954083.2477500003,382506.91025
+sparse_spending,6. Chi tiêu thưa,1000,arm_B,B: Mean (Winsorized),569362.853475,842356.6978104052,963064.2127500002,391487.87525
+sparse_spending,6. Chi tiêu thưa,1000,arm_C,C: EWMA (Raw),738310.2998166669,1010822.5650895659,1380517.29575,213979.98274999997
+sparse_spending,6. Chi tiêu thưa,1000,arm_D,D: EWMA (Winsorized) - Fixed,741157.8799666665,1016030.944146965,1385380.7007499998,220683.72275000002
+sparse_spending,6. Chi tiêu thưa,1000,arm_E,E: Adaptive Mean/EWMA (Winsorized),834132.2247833334,1297419.8420720133,1557078.0782499998,426947.46275000006
+sparse_spending,6. Chi tiêu thưa,1001,arm_A,A: Mean (Raw) - Baseline,537823.5811750002,717826.4145737621,873496.5245,-167483.697
+sparse_spending,6. Chi tiêu thưa,1001,arm_B,B: Mean (Winsorized),538403.5991250002,719288.7042761514,874739.5595000001,-166240.66199999998
+sparse_spending,6. Chi tiêu thưa,1001,arm_C,C: EWMA (Raw),901782.7153166666,1201316.0958703486,1638182.1405,-332908.33949999994
+sparse_spending,6. Chi tiêu thưa,1001,arm_D,D: EWMA (Winsorized) - Fixed,902365.8571416665,1202009.9509289092,1640004.528,-330917.292
+sparse_spending,6. Chi tiêu thưa,1001,arm_E,E: Adaptive Mean/EWMA (Winsorized),880835.3561833333,1622150.3717156958,1613559.588,-250050.30449999994
+sparse_spending,6. Chi tiêu thưa,1002,arm_A,A: Mean (Raw) - Baseline,507675.3070500001,667313.8129270563,672463.4045,-50043.680499999995
+sparse_spending,6. Chi tiêu thưa,1002,arm_B,B: Mean (Winsorized),508452.68433333345,668388.4691845187,673896.9845,-48468.18550000002
+sparse_spending,6. Chi tiêu thưa,1002,arm_C,C: EWMA (Raw),855705.0590166667,1165068.5122300007,1524541.1135,-56181.18550000002
+sparse_spending,6. Chi tiêu thưa,1002,arm_D,D: EWMA (Winsorized) - Fixed,855715.4857583335,1165084.0979977474,1524561.191,-56160.41800000002
+sparse_spending,6. Chi tiêu thưa,1002,arm_E,E: Adaptive Mean/EWMA (Winsorized),772855.6057416666,1127366.654214796,1274691.241,-239112.598
+sparse_spending,6. Chi tiêu thưa,1003,arm_A,A: Mean (Raw) - Baseline,547126.0504833333,731849.247787082,960540.22025,-78204.42475000008
+sparse_spending,6. Chi tiêu thưa,1003,arm_B,B: Mean (Winsorized),558492.427725,745937.3663082822,985239.21275,-45422.95225000007
+sparse_spending,6. Chi tiêu thưa,1003,arm_C,C: EWMA (Raw),671574.9521666669,972965.1742220508,1165535.67375,-125761.80475000001
+sparse_spending,6. Chi tiêu thưa,1003,arm_D,D: EWMA (Winsorized) - Fixed,666782.487675,969416.1071369849,1177630.0462500001,-81676.49724999997
+sparse_spending,6. Chi tiêu thưa,1003,arm_E,E: Adaptive Mean/EWMA (Winsorized),630103.3075916666,944153.7269081254,1165435.5297499998,254390.83775000004
+sparse_spending,6. Chi tiêu thưa,1004,arm_A,A: Mean (Raw) - Baseline,586908.0380999998,757541.9729124991,797919.4565000001,79992.33499999998
+sparse_spending,6. Chi tiêu thưa,1004,arm_B,B: Mean (Winsorized),587809.4774583331,758733.9733444521,799891.9040000002,82124.72750000001
+sparse_spending,6. Chi tiêu thưa,1004,arm_C,C: EWMA (Raw),879579.3616083332,1155524.4554037584,1533241.2825000002,265102.4225
+sparse_spending,6. Chi tiêu thưa,1004,arm_D,D: EWMA (Winsorized) - Fixed,879333.3305999998,1155425.1997112697,1532792.3700000003,266339.345
+sparse_spending,6. Chi tiêu thưa,1004,arm_E,E: Adaptive Mean/EWMA (Winsorized),786411.8626083332,1139627.9744439002,1358757.6835,533672.3525
+sparse_spending,6. Chi tiêu thưa,1005,arm_A,A: Mean (Raw) - Baseline,601982.49575,793914.6840750946,996068.4114999997,-49457.5585
+sparse_spending,6. Chi tiêu thưa,1005,arm_B,B: Mean (Winsorized),602636.5130749999,794928.5351350242,997349.4639999997,-47956.591000000015
+sparse_spending,6. Chi tiêu thưa,1005,arm_C,C: EWMA (Raw),819643.3911833334,1146968.5244599679,1434989.7434999996,-48427.43350000003
+sparse_spending,6. Chi tiêu thưa,1005,arm_D,D: EWMA (Winsorized) - Fixed,818195.1456250001,1143928.1932749024,1432108.2659999998,-43022.65600000004
+sparse_spending,6. Chi tiêu thưa,1005,arm_E,E: Adaptive Mean/EWMA (Winsorized),980784.3093833333,1608362.465301539,1735367.4279999998,9889.611500000061
+sparse_spending,6. Chi tiêu thưa,1006,arm_A,A: Mean (Raw) - Baseline,455416.3930333333,593109.3706046897,655220.3015,-72103.03499999996
+sparse_spending,6. Chi tiêu thưa,1006,arm_B,B: Mean (Winsorized),459136.1102583335,598436.9764450985,663967.7840000001,-60932.3325
+sparse_spending,6. Chi tiêu thưa,1006,arm_C,C: EWMA (Raw),753311.8795416665,977766.7057155756,1278207.8714999997,278567.3474999999
+sparse_spending,6. Chi tiêu thưa,1006,arm_D,D: EWMA (Winsorized) - Fixed,756985.9378583332,979629.9545746272,1286015.2814999998,287290.6574999999
+sparse_spending,6. Chi tiêu thưa,1006,arm_E,E: Adaptive Mean/EWMA (Winsorized),639931.527175,837376.6406727994,1015179.0634999999,493491.42750000005
+sparse_spending,6. Chi tiêu thưa,1007,arm_A,A: Mean (Raw) - Baseline,609980.8516249999,829392.6087712239,1029549.8702499999,21068.080750000016
+sparse_spending,6. Chi tiêu thưa,1007,arm_B,B: Mean (Winsorized),610433.5190083333,830334.4704703471,1030429.78525,21947.99575000002
+sparse_spending,6. Chi tiêu thưa,1007,arm_C,C: EWMA (Raw),794936.8300500001,1073632.6564834316,1441966.6377500002,225122.98825000002
+sparse_spending,6. Chi tiêu thưa,1007,arm_D,D: EWMA (Winsorized) - Fixed,795151.1990500002,1074050.9114151795,1442383.3377500004,225539.68825000004
+sparse_spending,6. Chi tiêu thưa,1007,arm_E,E: Adaptive Mean/EWMA (Winsorized),779957.201841667,1090464.8721679405,1467371.5887499999,509484.01075
+sparse_spending,6. Chi tiêu thưa,1008,arm_A,A: Mean (Raw) - Baseline,680060.3127666665,907154.4237843715,1160559.7820000001,-18044.62499999998
+sparse_spending,6. Chi tiêu thưa,1008,arm_B,B: Mean (Winsorized),686822.1739583332,915718.4785533685,1174190.7545000003,-4413.652499999995
+sparse_spending,6. Chi tiêu thưa,1008,arm_C,C: EWMA (Raw),762866.4996833336,1095146.745843754,1373178.408,-86408.92499999996
+sparse_spending,6. Chi tiêu thưa,1008,arm_D,D: EWMA (Winsorized) - Fixed,765007.0522833335,1095459.806186658,1378831.3230000003,-71005.81499999994
+sparse_spending,6. Chi tiêu thưa,1008,arm_E,E: Adaptive Mean/EWMA (Winsorized),817779.4108333335,1199578.1944186618,1467765.6845,294947.71499999997
+sparse_spending,6. Chi tiêu thưa,1009,arm_A,A: Mean (Raw) - Baseline,572562.3581833334,781908.5445623196,898788.37425,57746.54924999998
+sparse_spending,6. Chi tiêu thưa,1009,arm_B,B: Mean (Winsorized),573568.145683333,784648.0506641886,901214.0092499999,62865.85425000002
+sparse_spending,6. Chi tiêu thưa,1009,arm_C,C: EWMA (Raw),974639.5473333333,1377660.845118654,1664178.0512499998,94627.9342499999
+sparse_spending,6. Chi tiêu thưa,1009,arm_D,D: EWMA (Winsorized) - Fixed,975050.801925,1377886.571620899,1664578.5287500003,95699.16674999992
+sparse_spending,6. Chi tiêu thưa,1009,arm_E,E: Adaptive Mean/EWMA (Winsorized),798808.0014583332,1138513.4041811172,1315805.5772499999,455472.08175

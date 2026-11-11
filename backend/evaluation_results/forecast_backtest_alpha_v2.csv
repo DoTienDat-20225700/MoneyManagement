@@ -1,13 +1,25 @@
 scenario,scenario_label,alpha,MAE_daily_mean,MAE_daily_std,MAE_end_mean,MAE_end_std
-stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),0.1,924180.98,13758.73,988930.01,24027.93
-stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),0.2,946025.87,15720.89,1038232.43,27797.69
-stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),0.3,967190.71,18115.42,1084395.54,33680.76
-stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),0.5,1006657.67,23182.16,1166272.89,44783.31
-upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),0.1,956301.73,9271.21,1112913.71,17983.1
-upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),0.2,947196.59,12215.14,1078673.9,24536.44
-upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),0.3,955099.96,14751.1,1087414.69,29763.17
-upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),0.5,980728.97,20248.52,1133251.04,39660.58
-volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),0.1,1953327.92,28426.92,3129997.68,63147.75
-volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),0.2,2000534.08,27413.47,3217092.21,56851.77
-volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),0.3,2076543.47,27343.75,3362964.89,56204.47
-volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),0.5,2300927.51,35223.5,3801056.32,75886.15
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),0.1,101802.12,12377.55,170664.63,23294.22
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),0.2,127485.14,14488.29,226113.27,26961.05
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),0.3,151925.93,17305.12,277094.98,33701.08
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),0.5,196947.14,23714.53,367285.28,46985.6
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),0.1,145111.44,7917.08,323782.73,15961.77
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),0.2,132832.96,10623.78,281671.23,21644.01
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),0.3,141628.46,12763.92,290556.24,25628.98
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),0.5,170596.28,18934.06,340795.41,35288.16
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),0.1,1296777.7,26672.29,2567766.95,60571.47
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),0.2,1430016.52,27454.48,2818258.71,57188.89
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),0.3,1549604.12,28747.59,3043866.9,57762.65
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),0.5,1751801.46,33173.56,3423724.33,65607.7
+weekend_spending,4. Chi nhiều cuối tuần,0.1,230082.62,8335.42,378004.35,17451.62
+weekend_spending,4. Chi nhiều cuối tuần,0.2,338363.5,11521.59,595642.03,21490.04
+weekend_spending,4. Chi nhiều cuối tuần,0.3,415077.32,15078.99,745976.54,27899.84
+weekend_spending,4. Chi nhiều cuối tuần,0.5,398465.54,24223.44,710023.03,45094.35
+habit_shift,5. Thay đổi thói quen giữa chừng,0.1,352425.58,13058.38,783021.16,23817.75
+habit_shift,5. Thay đổi thói quen giữa chừng,0.2,315813.52,15531.99,713726.31,28322.07
+habit_shift,5. Thay đổi thói quen giữa chừng,0.3,318434.42,17918.34,720186.56,33868.71
+habit_shift,5. Thay đổi thói quen giữa chừng,0.5,345956.39,23619.96,772090.75,46139.7
+sparse_spending,6. Chi tiêu thưa,0.1,718446.64,88217.0,1218440.57,179781.85
+sparse_spending,6. Chi tiêu thưa,0.2,882665.86,100910.86,1582868.26,188832.53
+sparse_spending,6. Chi tiêu thưa,0.3,1040976.77,117933.96,1920881.59,219218.34
+sparse_spending,6. Chi tiêu thưa,0.5,1339095.77,178886.73,2539665.48,345320.87

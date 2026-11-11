@@ -1,0 +1,25 @@
+scenario,scenario_label,alpha,MAE_daily_mean,MAE_daily_std,MAE_end_mean,MAE_end_std
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),0.1,105283.26,13485.84,181375.13,32084.7
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),0.2,128256.51,14029.42,229292.49,28524.22
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),0.3,152435.2,14460.52,278217.56,26411.1
+stable_noise,1. Chi tiêu ổn định có nhiễu (Stable),0.5,203602.84,14618.03,380318.42,29038.84
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),0.1,143928.47,7203.44,319607.29,16671.38
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),0.2,131488.54,8745.37,276943.43,14894.09
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),0.3,140887.63,10443.02,287162.92,17155.55
+upward_trend,2. Chi tiêu có xu hướng tăng (Upward Trend),0.5,174400.97,10277.21,344125.29,19613.74
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),0.1,1288235.86,28397.03,2546347.88,82532.42
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),0.2,1418611.67,30324.25,2788172.36,74316.36
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),0.3,1537303.55,35128.52,3013060.22,80161.09
+volatile_outliers,3. Chi tiêu thất thường có outlier (Volatile/Outlier),0.5,1739370.13,36130.37,3394989.65,76098.78
+weekend_spending,4. Chi nhiều cuối tuần,0.1,233679.31,10881.03,385166.6,25862.18
+weekend_spending,4. Chi nhiều cuối tuần,0.2,341332.12,15042.91,604417.51,34083.86
+weekend_spending,4. Chi nhiều cuối tuần,0.3,418317.37,20146.06,755914.31,43011.37
+weekend_spending,4. Chi nhiều cuối tuần,0.5,399501.53,24902.17,715587.84,52630.25
+habit_shift,5. Thay đổi thói quen giữa chừng,0.1,359901.04,13084.93,798835.11,26810.1
+habit_shift,5. Thay đổi thói quen giữa chừng,0.2,318561.56,14353.47,721412.56,24905.96
+habit_shift,5. Thay đổi thói quen giữa chừng,0.3,322623.67,15161.41,729850.34,24161.01
+habit_shift,5. Thay đổi thói quen giữa chừng,0.5,357498.33,13313.19,798633.45,24974.12
+sparse_spending,6. Chi tiêu thưa,0.1,673335.48,65872.36,1131142.99,110226.91
+sparse_spending,6. Chi tiêu thưa,0.2,815574.52,89896.53,1446428.56,150969.9
+sparse_spending,6. Chi tiêu thưa,0.3,958673.0,115791.15,1749436.73,219703.04
+sparse_spending,6. Chi tiêu thưa,0.5,1237626.27,142451.19,2313527.2,283652.09
